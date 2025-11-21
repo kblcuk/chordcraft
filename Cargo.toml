@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["ChordCraft Contributors"]
+license = "MIT"
+repository = "https://github.com/kblcuk/chordcraft"
+
+[workspace.dependencies]
+# Shared dependencies that multiple crates might use
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }

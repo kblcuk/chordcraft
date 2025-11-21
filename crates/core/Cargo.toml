@@ -1,0 +1,20 @@
+[package]
+name = "chordcraft-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core music theory library for chord-fingering conversion"
+
+[dependencies]
+thiserror.workspace = true
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+# For property-based testing
+proptest = "1.9"
+
+[features]
+default = []
+serde = ["dep:serde"]

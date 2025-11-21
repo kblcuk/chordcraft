@@ -1,0 +1,18 @@
+[package]
+name = "chordcraft-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line interface for ChordCraft"
+
+[[bin]]
+name = "chordcraft"
+path = "src/main.rs"
+
+[dependencies]
+chordcraft-core = { path = "../core" }
+clap = { version = "4.5", features = ["derive", "cargo"] }
+anyhow = "1.0"
+colored = "3"
