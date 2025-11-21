@@ -154,8 +154,21 @@ pub fn generate_fingerings<I: Instrument>(
             // Calculate score
             let mut score = fingering.playability_score(max_stretch) as i32;
 
-            // Big bonus for using more strings (prefer fuller voicings)
+            // Bonus for using more strings, but moderate (don't over-penalize compact shapes)
             score += (played_count as i32) * 8;
+
+            // Heavy penalty for interior mutes (muted strings between played strings)
+            // But leading mutes (bass side) are fine - e.g., xx0232 for D is standard
+            let strings = fingering.strings();
+            let first_played = strings.iter().position(|s| s.is_played());
+            let last_played = strings.iter().rposition(|s| s.is_played());
+            if let (Some(first), Some(last)) = (first_played, last_played) {
+                let interior_mutes = strings[first..=last]
+                    .iter()
+                    .filter(|s| !s.is_played())
+                    .count();
+                score -= (interior_mutes as i32) * 30;
+            }
 
             // Bonus for root in bass
             if has_root_in_bass {
@@ -173,19 +186,16 @@ pub fn generate_fingerings<I: Instrument>(
             if let Some(pref_pos) = options.preferred_position {
                 let distance = (position as i32 - pref_pos as i32).abs();
                 score -= distance * 3;
-            }
-
-            // Slight penalty for too many muted strings at the bass end
-            let bass_mutes = fingering.strings()[..3].iter()
-                .filter(|s| !s.is_played())
-                .count();
-            if bass_mutes >= 2 {
-                score -= 10;
+            } else {
+                // Default: prefer open/low position chords
+                if position > 5 {
+                    score -= ((position - 5) as i32) * 5;
+                }
             }
 
             Some(ScoredFingering {
                 fingering,
-                score: score.clamp(0, 100) as u8,
+                score: score.max(0) as u8,  // Don't clamp to 100, allow higher scores for sorting
                 voicing_type,
                 has_root_in_bass,
                 position,
@@ -275,7 +285,7 @@ pub fn format_fingering_diagram<I: Instrument>(
     // Add metadata
     lines.push(String::new());
     lines.push(format!(
-        "Score: {}/100 | Position: Fret {} | Voicing: {:?}",
+        "Score: {} | Position: Fret {} | Voicing: {:?}",
         scored.score, scored.position, scored.voicing_type
     ));
 
@@ -402,5 +412,42 @@ mod tests {
         let diagram = format_fingering_diagram(&fingerings[0], &guitar);
         assert!(diagram.contains("|---"));
         assert!(diagram.contains("Score:"));
+    }
+
+    #[test]
+    fn test_am_includes_open_a_string() {
+        let chord = Chord::parse("Am").unwrap();
+        let guitar = Guitar::default();
+
+        // Am = A, C, E
+        let notes = chord.notes();
+        println!("Am notes: {:?}", notes);
+        assert!(notes.contains(&PitchClass::A));
+        assert!(notes.contains(&PitchClass::C));
+        assert!(notes.contains(&PitchClass::E));
+
+        // A string (index 1) at fret 0 should be A
+        let tuning = guitar.tuning();
+        let a_string_open = tuning[1].pitch.add_semitones(0);
+        println!("A string open: {:?}", a_string_open);
+        assert_eq!(a_string_open, PitchClass::A);
+
+        // Generate with high limit
+        let options = GeneratorOptions {
+            limit: 100,
+            ..Default::default()
+        };
+        let fingerings = generate_fingerings(&chord, &guitar, &options);
+
+        // x02210 should be in there
+        let has_classic = fingerings.iter().any(|f| f.fingering.to_string() == "x02210");
+        println!("Found x02210: {}", has_classic);
+
+        // Print first 10 fingerings
+        for (i, f) in fingerings.iter().take(10).enumerate() {
+            println!("{}. {} (score: {})", i + 1, f.fingering, f.score);
+        }
+
+        assert!(has_classic, "Classic Am shape x02210 should be generated");
     }
 }
