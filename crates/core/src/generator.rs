@@ -1,0 +1,406 @@
+//! Fingering generation algorithm (Chord → Fingerings)
+//!
+//! This module contains the algorithm for generating all possible fingerings
+//! for a given chord on a specific instrument.
+
+use crate::chord::{Chord, VoicingType};
+use crate::fingering::{Fingering, StringState};
+use crate::instrument::Instrument;
+
+/// Options for fingering generation
+#[derive(Debug, Clone)]
+pub struct GeneratorOptions {
+    /// Maximum number of fingerings to return
+    pub limit: usize,
+    /// Preferred fret position (fingerings near this position are ranked higher)
+    pub preferred_position: Option<u8>,
+    /// Voicing type filter
+    pub voicing_type: Option<VoicingType>,
+    /// Whether to include fingerings with the root in the bass
+    pub root_in_bass: bool,
+    /// Maximum fret to consider
+    pub max_fret: u8,
+}
+
+impl Default for GeneratorOptions {
+    fn default() -> Self {
+        GeneratorOptions {
+            limit: 10,
+            preferred_position: None,
+            voicing_type: None,
+            root_in_bass: true,
+            max_fret: 12,
+        }
+    }
+}
+
+/// A scored fingering with metadata
+#[derive(Debug, Clone)]
+pub struct ScoredFingering {
+    pub fingering: Fingering,
+    pub score: u8,
+    pub voicing_type: VoicingType,
+    pub has_root_in_bass: bool,
+    pub position: u8,  // Average fret position
+}
+
+/// Generate fingerings for a chord on an instrument
+pub fn generate_fingerings<I: Instrument>(
+    chord: &Chord,
+    instrument: &I,
+    options: &GeneratorOptions,
+) -> Vec<ScoredFingering> {
+    let tuning = instrument.tuning();
+    let string_count = tuning.len();
+    let max_stretch = instrument.max_stretch();
+
+    // Get required notes for different voicing types
+    let all_notes = chord.notes();
+    let core_notes = chord.core_notes();
+    let root = chord.root;
+
+    // For each string, find all fret positions that produce a chord tone
+    let max_fret = options.max_fret;
+    let string_options: Vec<Vec<StringState>> = tuning
+        .iter()
+        .map(|open_note| {
+            let mut fret_options = vec![StringState::Muted];
+
+            for fret in 0..=max_fret {
+                let note_at_fret = open_note.pitch.add_semitones(fret as i32);
+                if all_notes.contains(&note_at_fret) {
+                    fret_options.push(StringState::Fretted(fret));
+                }
+            }
+
+            fret_options
+        })
+        .collect();
+
+    // Generate all combinations
+    let mut fingerings = Vec::new();
+    generate_combinations(
+        &string_options,
+        &mut vec![],
+        &mut fingerings,
+        string_count,
+    );
+
+    // Filter and score fingerings
+    let mut scored: Vec<ScoredFingering> = fingerings
+        .into_iter()
+        .filter_map(|states| {
+            let fingering = Fingering::new(states);
+
+            // Must be physically playable
+            if !fingering.is_playable(max_stretch) {
+                return None;
+            }
+
+            // Must have at least 3 notes played
+            let played_count = fingering.strings().iter().filter(|s| s.is_played()).count();
+            if played_count < 3 {
+                return None;
+            }
+
+            // Get the pitch classes in this fingering
+            let pitches = fingering.unique_pitch_classes(instrument);
+
+            // Must contain all core notes for core voicings, or filter by voicing type
+            let has_all_core = core_notes.iter().all(|n| pitches.contains(n));
+            let has_all_notes = all_notes.iter().all(|n| pitches.contains(n));
+
+            let voicing_type = if has_all_notes {
+                VoicingType::Full
+            } else if has_all_core {
+                VoicingType::Core
+            } else {
+                VoicingType::Jazzy
+            };
+
+            // Apply voicing type filter
+            if let Some(required_voicing) = &options.voicing_type {
+                match required_voicing {
+                    VoicingType::Full if !has_all_notes => return None,
+                    VoicingType::Core if !has_all_core => return None,
+                    _ => {}
+                }
+            }
+
+            // Check root in bass if required
+            let bass_pitch = fingering.bass_note(instrument).map(|n| n.pitch);
+            let has_root_in_bass = bass_pitch == Some(root);
+
+            if options.root_in_bass && !has_root_in_bass {
+                // Don't filter out, just score lower
+            }
+
+            // Calculate position (average of fretted positions)
+            let fretted_frets: Vec<u8> = fingering
+                .strings()
+                .iter()
+                .filter_map(|s| match s {
+                    StringState::Fretted(f) if *f > 0 => Some(*f),
+                    _ => None,
+                })
+                .collect();
+
+            let position = if fretted_frets.is_empty() {
+                0
+            } else {
+                (fretted_frets.iter().map(|f| *f as u32).sum::<u32>() / fretted_frets.len() as u32) as u8
+            };
+
+            // Calculate score
+            let mut score = fingering.playability_score(max_stretch) as i32;
+
+            // Big bonus for using more strings (prefer fuller voicings)
+            score += (played_count as i32) * 8;
+
+            // Bonus for root in bass
+            if has_root_in_bass {
+                score += 20;
+            }
+
+            // Bonus for full voicing
+            if has_all_notes {
+                score += 15;
+            } else if has_all_core {
+                score += 5;
+            }
+
+            // Bonus/penalty for position preference
+            if let Some(pref_pos) = options.preferred_position {
+                let distance = (position as i32 - pref_pos as i32).abs();
+                score -= distance * 3;
+            }
+
+            // Slight penalty for too many muted strings at the bass end
+            let bass_mutes = fingering.strings()[..3].iter()
+                .filter(|s| !s.is_played())
+                .count();
+            if bass_mutes >= 2 {
+                score -= 10;
+            }
+
+            Some(ScoredFingering {
+                fingering,
+                score: score.clamp(0, 100) as u8,
+                voicing_type,
+                has_root_in_bass,
+                position,
+            })
+        })
+        .collect();
+
+    // Sort by score (descending)
+    scored.sort_by(|a, b| b.score.cmp(&a.score));
+
+    // Deduplicate similar fingerings (keep highest scored)
+    scored = deduplicate_fingerings(scored);
+
+    // Apply limit
+    scored.truncate(options.limit);
+
+    scored
+}
+
+/// Generate all combinations of string states
+fn generate_combinations(
+    string_options: &[Vec<StringState>],
+    current: &mut Vec<StringState>,
+    results: &mut Vec<Vec<StringState>>,
+    total_strings: usize,
+) {
+    if current.len() == total_strings {
+        results.push(current.clone());
+        return;
+    }
+
+    let string_idx = current.len();
+    for state in &string_options[string_idx] {
+        current.push(*state);
+        generate_combinations(string_options, current, results, total_strings);
+        current.pop();
+    }
+}
+
+/// Remove duplicate or very similar fingerings
+fn deduplicate_fingerings(mut fingerings: Vec<ScoredFingering>) -> Vec<ScoredFingering> {
+    let mut unique = Vec::new();
+
+    for f in fingerings.drain(..) {
+        let dominated = unique.iter().any(|existing: &ScoredFingering| {
+            // Check if fingerings are identical
+            existing.fingering.to_string() == f.fingering.to_string()
+        });
+
+        if !dominated {
+            unique.push(f);
+        }
+    }
+
+    unique
+}
+
+/// Format fingerings as ASCII tab diagram
+pub fn format_fingering_diagram<I: Instrument>(
+    scored: &ScoredFingering,
+    instrument: &I,
+) -> String {
+    let fingering = &scored.fingering;
+    let strings = fingering.strings();
+
+    // Standard guitar string names (high to low for display)
+    let string_names = ["e", "B", "G", "D", "A", "E"];
+
+    let mut lines = Vec::new();
+
+    // Display from highest string to lowest (reverse order)
+    for (i, state) in strings.iter().enumerate().rev() {
+        let name = if i < string_names.len() {
+            string_names[strings.len() - 1 - i]
+        } else {
+            "?"
+        };
+
+        let fret_str = match state {
+            StringState::Muted => "x".to_string(),
+            StringState::Fretted(f) => format!("{}", f),
+        };
+
+        lines.push(format!("{}|---{}---", name, fret_str));
+    }
+
+    // Add metadata
+    lines.push(String::new());
+    lines.push(format!(
+        "Score: {}/100 | Position: Fret {} | Voicing: {:?}",
+        scored.score, scored.position, scored.voicing_type
+    ));
+
+    if scored.has_root_in_bass {
+        lines.push("Root in bass: Yes".to_string());
+    }
+
+    // Add notes
+    let pitches = fingering.unique_pitch_classes(instrument);
+    let pitch_names: Vec<String> = pitches.iter().map(|p| p.to_string()).collect();
+    lines.push(format!("Notes: {}", pitch_names.join(", ")));
+
+    lines.join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::chord::Chord;
+    use crate::instrument::Guitar;
+    use crate::note::PitchClass;
+
+    #[test]
+    fn test_generate_c_major() {
+        let chord = Chord::parse("C").unwrap();
+        let guitar = Guitar::default();
+        let options = GeneratorOptions {
+            limit: 5,
+            ..Default::default()
+        };
+
+        let fingerings = generate_fingerings(&chord, &guitar, &options);
+
+        assert!(!fingerings.is_empty());
+
+        // Check that at least one fingering contains C, E, G
+        let has_valid = fingerings.iter().any(|sf| {
+            let pitches = sf.fingering.unique_pitch_classes(&guitar);
+            pitches.contains(&PitchClass::C)
+                && pitches.contains(&PitchClass::E)
+                && pitches.contains(&PitchClass::G)
+        });
+        assert!(has_valid);
+    }
+
+    #[test]
+    fn test_generate_g_major() {
+        let chord = Chord::parse("G").unwrap();
+        let guitar = Guitar::default();
+        let options = GeneratorOptions {
+            voicing_type: Some(VoicingType::Full),
+            ..Default::default()
+        };
+
+        let fingerings = generate_fingerings(&chord, &guitar, &options);
+
+        assert!(!fingerings.is_empty());
+
+        // All full voicings should contain G, B, D
+        for sf in &fingerings {
+            let pitches = sf.fingering.unique_pitch_classes(&guitar);
+            assert!(pitches.contains(&PitchClass::G));
+            assert!(pitches.contains(&PitchClass::B));
+            assert!(pitches.contains(&PitchClass::D));
+        }
+    }
+
+    #[test]
+    fn test_generate_with_position_preference() {
+        let chord = Chord::parse("A").unwrap();
+        let guitar = Guitar::default();
+
+        // Generate with position preference at fret 5
+        let options = GeneratorOptions {
+            limit: 10,
+            preferred_position: Some(5),
+            ..Default::default()
+        };
+        let fingerings = generate_fingerings(&chord, &guitar, &options);
+
+        assert!(!fingerings.is_empty());
+
+        // Check that all fingerings contain valid A chord notes
+        for sf in &fingerings {
+            let pitches = sf.fingering.unique_pitch_classes(&guitar);
+            assert!(pitches.contains(&PitchClass::A));
+            // Should have at least root and one other chord tone
+            assert!(pitches.len() >= 2);
+        }
+    }
+
+    #[test]
+    fn test_generate_minor_chord() {
+        let chord = Chord::parse("Am").unwrap();
+        let guitar = Guitar::default();
+        let options = GeneratorOptions::default();
+
+        let fingerings = generate_fingerings(&chord, &guitar, &options);
+
+        assert!(!fingerings.is_empty());
+
+        // Check for A, C, E (A minor = A, C, E)
+        let has_valid = fingerings.iter().any(|sf| {
+            let pitches = sf.fingering.unique_pitch_classes(&guitar);
+            pitches.contains(&PitchClass::A)
+                && pitches.contains(&PitchClass::C)
+                && pitches.contains(&PitchClass::E)
+        });
+        assert!(has_valid);
+    }
+
+    #[test]
+    fn test_format_diagram() {
+        let chord = Chord::parse("C").unwrap();
+        let guitar = Guitar::default();
+        let options = GeneratorOptions {
+            limit: 1,
+            ..Default::default()
+        };
+
+        let fingerings = generate_fingerings(&chord, &guitar, &options);
+        assert!(!fingerings.is_empty());
+
+        let diagram = format_fingering_diagram(&fingerings[0], &guitar);
+        assert!(diagram.contains("|---"));
+        assert!(diagram.contains("Score:"));
+    }
+}
