@@ -337,7 +337,7 @@ impl Chord {
         // Order matters - check longer patterns first!
         match s_lower.as_str() {
             // Minor variations
-            "m(maj7)" | "mM7" | "minmaj7" => Ok(MinorMajor7),
+            "m(maj7)" | "mmaj7" | "mM7" | "minmaj7" => Ok(MinorMajor7),
             "m7b5" | "m7♭5" | "ø" | "half-dim" | "halfdim" => Ok(HalfDiminished7),
             "madd9" | "m(add9)" => Ok(MinorAdd9),
             "m13" | "min13" => Ok(Minor13),
