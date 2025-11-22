@@ -9,7 +9,7 @@ use crate::note::{Note, PitchClass};
 use std::fmt;
 
 /// Represents a single string's state in a fingering
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StringState {
     /// String is muted/not played
     Muted,

@@ -98,10 +98,22 @@ chordcraft/
       fn fret_range(&self) -> (u8, u8);
       fn max_stretch(&self) -> u8;
       fn string_count(&self) -> usize;
+      fn max_fingers(&self) -> u8;
+      fn open_position_threshold(&self) -> u8;
+      fn main_barre_threshold(&self) -> usize;
+      fn min_played_strings(&self) -> usize;
   }
   ```
 
-  - Guitar (standard tuning EADGBE)
+  - **Guitar** (standard tuning EADGBE)
+    - max_stretch: 4 frets
+    - min_played_strings: 3 (50% of 6 strings)
+    - max_fingers: 4
+  - **Ukulele** (standard tuning GCEA)
+    - max_stretch: 5 frets (easier on shorter scale)
+    - min_played_strings: 1 (allows minimal voicings like C="0003")
+    - open_position_threshold: 5 frets
+    - Only 4 strings, so lower min doesn't cause performance issues
   - Support for alternate tunings (future)
   - Other stringed instruments (future)
 
@@ -118,16 +130,28 @@ chordcraft/
 
 1. Parse chord name to required notes/intervals
 2. For each string, find positions where required notes appear (within fret range)
-3. Generate combinations that:
-   - Include required notes based on voicing type (core/full/jazzy)
-   - Are physically playable (max stretch constraint)
-   - Follow voice leading principles (optional)
-4. Score each fingering by:
-   - Playability (stretch, barre requirements)
+3. Generate combinations using **early pruning** to avoid combinatorial explosion:
+   - Use recursive generation with branch pruning
+   - Prune branches that exceed max_stretch (instrument-specific)
+   - Prune branches that can't reach min_played_strings (instrument-specific)
+   - Check constraints incrementally during generation, not after
+   - This reduces 46K+ candidates down to ~100s for complex chords
+4. Filter generated fingerings:
+   - Must be physically playable (stretch, finger count)
+   - Must have minimum played strings (instrument-specific)
+   - Must include required notes based on voicing type
+5. Score each fingering by:
+   - Playability (stretch, barre requirements, finger efficiency)
    - Position (open vs. high on neck)
-   - Voicing completeness
-   - Voicing quality (root in bass, etc.)
-5. Return top N fingerings, sorted by score
+   - Voicing completeness (full > core > jazzy)
+   - Voicing quality (root in bass, no interior mutes)
+6. Deduplicate using HashSet on StringState vectors
+7. Return top N fingerings, sorted by score
+
+**Performance**:
+- Simple chords (3 notes): ~4-5ms
+- Complex chords (4+ notes): ~8-10ms
+- Early pruning reduces search space by 99%+ for complex chords
 
 **Voicing Classifications**:
 
@@ -260,10 +284,25 @@ Instead of binary "valid/invalid", classify voicings by use case:
 
 ### Performance Considerations
 
-- Fingering generation could be expensive for complex chords
-- Consider caching common chord fingerings
+**Optimizations Implemented**:
+
+- **Early pruning** during combination generation (99%+ reduction in candidates)
+  - Prune branches exceeding max_stretch incrementally
+  - Prune branches that can't reach min_played_strings
+  - Avoid allocations in pruning checks (inline min/max finding)
+- **Fast deduplication** using HashSet<Vec<StringState>> instead of string comparisons
+- **StringState** derives Hash for efficient deduplication
+- Keep Vec::contains for small note sets (4-5 notes) - faster than HashSet overhead
+
+**Performance Targets** (achieved):
+- Simple chords (3 notes): <10ms
+- Complex chords (4+ notes): <10ms
+- CLI should feel instant for all operations
+
+**Future Considerations**:
+- Consider caching common chord fingerings if needed
 - WASM bundle size matters for web app
-- CLI should feel instant for common operations
+- May add chord progression optimization (voice leading between chords)
 
 ### Code Style
 

@@ -76,13 +76,14 @@ pub fn generate_fingerings<I: Instrument>(
         })
         .collect();
 
-    // Generate all combinations
+    // Generate all combinations with instrument-aware pruning
     let mut fingerings = Vec::new();
-    generate_combinations(
+    generate_combinations_for_instrument(
         &string_options,
         &mut vec![],
         &mut fingerings,
         string_count,
+        instrument,
     );
 
     // Filter and score fingerings
@@ -96,9 +97,9 @@ pub fn generate_fingerings<I: Instrument>(
                 return None;
             }
 
-            // Must have at least 3 notes played
+            // Must have at least min_played_strings notes played
             let played_count = fingering.strings().iter().filter(|s| s.is_played()).count();
-            if played_count < 3 {
+            if played_count < instrument.min_played_strings() {
                 return None;
             }
 
@@ -214,12 +215,32 @@ pub fn generate_fingerings<I: Instrument>(
     scored
 }
 
-/// Generate all combinations of string states
-fn generate_combinations(
+/// Generate all combinations of string states with early pruning
+fn generate_combinations_for_instrument<I: Instrument>(
     string_options: &[Vec<StringState>],
     current: &mut Vec<StringState>,
     results: &mut Vec<Vec<StringState>>,
     total_strings: usize,
+    instrument: &I,
+) {
+    generate_combinations_pruned(
+        string_options,
+        current,
+        results,
+        total_strings,
+        instrument.max_stretch(),
+        instrument.min_played_strings(),
+    );
+}
+
+/// Generate combinations with early pruning based on stretch and finger constraints
+fn generate_combinations_pruned(
+    string_options: &[Vec<StringState>],
+    current: &mut Vec<StringState>,
+    results: &mut Vec<Vec<StringState>>,
+    total_strings: usize,
+    max_stretch: u8,
+    min_played: usize,
 ) {
     if current.len() == total_strings {
         results.push(current.clone());
@@ -227,24 +248,76 @@ fn generate_combinations(
     }
 
     let string_idx = current.len();
+
     for state in &string_options[string_idx] {
         current.push(*state);
-        generate_combinations(string_options, current, results, total_strings);
+
+        // Early pruning: check if current partial fingering is still viable
+        if should_continue_branch(current, total_strings, max_stretch, min_played) {
+            generate_combinations_pruned(string_options, current, results, total_strings, max_stretch, min_played);
+        }
+
         current.pop();
     }
 }
 
+/// Check if we should continue exploring this branch
+#[inline]
+fn should_continue_branch(
+    current: &[StringState],
+    total_strings: usize,
+    max_stretch: u8,
+    min_played: usize,
+) -> bool {
+    // Quick check: count played strings - avoid allocation if possible
+    let played = current.iter().filter(|s| s.is_played()).count();
+    let remaining = total_strings - current.len();
+
+    // If we can't possibly get to min_played strings, prune early
+    if played + remaining < min_played {
+        return false;
+    }
+
+    // Only check stretch if we have multiple fretted notes
+    if played < 2 {
+        return true;
+    }
+
+    // Find min/max without allocation
+    let mut min = u8::MAX;
+    let mut max = 0u8;
+    let mut has_fretted = false;
+
+    for state in current {
+        if let StringState::Fretted(f) = state {
+            if *f > 0 {
+                has_fretted = true;
+                min = min.min(*f);
+                max = max.max(*f);
+            }
+        }
+    }
+
+    if !has_fretted {
+        return true;
+    }
+
+    // Prune if stretch is already exceeded
+    max - min <= max_stretch
+}
+
 /// Remove duplicate or very similar fingerings
 fn deduplicate_fingerings(mut fingerings: Vec<ScoredFingering>) -> Vec<ScoredFingering> {
+    use std::collections::HashSet;
+
+    let mut seen = HashSet::new();
     let mut unique = Vec::new();
 
     for f in fingerings.drain(..) {
-        let dominated = unique.iter().any(|existing: &ScoredFingering| {
-            // Check if fingerings are identical
-            existing.fingering.to_string() == f.fingering.to_string()
-        });
+        // Create a simple hash key from the fingering without string allocation
+        let key: Vec<_> = f.fingering.strings().to_vec();
 
-        if !dominated {
+        if seen.insert(key) {
             unique.push(f);
         }
     }

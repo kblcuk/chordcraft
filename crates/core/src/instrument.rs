@@ -36,6 +36,12 @@ pub trait Instrument {
     fn main_barre_threshold(&self) -> usize {
         (self.string_count() / 2).max(2)
     }
+
+    /// Minimum number of strings that must be played for a valid chord
+    /// Default is half the strings, with a minimum of 2
+    fn min_played_strings(&self) -> usize {
+        (self.string_count() / 2).max(2)
+    }
 }
 
 /// Standard guitar in EADGBE tuning
@@ -126,4 +132,13 @@ impl Instrument for Ukulele {
 
     // With only 4 strings, a 2-string barre is already 50%
     // So we use the default: string_count/2 = 2
+    fn main_barre_threshold(&self) -> usize {
+        2
+    }
+
+    // Ukulele can have very minimal fingerings (e.g., C major is often just "0003")
+    // Allow single-note voicings
+    fn min_played_strings(&self) -> usize {
+        1
+    }
 }
