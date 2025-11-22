@@ -16,3 +16,26 @@ repository = "https://github.com/kblcuk/chordcraft"
 # Shared dependencies that multiple crates might use
 thiserror = "2.0"
 serde = { version = "1.0", features = ["derive"] }
+
+[profile.release]
+# Maximum optimization level
+opt-level = 3
+# Link-time optimization for better performance and smaller binaries
+lto = true
+# Single codegen unit for maximum optimization (slower compile, better runtime)
+codegen-units = 1
+# Strip debug symbols from binary
+strip = true
+# Abort on panic instead of unwinding (smaller binary, faster)
+panic = "abort"
+
+# Optional: profile for size-optimized builds
+[profile.release-small]
+inherits = "release"
+# Optimize for size instead of speed
+opt-level = "z"
+# Additional size optimizations
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
