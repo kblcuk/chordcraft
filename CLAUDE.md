@@ -67,22 +67,22 @@ chordcraft/
 
 ## Implementation Phases
 
-### Phase 1: Core Music Theory ✓ CURRENT PHASE
+### Phase 1: Core Music Theory ✓ COMPLETE
 
 **Goal**: Foundation for representing musical concepts
 
-- [ ] **Note representation** (`note.rs`)
+- [x] **Note representation** (`note.rs`)
   - Pitch classes (C, C#, D, etc.)
   - Enharmonic equivalents (C# = Db)
   - Octave-aware representation
   - Semitone calculations
 
-- [ ] **Interval system** (`interval.rs`)
+- [x] **Interval system** (`interval.rs`)
   - Perfect, Major, Minor, Augmented, Diminished
   - Interval calculation between notes
   - Interval arithmetic (stack intervals)
 
-- [ ] **Chord formulas** (`chord.rs`)
+- [x] **Chord formulas** (`chord.rs`)
   - Chord type definitions with interval patterns
   - Basic triads: Major [R, M3, P5], Minor [R, m3, P5], Dim, Aug
   - 7th chords: maj7, min7, dom7, min7b5, dim7
@@ -90,7 +90,7 @@ chordcraft/
   - Altered chords: sus2, sus4, add9, 7b9, 7#9, etc.
   - Chord name parser: "Abm7b5" → structured representation
 
-- [ ] **Instrument model** (`instrument.rs`)
+- [x] **Instrument model** (`instrument.rs`)
 
   ```rust
   trait Instrument {
@@ -117,12 +117,13 @@ chordcraft/
   - Support for alternate tunings (future)
   - Other stringed instruments (future)
 
-- [ ] **Fingering representation** (`fingering.rs`)
+- [x] **Fingering representation** (`fingering.rs`)
   - Tab notation format (e.g., "x32010")
   - Fret positions per string
   - Physical validation (stretch, muted strings)
+  - Playability scoring
 
-### Phase 2: Fingering Generation (Chord → Tabs)
+### Phase 2: Fingering Generation (Chord → Tabs) ✓ COMPLETE
 
 **Goal**: Given chord name, generate all playable fingerings
 
@@ -149,6 +150,7 @@ chordcraft/
 7. Return top N fingerings, sorted by score
 
 **Performance**:
+
 - Simple chords (3 notes): ~4-5ms
 - Complex chords (4+ notes): ~8-10ms
 - Early pruning reduces search space by 99%+ for complex chords
@@ -159,7 +161,7 @@ chordcraft/
 - **Full**: All chord tones present, no omissions
 - **Jazzy**: Extended voicings, possible omissions of less essential notes (often 5th), jazz-style colorings
 
-### Phase 3: Reverse Lookup (Tabs → Chord)
+### Phase 3: Reverse Lookup (Tabs → Chord) ✓ CURRENT PHASE
 
 **Goal**: Given fingering notation, identify the chord
 
@@ -170,14 +172,21 @@ chordcraft/
 3. Determine intervals relative to each possible root
 4. Match interval patterns against chord formulas
 5. Rank matches by:
-   - Key guess from first letter of notes present
-   - Commonality (C major more likely than B# major)
-   - Completeness (all chord tones present)
+   - Completeness (all chord tones present vs. partial match)
+   - Root position (bass note = root is preferred)
+   - Chord commonality (simpler chords ranked higher)
+   - Interval set uniqueness (avoid ambiguous matches)
 6. Return primary match + alternatives ("Could also be...")
 
-### Phase 4: CLI Tool
+### Phase 4: CLI Tool ✓ PARTIAL
 
 **Goal**: Quick iteration, testing, and usable terminal tool
+
+**Status**:
+
+- ✅ `find` command fully implemented with all options
+- ⏳ `name` command exists but needs analyzer.rs integration
+- ⏳ Chord progressions (future)
 
 **Commands**:
 
@@ -295,11 +304,13 @@ Instead of binary "valid/invalid", classify voicings by use case:
 - Keep Vec::contains for small note sets (4-5 notes) - faster than HashSet overhead
 
 **Performance Targets** (achieved):
+
 - Simple chords (3 notes): <10ms
 - Complex chords (4+ notes): <10ms
 - CLI should feel instant for all operations
 
 **Future Considerations**:
+
 - Consider caching common chord fingerings if needed
 - WASM bundle size matters for web app
 - May add chord progression optimization (voice leading between chords)
