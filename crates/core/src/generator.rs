@@ -52,7 +52,6 @@ pub fn generate_fingerings<I: Instrument>(
 ) -> Vec<ScoredFingering> {
     let tuning = instrument.tuning();
     let string_count = tuning.len();
-    let max_stretch = instrument.max_stretch();
 
     // Get required notes for different voicing types
     let all_notes = chord.notes();
@@ -92,8 +91,8 @@ pub fn generate_fingerings<I: Instrument>(
         .filter_map(|states| {
             let fingering = Fingering::new(states);
 
-            // Must be physically playable
-            if !fingering.is_playable(max_stretch) {
+            // Must be physically playable for this instrument
+            if !fingering.is_playable_for(instrument) {
                 return None;
             }
 
@@ -151,8 +150,8 @@ pub fn generate_fingerings<I: Instrument>(
                 (fretted_frets.iter().map(|f| *f as u32).sum::<u32>() / fretted_frets.len() as u32) as u8
             };
 
-            // Calculate score
-            let mut score = fingering.playability_score(max_stretch) as i32;
+            // Calculate score using instrument-aware playability
+            let mut score = fingering.playability_score_for(instrument) as i32;
 
             // Bonus for using more strings, but moderate (don't over-penalize compact shapes)
             score += (played_count as i32) * 8;
@@ -412,6 +411,46 @@ mod tests {
         let diagram = format_fingering_diagram(&fingerings[0], &guitar);
         assert!(diagram.contains("|---"));
         assert!(diagram.contains("Score:"));
+    }
+
+    #[test]
+    fn test_generate_ukulele_c_major() {
+        use crate::instrument::Ukulele;
+
+        let chord = Chord::parse("C").unwrap();
+        let ukulele = Ukulele::default();
+        let options = GeneratorOptions {
+            limit: 5,
+            ..Default::default()
+        };
+
+        let fingerings = generate_fingerings(&chord, &ukulele, &options);
+
+        assert!(!fingerings.is_empty(), "Should generate ukulele fingerings");
+
+        // Check that fingerings contain C, E, G
+        let has_valid = fingerings.iter().any(|sf| {
+            let pitches = sf.fingering.unique_pitch_classes(&ukulele);
+            pitches.contains(&PitchClass::C)
+                && pitches.contains(&PitchClass::E)
+                && pitches.contains(&PitchClass::G)
+        });
+        assert!(has_valid, "Should have valid C major fingering for ukulele");
+
+        // Ukulele should allow 5-fret stretches
+        println!("Ukulele C major fingerings:");
+        for (i, f) in fingerings.iter().enumerate() {
+            println!("{}. {} (score: {}, span: {})",
+                i + 1,
+                f.fingering,
+                f.score,
+                f.fingering.fret_span()
+            );
+            assert!(
+                f.fingering.fret_span() <= 5,
+                "Ukulele should allow 5-fret stretch"
+            );
+        }
     }
 
     #[test]

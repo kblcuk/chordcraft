@@ -20,6 +20,22 @@ pub trait Instrument {
     fn string_count(&self) -> usize {
         self.tuning().len()
     }
+
+    /// Maximum number of fretting fingers available (default 4)
+    fn max_fingers(&self) -> u8 {
+        4
+    }
+
+    /// Maximum fret position considered "open position" (default 4)
+    fn open_position_threshold(&self) -> u8 {
+        4
+    }
+
+    /// Minimum consecutive strings to be considered a "main barre"
+    /// Default is 50% of strings, minimum 2
+    fn main_barre_threshold(&self) -> usize {
+        (self.string_count() / 2).max(2)
+    }
 }
 
 /// Standard guitar in EADGBE tuning
@@ -62,4 +78,52 @@ impl Instrument for Guitar {
     fn max_stretch(&self) -> u8 {
         self.max_stretch
     }
+}
+
+/// Ukulele in standard GCEA tuning (soprano/concert/tenor)
+#[derive(Debug, Clone)]
+pub struct Ukulele {
+    tuning: Vec<Note>,
+    fret_range: (u8, u8),
+    max_stretch: u8,
+}
+
+impl Default for Ukulele {
+    fn default() -> Self {
+        use crate::note::PitchClass::*;
+
+        Ukulele {
+            // Standard ukulele tuning: G4 (re-entrant), C4, E4, A4
+            tuning: vec![
+                Note::new(G, 4),
+                Note::new(C, 4),
+                Note::new(E, 4),
+                Note::new(A, 4),
+            ],
+            fret_range: (0, 15),
+            max_stretch: 5, // Easier to stretch on shorter scale
+        }
+    }
+}
+
+impl Instrument for Ukulele {
+    fn tuning(&self) -> &[Note] {
+        &self.tuning
+    }
+
+    fn fret_range(&self) -> (u8, u8) {
+        self.fret_range
+    }
+
+    fn max_stretch(&self) -> u8 {
+        self.max_stretch
+    }
+
+    // Ukulele has shorter scale, so "open position" extends a bit further
+    fn open_position_threshold(&self) -> u8 {
+        5
+    }
+
+    // With only 4 strings, a 2-string barre is already 50%
+    // So we use the default: string_count/2 = 2
 }
