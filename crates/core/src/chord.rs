@@ -382,8 +382,7 @@ impl Chord {
             "6" => Ok(Major6),
 
             _ => Err(ChordCraftError::InvalidChordName(format!(
-                "Unknown chord quality: {}",
-                s
+                "Unknown chord quality: {s}"
             ))),
         }
     }
@@ -393,7 +392,7 @@ impl fmt::Display for Chord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.root, self.quality.display_name())?;
         if let Some(bass) = self.bass {
-            write!(f, "/{}", bass)?;
+            write!(f, "/{bass}")?;
         }
         Ok(())
     }

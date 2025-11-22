@@ -275,10 +275,10 @@ pub fn format_fingering_diagram<I: Instrument>(
 
         let fret_str = match state {
             StringState::Muted => "x".to_string(),
-            StringState::Fretted(f) => format!("{}", f),
+            StringState::Fretted(f) => format!("{f}"),
         };
 
-        lines.push(format!("{}|---{}---", name, fret_str));
+        lines.push(format!("{name}|---{fret_str}---"));
     }
 
     // Add metadata
@@ -460,7 +460,7 @@ mod tests {
 
         // Am = A, C, E
         let notes = chord.notes();
-        println!("Am notes: {:?}", notes);
+        println!("Am notes: {notes:?}");
         assert!(notes.contains(&PitchClass::A));
         assert!(notes.contains(&PitchClass::C));
         assert!(notes.contains(&PitchClass::E));
@@ -468,7 +468,7 @@ mod tests {
         // A string (index 1) at fret 0 should be A
         let tuning = guitar.tuning();
         let a_string_open = tuning[1].pitch.add_semitones(0);
-        println!("A string open: {:?}", a_string_open);
+        println!("A string open: {a_string_open:?}");
         assert_eq!(a_string_open, PitchClass::A);
 
         // Generate with high limit
@@ -480,7 +480,7 @@ mod tests {
 
         // x02210 should be in there
         let has_classic = fingerings.iter().any(|f| f.fingering.to_string() == "x02210");
-        println!("Found x02210: {}", has_classic);
+        println!("Found x02210: {has_classic}");
 
         // Print first 10 fingerings
         for (i, f) in fingerings.iter().take(10).enumerate() {

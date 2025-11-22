@@ -74,7 +74,7 @@ fn find_fingerings(
 ) -> Result<()> {
     // Parse the chord
     let chord = Chord::parse(chord_str)
-        .with_context(|| format!("Invalid chord name: '{}'", chord_str))?;
+        .with_context(|| format!("Invalid chord name: '{chord_str}'"))?;
 
     // Parse voicing type
     let voicing_type = voicing.as_ref().and_then(|v| match v.to_lowercase().as_str() {
@@ -101,7 +101,7 @@ fn find_fingerings(
     if fingerings.is_empty() {
         println!(
             "{}",
-            format!("No fingerings found for chord: {}", chord).yellow()
+            format!("No fingerings found for chord: {chord}").yellow()
         );
         return Ok(());
     }
@@ -130,7 +130,7 @@ fn name_chord(fingering_str: &str, key: Option<String>) -> Result<()> {
 
     // Parse the fingering
     let fingering = Fingering::parse(fingering_str)
-        .with_context(|| format!("Invalid fingering notation: '{}'", fingering_str))?;
+        .with_context(|| format!("Invalid fingering notation: '{fingering_str}'"))?;
 
     let guitar = Guitar::default();
 
@@ -146,7 +146,7 @@ fn name_chord(fingering_str: &str, key: Option<String>) -> Result<()> {
     println!("Notes played: {}", pitches.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", "));
 
     if let Some(k) = key {
-        println!("Key context: {}", k);
+        println!("Key context: {k}");
     }
 
     println!("\n{}", "[Chord identification coming soon...]".yellow());

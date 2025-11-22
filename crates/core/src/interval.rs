@@ -127,7 +127,7 @@ impl Interval {
             _ => return format!("{} {}", quality_name, self.distance),
         };
 
-        format!("{} {}", quality_name, distance_name)
+        format!("{quality_name} {distance_name}")
     }
 
     /// Parse an interval from short notation (e.g., "M3", "P5", "m7")

@@ -3,6 +3,7 @@
 ## Project Vision
 
 A multi-platform tool for bidirectional chord-fingering conversion:
+
 - **Chord → Fingering**: Input chord name (e.g., "Abm7"), get multiple fingering options
 - **Fingering → Chord**: Input tab notation (e.g., "x32010"), identify the chord
 - **Multi-instrument**: Guitar-first, but designed to support bass, ukulele, mandolin, and eventually keys
@@ -67,6 +68,7 @@ chordcraft/
 ## Implementation Phases
 
 ### Phase 1: Core Music Theory ✓ CURRENT PHASE
+
 **Goal**: Foundation for representing musical concepts
 
 - [ ] **Note representation** (`note.rs`)
@@ -89,6 +91,7 @@ chordcraft/
   - Chord name parser: "Abm7b5" → structured representation
 
 - [ ] **Instrument model** (`instrument.rs`)
+
   ```rust
   trait Instrument {
       fn tuning(&self) -> &[Note];
@@ -97,6 +100,7 @@ chordcraft/
       fn string_count(&self) -> usize;
   }
   ```
+
   - Guitar (standard tuning EADGBE)
   - Support for alternate tunings (future)
   - Other stringed instruments (future)
@@ -107,9 +111,11 @@ chordcraft/
   - Physical validation (stretch, muted strings)
 
 ### Phase 2: Fingering Generation (Chord → Tabs)
+
 **Goal**: Given chord name, generate all playable fingerings
 
 **Algorithm** (`generator.rs`):
+
 1. Parse chord name to required notes/intervals
 2. For each string, find positions where required notes appear (within fret range)
 3. Generate combinations that:
@@ -124,14 +130,17 @@ chordcraft/
 5. Return top N fingerings, sorted by score
 
 **Voicing Classifications**:
+
 - **Core**: Essential notes only (root, 3rd, 7th for 7th chords; root, 3rd, 5th for triads)
 - **Full**: All chord tones present, no omissions
 - **Jazzy**: Extended voicings, possible omissions of less essential notes (often 5th), jazz-style colorings
 
 ### Phase 3: Reverse Lookup (Tabs → Chord)
+
 **Goal**: Given fingering notation, identify the chord
 
 **Algorithm** (`analyzer.rs`):
+
 1. Parse tab notation (e.g., "x32010")
 2. Calculate which notes are being played
 3. Determine intervals relative to each possible root
@@ -143,9 +152,11 @@ chordcraft/
 6. Return primary match + alternatives ("Could also be...")
 
 ### Phase 4: CLI Tool
+
 **Goal**: Quick iteration, testing, and usable terminal tool
 
 **Commands**:
+
 ```bash
 # Find fingerings for a chord
 chordcraft find "Abm7"
@@ -162,6 +173,7 @@ chordcraft progression "Cmaj7 Am7 Dm7 G7" --optimize-transitions
 ```
 
 **Output format**:
+
 ```
 Abm7 fingerings (top 5):
 
@@ -181,9 +193,11 @@ Show more? (y/n)
 ```
 
 ### Phase 5: Web App (Vue + Rust WASM)
+
 **Goal**: Interactive visual interface
 
 **Features**:
+
 - Interactive fretboard visualization
 - Input modes: click fretboard OR type chord name
 - Real-time suggestions as you type
@@ -193,6 +207,7 @@ Show more? (y/n)
 - Save favorites (localStorage initially)
 
 **Tech stack**:
+
 - Rust core compiled to WASM (wasm-pack)
 - Vue 3 with Composition API
 - SVG-based fretboard component
@@ -201,27 +216,33 @@ Show more? (y/n)
 ## Key Design Decisions
 
 ### Why Algorithmic Over Database?
+
 - Supports all instruments/tunings without manual curation
 - Handles unusual/complex chords automatically
 - More flexible for future features (voice leading, progressions)
 - Consistent behavior across all chord types
 
 ### Instrument Abstraction
+
 Generic `Instrument` trait allows guitar, bass, ukulele, mandolin to use the same core logic. Piano/keys would need different constraint model but can share chord theory.
 
 ### Voicing Classification System
+
 Instead of binary "valid/invalid", classify voicings by use case:
+
 - **Core**: For clarity, ensemble playing, when others cover the full harmony
 - **Full**: For solo playing, complete harmonic picture
 - **Jazzy**: For advanced players, color tones, sophisticated voicings
 
 ### Scoring Weights (to be tuned)
+
 - Playability: How easy to finger (stretch, barres, hand position)
 - Position: Preference for open/low positions (configurable)
 - Voicing: Completeness, voice leading quality, root position
 - Context: Match requested position/voicing type
 
 ### Future Extensibility
+
 - **Chord progressions**: Optimize fingering transitions between chords
 - **Voice leading**: Suggest fingerings with minimal movement
 - **Scales/modes**: Use same interval system
@@ -231,22 +252,26 @@ Instead of binary "valid/invalid", classify voicings by use case:
 ## Development Guidelines
 
 ### Testing Strategy
+
 - Unit tests for core music theory (intervals, chord formulas)
 - Property-based tests for fingering generation (all generated fingerings must be valid)
 - Integration tests for CLI commands
 - Manual testing for playability scoring (needs musician feedback)
 
 ### Performance Considerations
+
 - Fingering generation could be expensive for complex chords
 - Consider caching common chord fingerings
 - WASM bundle size matters for web app
 - CLI should feel instant for common operations
 
 ### Code Style
+
 - Idiomatic Rust (leverage type system, avoid panics)
 - Comprehensive documentation for music theory concepts
 - Examples in doc comments
 - Clear error messages (especially for chord name parsing)
+- Verify code quality with clippy and rustfmt
 
 ## Open Questions & Future Decisions
 
