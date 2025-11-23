@@ -156,6 +156,20 @@ impl ChordQuality {
         }
     }
 
+    /// Check if the 5th can be omitted in voicings
+    /// Typically true for 7th chords and extended chords where the 7th is present
+    pub fn can_omit_fifth(&self) -> bool {
+        use ChordQuality::*;
+        matches!(
+            self,
+            Dominant7 | Major7 | Minor7 | MinorMajor7 |
+            Dominant9 | Major9 | Minor9 |
+            Dominant11 | Minor11 |
+            Dominant13 | Major13 | Minor13 |
+            Dominant7b9 | Dominant7sharp9 | Dominant7b5 | Dominant7sharp5
+        )
+    }
+
     /// Get a display name for this chord quality
     pub fn display_name(&self) -> &'static str {
         use ChordQuality::*;
@@ -260,16 +274,10 @@ impl Chord {
     /// For 7th chords: root, 3rd, 7th (5th can be omitted)
     /// For extended: root, 3rd, 7th, extension
     pub fn core_notes(&self) -> Vec<PitchClass> {
-        use ChordQuality::*;
-
         let (required, _) = self.quality.intervals();
 
         // For most 7th and extended chords, the 5th is not essential
-        let skip_fifth = matches!(
-            self.quality,
-            Dominant7 | Major7 | Minor7 | Dominant9 | Major9 | Minor9 |
-            Dominant11 | Minor11 | Dominant13 | Major13 | Minor13
-        );
+        let skip_fifth = self.quality.can_omit_fifth();
 
         required
             .iter()
