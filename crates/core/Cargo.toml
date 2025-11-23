@@ -10,7 +10,7 @@ description = "Core music theory library for chord-fingering conversion"
 [dependencies]
 thiserror.workspace = true
 serde = { workspace = true, optional = true }
-strum = { version = "0.26", features = ["derive"] }
+strum = { version = "0.27", features = ["derive"] }
 
 [dev-dependencies]
 # For property-based testing
