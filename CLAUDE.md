@@ -292,6 +292,65 @@ Instead of binary "valid/invalid", classify voicings by use case:
 - **Rhythm patterns**: Strumming/picking patterns for practice
 - **Sound synthesis**: Generate audio previews (web audio API)
 
+## Code Quality & Architecture Notes
+
+### API Design Principles
+
+**Instrument-Aware API Pattern**: All fingering analysis methods require an explicit `Instrument` parameter. This design:
+- Forces users to be explicit about instrument constraints
+- Avoids hidden assumptions (no "default guitar" behavior)
+- Supports multi-instrument use cases cleanly
+- Makes code more maintainable (no hardcoded defaults scattered throughout)
+
+Example:
+```rust
+// Good: Explicit about instrument
+fingering.is_playable_for(&guitar)
+fingering.playability_score_for(&ukulele)
+
+// Removed: Generic methods with hidden assumptions
+// fingering.is_playable(4)  // What instrument? What context?
+```
+
+### Music Theory Encapsulation
+
+Music theory rules are encapsulated in methods rather than scattered as hardcoded logic:
+
+```rust
+impl ChordQuality {
+    /// Check if the 5th can be omitted in voicings
+    pub fn can_omit_fifth(&self) -> bool {
+        // Encapsulates the rule: 7th chords can omit the 5th
+        matches!(self, Dominant7 | Major7 | Minor7 | ...)
+    }
+}
+```
+
+This makes the codebase:
+- Self-documenting (method name explains the rule)
+- Easy to maintain (change rule in one place)
+- Extensible (add new chord types without hunting for all uses)
+
+### Scoring Architecture
+
+Fingering scoring is separated into distinct concerns:
+
+1. **Playability Scoring** (`Fingering::playability_score_for()`) - 0-100 scale
+   - Physical difficulty (stretch, finger count, barre awkwardness)
+   - Position preferences (open position bonus, high fret penalty)
+   - Independent of chord context
+
+2. **Generation Scoring** (`generator::score_fingering()`) - Unbounded
+   - Builds on playability score
+   - Adds chord-specific bonuses (root in bass, voicing completeness)
+   - Adds musical preferences (interior mutes penalty, string coverage)
+   - Used for ranking/sorting fingerings
+
+This separation allows:
+- Testing scoring components independently
+- Tuning scoring weights without touching core logic
+- Different scoring strategies for different use cases
+
 ## Development Guidelines
 
 ### Testing Strategy
