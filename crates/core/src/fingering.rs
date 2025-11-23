@@ -172,13 +172,6 @@ impl Fingering {
         max - min
     }
 
-    /// Check if this is an open position chord (includes open strings, low frets)
-    /// For instrument-aware version, use `is_open_position_for()`
-    pub fn is_open_position(&self) -> bool {
-        self.strings.iter().any(|s| matches!(s, StringState::Fretted(0)))
-            && self.max_fret().unwrap_or(0) <= 4
-    }
-
     /// Check if this is an open position chord for a specific instrument
     pub fn is_open_position_for<I: Instrument>(&self, instrument: &I) -> bool {
         self.strings.iter().any(|s| matches!(s, StringState::Fretted(0)))
@@ -204,13 +197,6 @@ impl Fingering {
     /// Only penalizes if the LARGEST barre is not at the minimum fret, since having
     /// small barres above a foundation barre (like F chord: barre at 1, mini-barre at 3)
     /// is a normal and comfortable technique.
-    ///
-    /// Uses a hardcoded threshold of 3 strings. For instrument-aware version, use `has_high_barre_for()`.
-    pub fn has_high_barre(&self) -> bool {
-        self.has_high_barre_with_threshold(3)
-    }
-
-    /// Detect if there's a high barre for a specific instrument
     pub fn has_high_barre_for<I: Instrument>(&self, instrument: &I) -> bool {
         self.has_high_barre_with_threshold(instrument.main_barre_threshold())
     }
@@ -337,12 +323,6 @@ impl Fingering {
         finger_count
     }
 
-    /// Check if the fingering is physically playable given max stretch
-    /// Uses default of 4 fingers max. For instrument-aware version, use `is_playable_for()`.
-    pub fn is_playable(&self, max_stretch: u8) -> bool {
-        self.is_playable_with_constraints(max_stretch, 4)
-    }
-
     /// Check if the fingering is physically playable for a specific instrument
     pub fn is_playable_for<I: Instrument>(&self, instrument: &I) -> bool {
         self.is_playable_with_constraints(instrument.max_stretch(), instrument.max_fingers())
@@ -400,13 +380,7 @@ impl Fingering {
         pitches
     }
 
-    /// Calculate a playability score (0-100, higher is easier to play)
-    /// Uses hardcoded thresholds. For instrument-aware version, use `playability_score_for()`.
-    pub fn playability_score(&self, max_stretch: u8) -> u8 {
-        self.playability_score_with_params(max_stretch, 4, 3, 4)
-    }
-
-    /// Calculate a playability score for a specific instrument
+    /// Calculate a playability score for a specific instrument (0-100, higher is easier to play)
     pub fn playability_score_for<I: Instrument>(&self, instrument: &I) -> u8 {
         self.playability_score_with_params(
             instrument.max_stretch(),
@@ -598,11 +572,12 @@ mod tests {
 
     #[test]
     fn test_is_open_position() {
+        let guitar = Guitar::default();
         let c = Fingering::parse("x32010").unwrap();
-        assert!(c.is_open_position());
+        assert!(c.is_open_position_for(&guitar));
 
         let barre_f = Fingering::parse("133211").unwrap();
-        assert!(!barre_f.is_open_position());
+        assert!(!barre_f.is_open_position_for(&guitar));
     }
 
     #[test]
@@ -623,12 +598,13 @@ mod tests {
 
     #[test]
     fn test_playability() {
+        let guitar = Guitar::default();
         let easy = Fingering::parse("x32010").unwrap();
-        assert!(easy.is_playable(4));
-        assert!(easy.playability_score(4) > 50);
+        assert!(easy.is_playable_for(&guitar));
+        assert!(easy.playability_score_for(&guitar) > 50);
 
         let hard = Fingering::parse("x24442").unwrap();
-        assert!(hard.playability_score(4) < easy.playability_score(4));
+        assert!(hard.playability_score_for(&guitar) < easy.playability_score_for(&guitar));
     }
 
     #[test]
@@ -723,20 +699,22 @@ mod tests {
 
     #[test]
     fn test_unplayable_too_many_fingers() {
+        let guitar = Guitar::default();
         // Create a fingering that requires 5+ fingers (should be filtered)
         let f = Fingering::parse("123456").unwrap();
         let fingers = f.min_fingers_required();
         assert!(fingers > 4, "This should require too many fingers");
-        assert!(!f.is_playable(4), "Should be marked unplayable");
+        assert!(!f.is_playable_for(&guitar), "Should be marked unplayable");
     }
 
     #[test]
     fn test_playability_prefers_fewer_fingers() {
+        let guitar = Guitar::default();
         let simple_barre = Fingering::parse("464444").unwrap();  // 3 fingers
         let complex = Fingering::parse("424404").unwrap();  // 4 fingers
 
-        let score_simple = simple_barre.playability_score(4);
-        let score_complex = complex.playability_score(4);
+        let score_simple = simple_barre.playability_score_for(&guitar);
+        let score_complex = complex.playability_score_for(&guitar);
 
         assert!(
             score_simple > score_complex,
@@ -746,30 +724,32 @@ mod tests {
 
     #[test]
     fn test_has_high_barre() {
+        let guitar = Guitar::default();
         // 464444 - barre at fret 4 (minimum), extension at fret 6 - NO high barre
         let good_barre = Fingering::parse("464444").unwrap();
-        assert!(!good_barre.has_high_barre(), "464444 should NOT have high barre (barre is at min fret)");
+        assert!(!good_barre.has_high_barre_for(&guitar), "464444 should NOT have high barre (barre is at min fret)");
 
         // 424444 - fret 2 on one string, barre at fret 4 - YES high barre
         let bad_barre = Fingering::parse("424444").unwrap();
-        assert!(bad_barre.has_high_barre(), "424444 should have high barre (barre above min fret)");
+        assert!(bad_barre.has_high_barre_for(&guitar), "424444 should have high barre (barre above min fret)");
 
         // 133211 - classic F barre chord, barre at fret 1 (minimum) - NO high barre
         let f_chord = Fingering::parse("133211").unwrap();
-        assert!(!f_chord.has_high_barre(), "F barre should NOT have high barre");
+        assert!(!f_chord.has_high_barre_for(&guitar), "F barre should NOT have high barre");
 
         // x32010 - open C, no barres at all
         let c_chord = Fingering::parse("x32010").unwrap();
-        assert!(!c_chord.has_high_barre(), "Open C should have no high barre");
+        assert!(!c_chord.has_high_barre_for(&guitar), "Open C should have no high barre");
     }
 
     #[test]
     fn test_playability_penalizes_high_barre() {
+        let guitar = Guitar::default();
         let good_barre = Fingering::parse("464444").unwrap();  // Barre at min fret
         let bad_barre = Fingering::parse("424444").unwrap();   // Barre above min fret
 
-        let score_good = good_barre.playability_score(4);
-        let score_bad = bad_barre.playability_score(4);
+        let score_good = good_barre.playability_score_for(&guitar);
+        let score_bad = bad_barre.playability_score_for(&guitar);
 
         assert!(
             score_good > score_bad,
