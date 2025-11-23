@@ -125,8 +125,9 @@ fn find_fingerings(
     Ok(())
 }
 
-fn name_chord(fingering_str: &str, key: Option<String>) -> Result<()> {
+fn name_chord(fingering_str: &str, _key: Option<String>) -> Result<()> {
     use chordcraft_core::fingering::Fingering;
+    use chordcraft_core::analyzer::analyze_fingering;
 
     // Parse the fingering
     let fingering = Fingering::parse(fingering_str)
@@ -143,13 +144,41 @@ fn name_chord(fingering_str: &str, key: Option<String>) -> Result<()> {
         fingering_str.green().bold()
     );
 
-    println!("Notes played: {}", pitches.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", "));
+    println!("Notes played: {}\n", pitches.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", "));
 
-    if let Some(k) = key {
-        println!("Key context: {k}");
+    // Analyze the fingering
+    let matches = analyze_fingering(&fingering, &guitar);
+
+    if matches.is_empty() {
+        println!("{}", "Could not identify chord (not enough notes)".yellow());
+        return Ok(());
     }
 
-    println!("\n{}", "[Chord identification coming soon...]".yellow());
+    // Display the top match
+    let top = &matches[0];
+    println!(
+        "{} {}\n",
+        "Best match:".bold().green(),
+        top.chord.to_string().green().bold()
+    );
+
+    println!("  Confidence: {:.0}%", top.completeness * 100.0);
+    println!("  Root in bass: {}", if top.root_in_bass { "Yes".green() } else { "No".yellow() });
+    println!("  Score: {}", top.score);
+
+    // Display alternatives if there are any
+    if matches.len() > 1 {
+        println!("\n{}", "Alternative interpretations:".bold());
+        for (i, m) in matches.iter().skip(1).take(4).enumerate() {
+            println!(
+                "  {}. {} (confidence: {:.0}%, score: {})",
+                i + 1,
+                m.chord.to_string().cyan(),
+                m.completeness * 100.0,
+                m.score
+            );
+        }
+    }
 
     Ok(())
 }

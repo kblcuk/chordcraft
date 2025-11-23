@@ -34,6 +34,7 @@ pub use interval::Interval;
 pub use chord::{Chord, ChordQuality};
 pub use instrument::{Instrument, Guitar};
 pub use fingering::Fingering;
+pub use analyzer::{analyze_fingering, ChordMatch};
 
 /// Error types for the chordcraft-core library
 pub mod error {

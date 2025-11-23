@@ -12,7 +12,7 @@ use crate::note::PitchClass;
 use std::fmt;
 
 /// Chord quality/type
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumIter)]
 pub enum ChordQuality {
     // Triads
     Major,

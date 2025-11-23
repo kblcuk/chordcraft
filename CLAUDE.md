@@ -161,32 +161,42 @@ chordcraft/
 - **Full**: All chord tones present, no omissions
 - **Jazzy**: Extended voicings, possible omissions of less essential notes (often 5th), jazz-style colorings
 
-### Phase 3: Reverse Lookup (Tabs → Chord) ✓ CURRENT PHASE
+### Phase 3: Reverse Lookup (Tabs → Chord) ✓ COMPLETE
 
 **Goal**: Given fingering notation, identify the chord
 
 **Algorithm** (`analyzer.rs`):
 
 1. Parse tab notation (e.g., "x32010")
-2. Calculate which notes are being played
-3. Determine intervals relative to each possible root
-4. Match interval patterns against chord formulas
-5. Rank matches by:
-   - Completeness (all chord tones present vs. partial match)
-   - Root position (bass note = root is preferred)
-   - Chord commonality (simpler chords ranked higher)
-   - Interval set uniqueness (avoid ambiguous matches)
-6. Return primary match + alternatives ("Could also be...")
+2. Extract unique pitch classes from fingering
+3. For each pitch class as potential root:
+   - Calculate intervals from that root to all notes
+   - Try to match intervals against all known chord qualities
+4. Score each match by:
+   - **Completeness** (0-100 points): percentage of required notes present
+   - **Root in bass** (+20 points): bass note matches root
+   - **Chord complexity** (+3 per required note): prefer more specific chords (G7 over G)
+   - **Optional notes** (+5 per optional note present)
+   - **Extra notes penalty** (-10 per note not in chord)
+   - **Simplicity bonus** (+5 for major/minor if 100% complete)
+5. Sort by score, deduplicate, return top matches
 
-### Phase 4: CLI Tool ✓ PARTIAL
+**Features**:
+- ✅ Identifies 30+ chord types (triads, 7ths, extended, altered)
+- ✅ Provides confidence percentage (completeness)
+- ✅ Shows alternative interpretations
+- ✅ Handles ambiguous fingerings (e.g., C vs Em/C)
+- ✅ Prefers complete, specific chords (G7 over G when 7th is present)
+
+### Phase 4: CLI Tool ✓ COMPLETE
 
 **Goal**: Quick iteration, testing, and usable terminal tool
 
 **Status**:
 
 - ✅ `find` command fully implemented with all options
-- ⏳ `name` command exists but needs analyzer.rs integration
-- ⏳ Chord progressions (future)
+- ✅ `name` command implemented with analyzer integration
+- ⏳ Chord progressions (future - Phase 6)
 
 **Commands**:
 
@@ -350,5 +360,6 @@ Instead of binary "valid/invalid", classify voicings by use case:
 
 ---
 
-**Last updated**: Initial creation - Phase 1 in progress
-**Current focus**: Core music theory types (Note, Interval, Chord)
+**Last updated**: Phase 3 complete - Full bidirectional chord-fingering conversion
+**Current focus**: Phases 1-4 complete (Core, Generator, Analyzer, CLI)
+**Next phase**: Phase 5 (Web App with Vue + WASM)
