@@ -65,7 +65,9 @@ impl Fingering {
     pub fn parse(s: &str) -> Result<Self> {
         let s = s.trim();
         if s.is_empty() {
-            return Err(ChordCraftError::InvalidFingering("Empty fingering".to_string()));
+            return Err(ChordCraftError::InvalidFingering(
+                "Empty fingering".to_string(),
+            ));
         }
 
         let mut strings = Vec::new();
@@ -94,14 +96,16 @@ impl Fingering {
                 _ => {
                     return Err(ChordCraftError::InvalidFingering(format!(
                         "Invalid character in fingering: '{c}'"
-                    )))
+                    )));
                 }
             };
             strings.push(state);
         }
 
         if strings.is_empty() {
-            return Err(ChordCraftError::InvalidFingering("No strings found".to_string()));
+            return Err(ChordCraftError::InvalidFingering(
+                "No strings found".to_string(),
+            ));
         }
 
         Ok(Fingering { strings })
@@ -147,15 +151,13 @@ impl Fingering {
 
     /// Get the highest fret position
     pub fn max_fret(&self) -> Option<u8> {
-        self.strings
-            .iter()
-            .filter_map(|s| s.fret())
-            .max()
+        self.strings.iter().filter_map(|s| s.fret()).max()
     }
 
     /// Calculate the fret span (stretch required)
     pub fn fret_span(&self) -> u8 {
-        let fretted: Vec<u8> = self.strings
+        let fretted: Vec<u8> = self
+            .strings
             .iter()
             .filter_map(|s| match s {
                 StringState::Fretted(f) if *f > 0 => Some(*f),
@@ -174,14 +176,17 @@ impl Fingering {
 
     /// Check if this is an open position chord for a specific instrument
     pub fn is_open_position_for<I: Instrument>(&self, instrument: &I) -> bool {
-        self.strings.iter().any(|s| matches!(s, StringState::Fretted(0)))
+        self.strings
+            .iter()
+            .any(|s| matches!(s, StringState::Fretted(0)))
             && self.max_fret().unwrap_or(0) <= instrument.open_position_threshold()
     }
 
     /// Check if this fingering requires a barre
     pub fn requires_barre(&self) -> bool {
         if let Some(min) = self.min_fret() {
-            let count_at_min = self.strings
+            let count_at_min = self
+                .strings
                 .iter()
                 .filter(|s| matches!(s, StringState::Fretted(f) if *f == min))
                 .count();
@@ -189,6 +194,11 @@ impl Fingering {
         } else {
             false
         }
+    }
+
+    /// Check if this fingering uses a barre (alias for requires_barre)
+    pub fn has_barre(&self) -> bool {
+        self.requires_barre()
     }
 
     /// Detect if there's a barre at a fret higher than the minimum fret
@@ -274,7 +284,8 @@ impl Fingering {
 
         for (string_idx, state) in self.strings.iter().enumerate() {
             if let StringState::Fretted(fret) = state {
-                if *fret > 0 {  // Exclude open strings (don't need fingers)
+                if *fret > 0 {
+                    // Exclude open strings (don't need fingers)
                     frets_map.entry(*fret).or_default().push(string_idx);
                 }
             }
@@ -356,9 +367,7 @@ impl Fingering {
                 }
                 match state {
                     StringState::Muted => None,
-                    StringState::Fretted(fret) => {
-                        Some(tuning[i].add_semitones(*fret as i32))
-                    }
+                    StringState::Fretted(fret) => Some(tuning[i].add_semitones(*fret as i32)),
                 }
             })
             .collect()
@@ -418,13 +427,13 @@ impl Fingering {
         // 4 fingers: cramped (if max is 4), penalize
         let finger_ratio = (fingers as f32) / (max_fingers as f32);
         if finger_ratio <= 0.25 {
-            score += 15;  // Very easy (1 finger if max=4)
+            score += 15; // Very easy (1 finger if max=4)
         } else if finger_ratio <= 0.5 {
-            score += 10;  // Easy (2 fingers if max=4)
+            score += 10; // Easy (2 fingers if max=4)
         } else if finger_ratio <= 0.75 {
-            score += 0;   // Neutral (3 fingers if max=4)
+            score += 0; // Neutral (3 fingers if max=4)
         } else {
-            score -= 20;  // All fingers occupied, harder to play cleanly
+            score -= 20; // All fingers occupied, harder to play cleanly
         }
 
         // HEAVY penalty for high barres (barre not at minimum fret)
@@ -434,7 +443,10 @@ impl Fingering {
         }
 
         // Bonus for open position
-        let is_open = self.strings.iter().any(|s| matches!(s, StringState::Fretted(0)))
+        let is_open = self
+            .strings
+            .iter()
+            .any(|s| matches!(s, StringState::Fretted(0)))
             && self.max_fret().unwrap_or(0) <= open_position_threshold;
         if is_open {
             score += 10;
@@ -635,15 +647,27 @@ mod tests {
         // Algorithm counts: string 0 at fret 4 (1), strings 2-5 barred at fret 4 (1), string 1 at fret 6 (1)
         // = 3 fingers (conservative but correct - can't make a full barre with string 1 in the way)
         let f = Fingering::parse("464444").unwrap();
-        assert_eq!(f.min_fingers_required(), 3, "Broken barre + one note = 3 fingers");
+        assert_eq!(
+            f.min_fingers_required(),
+            3,
+            "Broken barre + one note = 3 fingers"
+        );
 
         // A true full barre would be something like 444444
         let full_barre = Fingering::parse("444444").unwrap();
-        assert_eq!(full_barre.min_fingers_required(), 1, "Full barre = 1 finger");
+        assert_eq!(
+            full_barre.min_fingers_required(),
+            1,
+            "Full barre = 1 finger"
+        );
 
         // Or a barre with one extension: 444445
         let barre_plus = Fingering::parse("444445").unwrap();
-        assert_eq!(barre_plus.min_fingers_required(), 2, "Barre + extension = 2 fingers");
+        assert_eq!(
+            barre_plus.min_fingers_required(),
+            2,
+            "Barre + extension = 2 fingers"
+        );
     }
 
     #[test]
@@ -653,7 +677,11 @@ mod tests {
         // Fret 4: strings 0,2,3,5 (can barre 2-3, separate fingers for 0 and 5) = 3 fingers
         // Fret 2: string 1 = 1 finger
         // Total: 4 fingers
-        assert_eq!(f.min_fingers_required(), 4, "Mixed frets with gaps = 4 fingers");
+        assert_eq!(
+            f.min_fingers_required(),
+            4,
+            "Mixed frets with gaps = 4 fingers"
+        );
     }
 
     #[test]
@@ -710,8 +738,8 @@ mod tests {
     #[test]
     fn test_playability_prefers_fewer_fingers() {
         let guitar = Guitar::default();
-        let simple_barre = Fingering::parse("464444").unwrap();  // 3 fingers
-        let complex = Fingering::parse("424404").unwrap();  // 4 fingers
+        let simple_barre = Fingering::parse("464444").unwrap(); // 3 fingers
+        let complex = Fingering::parse("424404").unwrap(); // 4 fingers
 
         let score_simple = simple_barre.playability_score_for(&guitar);
         let score_complex = complex.playability_score_for(&guitar);
@@ -727,26 +755,38 @@ mod tests {
         let guitar = Guitar::default();
         // 464444 - barre at fret 4 (minimum), extension at fret 6 - NO high barre
         let good_barre = Fingering::parse("464444").unwrap();
-        assert!(!good_barre.has_high_barre_for(&guitar), "464444 should NOT have high barre (barre is at min fret)");
+        assert!(
+            !good_barre.has_high_barre_for(&guitar),
+            "464444 should NOT have high barre (barre is at min fret)"
+        );
 
         // 424444 - fret 2 on one string, barre at fret 4 - YES high barre
         let bad_barre = Fingering::parse("424444").unwrap();
-        assert!(bad_barre.has_high_barre_for(&guitar), "424444 should have high barre (barre above min fret)");
+        assert!(
+            bad_barre.has_high_barre_for(&guitar),
+            "424444 should have high barre (barre above min fret)"
+        );
 
         // 133211 - classic F barre chord, barre at fret 1 (minimum) - NO high barre
         let f_chord = Fingering::parse("133211").unwrap();
-        assert!(!f_chord.has_high_barre_for(&guitar), "F barre should NOT have high barre");
+        assert!(
+            !f_chord.has_high_barre_for(&guitar),
+            "F barre should NOT have high barre"
+        );
 
         // x32010 - open C, no barres at all
         let c_chord = Fingering::parse("x32010").unwrap();
-        assert!(!c_chord.has_high_barre_for(&guitar), "Open C should have no high barre");
+        assert!(
+            !c_chord.has_high_barre_for(&guitar),
+            "Open C should have no high barre"
+        );
     }
 
     #[test]
     fn test_playability_penalizes_high_barre() {
         let guitar = Guitar::default();
-        let good_barre = Fingering::parse("464444").unwrap();  // Barre at min fret
-        let bad_barre = Fingering::parse("424444").unwrap();   // Barre above min fret
+        let good_barre = Fingering::parse("464444").unwrap(); // Barre at min fret
+        let bad_barre = Fingering::parse("424444").unwrap(); // Barre above min fret
 
         let score_good = good_barre.playability_score_for(&guitar);
         let score_bad = bad_barre.playability_score_for(&guitar);

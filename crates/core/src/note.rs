@@ -13,16 +13,16 @@ use std::fmt;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PitchClass {
     C,
-    CSharp,  // C# / Db
+    CSharp, // C# / Db
     D,
-    DSharp,  // D# / Eb
+    DSharp, // D# / Eb
     E,
     F,
-    FSharp,  // F# / Gb
+    FSharp, // F# / Gb
     G,
-    GSharp,  // G# / Ab
+    GSharp, // G# / Ab
     A,
-    ASharp,  // A# / Bb
+    ASharp, // A# / Bb
     B,
 }
 
@@ -172,14 +172,17 @@ impl Note {
         let s = s.trim();
 
         // Find where the octave number starts
-        let octave_start = s.chars().position(|c| c.is_ascii_digit() || c == '-')
+        let octave_start = s
+            .chars()
+            .position(|c| c.is_ascii_digit() || c == '-')
             .ok_or_else(|| ChordCraftError::InvalidNote(s.to_string()))?;
 
         let pitch_str = &s[..octave_start];
         let octave_str = &s[octave_start..];
 
         let pitch = PitchClass::parse(pitch_str)?;
-        let octave = octave_str.parse::<i8>()
+        let octave = octave_str
+            .parse::<i8>()
             .map_err(|_| ChordCraftError::InvalidNote(s.to_string()))?;
 
         Ok(Note::new(pitch, octave))

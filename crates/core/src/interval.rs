@@ -21,7 +21,7 @@ pub enum IntervalQuality {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Interval {
     pub quality: IntervalQuality,
-    pub distance: u8,  // 1-based: 1=unison, 2=second, 3=third, etc.
+    pub distance: u8, // 1-based: 1=unison, 2=second, 3=third, etc.
 }
 
 impl Interval {
@@ -36,14 +36,14 @@ impl Interval {
 
         // Base semitones for perfect/major intervals
         let base_semitones = match self.distance {
-            1 => 0,   // Unison
-            2 => 2,   // Second
-            3 => 4,   // Third
-            4 => 5,   // Fourth
-            5 => 7,   // Fifth
-            6 => 9,   // Sixth
-            7 => 11,  // Seventh
-            8 => 12,  // Octave
+            1 => 0,  // Unison
+            2 => 2,  // Second
+            3 => 4,  // Third
+            4 => 5,  // Fourth
+            5 => 7,  // Fifth
+            6 => 9,  // Sixth
+            7 => 11, // Seventh
+            8 => 12, // Octave
             _ => {
                 // For intervals larger than an octave
                 let octaves = (self.distance - 1) / 7;
@@ -58,7 +58,7 @@ impl Interval {
             (Minor, false) => base_semitones - 1,
             (Augmented, _) => base_semitones + 1,
             (Diminished, _) => base_semitones - 1,
-            _ => base_semitones,  // Invalid combination, return base
+            _ => base_semitones, // Invalid combination, return base
         }
     }
 
@@ -67,18 +67,18 @@ impl Interval {
         use IntervalQuality::*;
 
         match semitones % 12 {
-            0 => Interval::new(Perfect, 1),      // Unison
-            1 => Interval::new(Minor, 2),        // Minor 2nd
-            2 => Interval::new(Major, 2),        // Major 2nd
-            3 => Interval::new(Minor, 3),        // Minor 3rd
-            4 => Interval::new(Major, 3),        // Major 3rd
-            5 => Interval::new(Perfect, 4),      // Perfect 4th
-            6 => Interval::new(Augmented, 4),    // Augmented 4th (Tritone)
-            7 => Interval::new(Perfect, 5),      // Perfect 5th
-            8 => Interval::new(Minor, 6),        // Minor 6th
-            9 => Interval::new(Major, 6),        // Major 6th
-            10 => Interval::new(Minor, 7),       // Minor 7th
-            11 => Interval::new(Major, 7),       // Major 7th
+            0 => Interval::new(Perfect, 1),   // Unison
+            1 => Interval::new(Minor, 2),     // Minor 2nd
+            2 => Interval::new(Major, 2),     // Major 2nd
+            3 => Interval::new(Minor, 3),     // Minor 3rd
+            4 => Interval::new(Major, 3),     // Major 3rd
+            5 => Interval::new(Perfect, 4),   // Perfect 4th
+            6 => Interval::new(Augmented, 4), // Augmented 4th (Tritone)
+            7 => Interval::new(Perfect, 5),   // Perfect 5th
+            8 => Interval::new(Minor, 6),     // Minor 6th
+            9 => Interval::new(Major, 6),     // Major 6th
+            10 => Interval::new(Minor, 7),    // Minor 7th
+            11 => Interval::new(Major, 7),    // Major 7th
             _ => unreachable!(),
         }
     }
@@ -149,7 +149,8 @@ impl Interval {
 
         // Rest is distance
         let distance_str = &s[1..];
-        let distance = distance_str.parse::<u8>()
+        let distance = distance_str
+            .parse::<u8>()
             .map_err(|_| ChordCraftError::InvalidInterval(s.to_string()))?;
 
         if distance == 0 {
@@ -167,25 +168,76 @@ impl fmt::Display for Interval {
 }
 
 // Convenience constants for common intervals
-pub const UNISON: Interval = Interval { quality: IntervalQuality::Perfect, distance: 1 };
-pub const MINOR_SECOND: Interval = Interval { quality: IntervalQuality::Minor, distance: 2 };
-pub const MAJOR_SECOND: Interval = Interval { quality: IntervalQuality::Major, distance: 2 };
-pub const MINOR_THIRD: Interval = Interval { quality: IntervalQuality::Minor, distance: 3 };
-pub const MAJOR_THIRD: Interval = Interval { quality: IntervalQuality::Major, distance: 3 };
-pub const PERFECT_FOURTH: Interval = Interval { quality: IntervalQuality::Perfect, distance: 4 };
-pub const TRITONE: Interval = Interval { quality: IntervalQuality::Augmented, distance: 4 };
-pub const PERFECT_FIFTH: Interval = Interval { quality: IntervalQuality::Perfect, distance: 5 };
-pub const MINOR_SIXTH: Interval = Interval { quality: IntervalQuality::Minor, distance: 6 };
-pub const MAJOR_SIXTH: Interval = Interval { quality: IntervalQuality::Major, distance: 6 };
-pub const MINOR_SEVENTH: Interval = Interval { quality: IntervalQuality::Minor, distance: 7 };
-pub const MAJOR_SEVENTH: Interval = Interval { quality: IntervalQuality::Major, distance: 7 };
-pub const OCTAVE: Interval = Interval { quality: IntervalQuality::Perfect, distance: 8 };
+pub const UNISON: Interval = Interval {
+    quality: IntervalQuality::Perfect,
+    distance: 1,
+};
+pub const MINOR_SECOND: Interval = Interval {
+    quality: IntervalQuality::Minor,
+    distance: 2,
+};
+pub const MAJOR_SECOND: Interval = Interval {
+    quality: IntervalQuality::Major,
+    distance: 2,
+};
+pub const MINOR_THIRD: Interval = Interval {
+    quality: IntervalQuality::Minor,
+    distance: 3,
+};
+pub const MAJOR_THIRD: Interval = Interval {
+    quality: IntervalQuality::Major,
+    distance: 3,
+};
+pub const PERFECT_FOURTH: Interval = Interval {
+    quality: IntervalQuality::Perfect,
+    distance: 4,
+};
+pub const TRITONE: Interval = Interval {
+    quality: IntervalQuality::Augmented,
+    distance: 4,
+};
+pub const PERFECT_FIFTH: Interval = Interval {
+    quality: IntervalQuality::Perfect,
+    distance: 5,
+};
+pub const MINOR_SIXTH: Interval = Interval {
+    quality: IntervalQuality::Minor,
+    distance: 6,
+};
+pub const MAJOR_SIXTH: Interval = Interval {
+    quality: IntervalQuality::Major,
+    distance: 6,
+};
+pub const MINOR_SEVENTH: Interval = Interval {
+    quality: IntervalQuality::Minor,
+    distance: 7,
+};
+pub const MAJOR_SEVENTH: Interval = Interval {
+    quality: IntervalQuality::Major,
+    distance: 7,
+};
+pub const OCTAVE: Interval = Interval {
+    quality: IntervalQuality::Perfect,
+    distance: 8,
+};
 
 // Extended intervals
-pub const MINOR_NINTH: Interval = Interval { quality: IntervalQuality::Minor, distance: 9 };
-pub const MAJOR_NINTH: Interval = Interval { quality: IntervalQuality::Major, distance: 9 };
-pub const PERFECT_ELEVENTH: Interval = Interval { quality: IntervalQuality::Perfect, distance: 11 };
-pub const MAJOR_THIRTEENTH: Interval = Interval { quality: IntervalQuality::Major, distance: 13 };
+pub const MINOR_NINTH: Interval = Interval {
+    quality: IntervalQuality::Minor,
+    distance: 9,
+};
+pub const MAJOR_NINTH: Interval = Interval {
+    quality: IntervalQuality::Major,
+    distance: 9,
+};
+pub const PERFECT_ELEVENTH: Interval = Interval {
+    quality: IntervalQuality::Perfect,
+    distance: 11,
+};
+pub const MAJOR_THIRTEENTH: Interval = Interval {
+    quality: IntervalQuality::Major,
+    distance: 13,
+};
 
 #[cfg(test)]
 mod tests {

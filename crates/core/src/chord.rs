@@ -25,37 +25,37 @@ pub enum ChordQuality {
     Sus4,
 
     // 7th chords
-    Dominant7,          // X7
-    Major7,             // Xmaj7
-    Minor7,             // Xm7
-    MinorMajor7,        // Xm(maj7)
-    Diminished7,        // Xdim7
-    HalfDiminished7,    // Xm7b5
+    Dominant7,       // X7
+    Major7,          // Xmaj7
+    Minor7,          // Xm7
+    MinorMajor7,     // Xm(maj7)
+    Diminished7,     // Xdim7
+    HalfDiminished7, // Xm7b5
 
     // Extended chords
-    Dominant9,          // X9
-    Major9,             // Xmaj9
-    Minor9,             // Xm9
-    Dominant11,         // X11
-    Minor11,            // Xm11
-    Dominant13,         // X13
-    Major13,            // Xmaj13
-    Minor13,            // Xm13
+    Dominant9,  // X9
+    Major9,     // Xmaj9
+    Minor9,     // Xm9
+    Dominant11, // X11
+    Minor11,    // Xm11
+    Dominant13, // X13
+    Major13,    // Xmaj13
+    Minor13,    // Xm13
 
     // Altered dominants
-    Dominant7b9,        // X7b9
-    Dominant7sharp9,    // X7#9
-    Dominant7b5,        // X7b5
-    Dominant7sharp5,    // X7#5 (aug7)
+    Dominant7b9,     // X7b9
+    Dominant7sharp9, // X7#9
+    Dominant7b5,     // X7b5
+    Dominant7sharp5, // X7#5 (aug7)
 
     // Add chords
-    Add9,               // Xadd9
-    MinorAdd9,          // Xmadd9
-    Add11,              // Xadd11
+    Add9,      // Xadd9
+    MinorAdd9, // Xmadd9
+    Add11,     // Xadd11
 
     // 6th chords
-    Major6,             // X6
-    Minor6,             // Xm6
+    Major6, // X6
+    Minor6, // Xm6
 }
 
 impl ChordQuality {
@@ -68,31 +68,67 @@ impl ChordQuality {
             // Triads
             Major => (vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH], vec![]),
             Minor => (vec![UNISON, MINOR_THIRD, PERFECT_FIFTH], vec![]),
-            Diminished => (vec![UNISON, MINOR_THIRD, Interval::new(IntervalQuality::Diminished, 5)], vec![]),
-            Augmented => (vec![UNISON, MAJOR_THIRD, Interval::new(IntervalQuality::Augmented, 5)], vec![]),
+            Diminished => (
+                vec![
+                    UNISON,
+                    MINOR_THIRD,
+                    Interval::new(IntervalQuality::Diminished, 5),
+                ],
+                vec![],
+            ),
+            Augmented => (
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    Interval::new(IntervalQuality::Augmented, 5),
+                ],
+                vec![],
+            ),
 
             // Suspended
             Sus2 => (vec![UNISON, MAJOR_SECOND, PERFECT_FIFTH], vec![]),
             Sus4 => (vec![UNISON, PERFECT_FOURTH, PERFECT_FIFTH], vec![]),
 
             // 7th chords
-            Dominant7 => (vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH], vec![]),
-            Major7 => (vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MAJOR_SEVENTH], vec![]),
-            Minor7 => (vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH], vec![]),
-            MinorMajor7 => (vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MAJOR_SEVENTH], vec![]),
+            Dominant7 => (
+                vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH],
+                vec![],
+            ),
+            Major7 => (
+                vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MAJOR_SEVENTH],
+                vec![],
+            ),
+            Minor7 => (
+                vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH],
+                vec![],
+            ),
+            MinorMajor7 => (
+                vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MAJOR_SEVENTH],
+                vec![],
+            ),
             Diminished7 => (
-                vec![UNISON, MINOR_THIRD, Interval::new(IntervalQuality::Diminished, 5), Interval::new(IntervalQuality::Diminished, 7)],
+                vec![
+                    UNISON,
+                    MINOR_THIRD,
+                    Interval::new(IntervalQuality::Diminished, 5),
+                    Interval::new(IntervalQuality::Diminished, 7),
+                ],
                 vec![],
             ),
             HalfDiminished7 => (
-                vec![UNISON, MINOR_THIRD, Interval::new(IntervalQuality::Diminished, 5), MINOR_SEVENTH],
+                vec![
+                    UNISON,
+                    MINOR_THIRD,
+                    Interval::new(IntervalQuality::Diminished, 5),
+                    MINOR_SEVENTH,
+                ],
                 vec![],
             ),
 
             // Extended chords (9ths)
             Dominant9 => (
                 vec![UNISON, MAJOR_THIRD, MINOR_SEVENTH, MAJOR_NINTH],
-                vec![PERFECT_FIFTH],  // 5th often omitted in jazz voicings
+                vec![PERFECT_FIFTH], // 5th often omitted in jazz voicings
             ),
             Major9 => (
                 vec![UNISON, MAJOR_THIRD, MAJOR_SEVENTH, MAJOR_NINTH],
@@ -105,54 +141,121 @@ impl ChordQuality {
 
             // Extended chords (11ths)
             Dominant11 => (
-                vec![UNISON, MAJOR_THIRD, MINOR_SEVENTH, MAJOR_NINTH, PERFECT_ELEVENTH],
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    MINOR_SEVENTH,
+                    MAJOR_NINTH,
+                    PERFECT_ELEVENTH,
+                ],
                 vec![PERFECT_FIFTH],
             ),
             Minor11 => (
-                vec![UNISON, MINOR_THIRD, MINOR_SEVENTH, MAJOR_NINTH, PERFECT_ELEVENTH],
+                vec![
+                    UNISON,
+                    MINOR_THIRD,
+                    MINOR_SEVENTH,
+                    MAJOR_NINTH,
+                    PERFECT_ELEVENTH,
+                ],
                 vec![PERFECT_FIFTH],
             ),
 
             // Extended chords (13ths)
             Dominant13 => (
-                vec![UNISON, MAJOR_THIRD, MINOR_SEVENTH, MAJOR_NINTH, MAJOR_THIRTEENTH],
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    MINOR_SEVENTH,
+                    MAJOR_NINTH,
+                    MAJOR_THIRTEENTH,
+                ],
                 vec![PERFECT_FIFTH, PERFECT_ELEVENTH],
             ),
             Major13 => (
-                vec![UNISON, MAJOR_THIRD, MAJOR_SEVENTH, MAJOR_NINTH, MAJOR_THIRTEENTH],
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    MAJOR_SEVENTH,
+                    MAJOR_NINTH,
+                    MAJOR_THIRTEENTH,
+                ],
                 vec![PERFECT_FIFTH, PERFECT_ELEVENTH],
             ),
             Minor13 => (
-                vec![UNISON, MINOR_THIRD, MINOR_SEVENTH, MAJOR_NINTH, MAJOR_THIRTEENTH],
+                vec![
+                    UNISON,
+                    MINOR_THIRD,
+                    MINOR_SEVENTH,
+                    MAJOR_NINTH,
+                    MAJOR_THIRTEENTH,
+                ],
                 vec![PERFECT_FIFTH, PERFECT_ELEVENTH],
             ),
 
             // Altered dominants
             Dominant7b9 => (
-                vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH, MINOR_NINTH],
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    PERFECT_FIFTH,
+                    MINOR_SEVENTH,
+                    MINOR_NINTH,
+                ],
                 vec![],
             ),
             Dominant7sharp9 => (
-                vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH, Interval::new(IntervalQuality::Augmented, 9)],
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    PERFECT_FIFTH,
+                    MINOR_SEVENTH,
+                    Interval::new(IntervalQuality::Augmented, 9),
+                ],
                 vec![],
             ),
             Dominant7b5 => (
-                vec![UNISON, MAJOR_THIRD, Interval::new(IntervalQuality::Diminished, 5), MINOR_SEVENTH],
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    Interval::new(IntervalQuality::Diminished, 5),
+                    MINOR_SEVENTH,
+                ],
                 vec![],
             ),
             Dominant7sharp5 => (
-                vec![UNISON, MAJOR_THIRD, Interval::new(IntervalQuality::Augmented, 5), MINOR_SEVENTH],
+                vec![
+                    UNISON,
+                    MAJOR_THIRD,
+                    Interval::new(IntervalQuality::Augmented, 5),
+                    MINOR_SEVENTH,
+                ],
                 vec![],
             ),
 
             // Add chords
-            Add9 => (vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MAJOR_NINTH], vec![]),
-            MinorAdd9 => (vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MAJOR_NINTH], vec![]),
-            Add11 => (vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, PERFECT_ELEVENTH], vec![]),
+            Add9 => (
+                vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MAJOR_NINTH],
+                vec![],
+            ),
+            MinorAdd9 => (
+                vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MAJOR_NINTH],
+                vec![],
+            ),
+            Add11 => (
+                vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, PERFECT_ELEVENTH],
+                vec![],
+            ),
 
             // 6th chords
-            Major6 => (vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MAJOR_SIXTH], vec![]),
-            Minor6 => (vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MAJOR_SIXTH], vec![]),
+            Major6 => (
+                vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MAJOR_SIXTH],
+                vec![],
+            ),
+            Minor6 => (
+                vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MAJOR_SIXTH],
+                vec![],
+            ),
         }
     }
 
@@ -162,11 +265,22 @@ impl ChordQuality {
         use ChordQuality::*;
         matches!(
             self,
-            Dominant7 | Major7 | Minor7 | MinorMajor7 |
-            Dominant9 | Major9 | Minor9 |
-            Dominant11 | Minor11 |
-            Dominant13 | Major13 | Minor13 |
-            Dominant7b9 | Dominant7sharp9 | Dominant7b5 | Dominant7sharp5
+            Dominant7
+                | Major7
+                | Minor7
+                | MinorMajor7
+                | Dominant9
+                | Major9
+                | Minor9
+                | Dominant11
+                | Minor11
+                | Dominant13
+                | Major13
+                | Minor13
+                | Dominant7b9
+                | Dominant7sharp9
+                | Dominant7b5
+                | Dominant7sharp5
         )
     }
 
@@ -223,7 +337,7 @@ pub enum VoicingType {
 pub struct Chord {
     pub root: PitchClass,
     pub quality: ChordQuality,
-    pub bass: Option<PitchClass>,  // For slash chords (e.g., C/G)
+    pub bass: Option<PitchClass>, // For slash chords (e.g., C/G)
 }
 
 impl Chord {
@@ -276,9 +390,7 @@ impl Chord {
 
         all_intervals
             .iter()
-            .map(|interval| {
-                self.root.add_semitones(interval.to_semitones() as i32)
-            })
+            .map(|interval| self.root.add_semitones(interval.to_semitones() as i32))
             .collect()
     }
 
@@ -287,9 +399,7 @@ impl Chord {
         let (required, _) = self.quality.intervals();
         required
             .iter()
-            .map(|interval| {
-                self.root.add_semitones(interval.to_semitones() as i32)
-            })
+            .map(|interval| self.root.add_semitones(interval.to_semitones() as i32))
             .collect()
     }
 
@@ -312,9 +422,7 @@ impl Chord {
                     true
                 }
             })
-            .map(|interval| {
-                self.root.add_semitones(interval.to_semitones() as i32)
-            })
+            .map(|interval| self.root.add_semitones(interval.to_semitones() as i32))
             .collect()
     }
 

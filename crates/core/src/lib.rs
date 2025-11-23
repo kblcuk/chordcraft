@@ -20,21 +20,22 @@
 //! let chord = Chord::parse("Cmaj7").unwrap();
 //! ```
 
-pub mod note;
-pub mod interval;
+pub mod analyzer;
 pub mod chord;
-pub mod instrument;
 pub mod fingering;
 pub mod generator;
-pub mod analyzer;
+pub mod instrument;
+pub mod interval;
+pub mod note;
+pub mod progression;
 
 // Re-export commonly used types
-pub use note::{Note, PitchClass};
-pub use interval::Interval;
+pub use analyzer::{ChordMatch, analyze_fingering};
 pub use chord::{Chord, ChordQuality};
-pub use instrument::{Instrument, Guitar};
 pub use fingering::Fingering;
-pub use analyzer::{analyze_fingering, ChordMatch};
+pub use instrument::{Guitar, Instrument};
+pub use interval::Interval;
+pub use note::{Note, PitchClass};
 
 /// Error types for the chordcraft-core library
 pub mod error {

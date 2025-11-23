@@ -73,10 +73,10 @@ impl Default for Guitar {
 }
 
 impl Guitar {
-    /// Create a new Guitar with a capo at the specified fret
+    /// Create a capoed guitar at the specified fret
     ///
-    /// This transposes the tuning up by the capo position and reduces
-    /// the available fret range accordingly.
+    /// This returns a `CapoedInstrument<Guitar>` that transposes the tuning
+    /// up by the capo position and reduces the available fret range accordingly.
     ///
     /// # Examples
     ///
@@ -155,7 +155,8 @@ impl Ukulele {
     pub fn with_capo(&self, fret: u8) -> Self {
         // Transpose tuning up by capo frets
         // Use the Note::add_semitones method which handles octave changes correctly
-        let new_tuning: Vec<Note> = self.tuning
+        let new_tuning: Vec<Note> = self
+            .tuning
             .iter()
             .map(|note| note.add_semitones(fret as i32))
             .collect();
@@ -271,7 +272,10 @@ mod tests {
         // Open E string should now be E an octave higher
         assert_eq!(capo_guitar.tuning()[0].pitch, PitchClass::E);
         // But octave should have increased
-        assert_eq!(capo_guitar.tuning()[0].octave, guitar.tuning()[0].octave + 1);
+        assert_eq!(
+            capo_guitar.tuning()[0].octave,
+            guitar.tuning()[0].octave + 1
+        );
 
         // Fret range should be significantly reduced
         assert_eq!(capo_guitar.fret_range().1, guitar.fret_range().1 - 12);
