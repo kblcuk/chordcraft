@@ -39,10 +39,6 @@ enum Commands {
     Name {
         /// Tab notation (e.g., "x32010", "022100")
         fingering: String,
-
-        /// Key context hint (e.g., "C", "G")
-        #[arg(short, long)]
-        key: Option<String>,
     },
 }
 
@@ -58,8 +54,8 @@ fn main() -> Result<()> {
         } => {
             find_fingerings(&chord, limit, position, voicing)?;
         }
-        Commands::Name { fingering, key } => {
-            name_chord(&fingering, key)?;
+        Commands::Name { fingering } => {
+            name_chord(&fingering)?;
         }
     }
 
@@ -125,7 +121,7 @@ fn find_fingerings(
     Ok(())
 }
 
-fn name_chord(fingering_str: &str, _key: Option<String>) -> Result<()> {
+fn name_chord(fingering_str: &str) -> Result<()> {
     use chordcraft_core::fingering::Fingering;
     use chordcraft_core::analyzer::analyze_fingering;
 
