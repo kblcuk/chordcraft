@@ -33,12 +33,20 @@ enum Commands {
         /// Voicing type: core, full, or jazzy
         #[arg(short, long)]
         voicing: Option<String>,
+
+        /// Capo position (fret number)
+        #[arg(short, long)]
+        capo: Option<u8>,
     },
 
     /// Identify chord from fingering notation
     Name {
         /// Tab notation (e.g., "x32010", "022100")
         fingering: String,
+
+        /// Capo position (fret number)
+        #[arg(short, long)]
+        capo: Option<u8>,
     },
 }
 
@@ -51,11 +59,12 @@ fn main() -> Result<()> {
             limit,
             position,
             voicing,
+            capo,
         } => {
-            find_fingerings(&chord, limit, position, voicing)?;
+            find_fingerings(&chord, limit, position, voicing, capo)?;
         }
-        Commands::Name { fingering } => {
-            name_chord(&fingering)?;
+        Commands::Name { fingering, capo } => {
+            name_chord(&fingering, capo)?;
         }
     }
 
@@ -67,10 +76,20 @@ fn find_fingerings(
     limit: usize,
     position: Option<u8>,
     voicing: Option<String>,
+    capo: Option<u8>,
 ) -> Result<()> {
     // Parse the chord
-    let chord = Chord::parse(chord_str)
+    let original_chord = Chord::parse(chord_str)
         .with_context(|| format!("Invalid chord name: '{chord_str}'"))?;
+
+    // If using capo, we generate fingerings for the SHAPE chord (transposed down)
+    // Otherwise, generate for the actual chord
+    let (search_chord, shape_chord) = if let Some(capo_fret) = capo {
+        let shape = original_chord.transpose(-(capo_fret as i32));
+        (shape.clone(), Some(shape))
+    } else {
+        (original_chord.clone(), None)
+    };
 
     // Parse voicing type
     let voicing_type = voicing.as_ref().and_then(|v| match v.to_lowercase().as_str() {
@@ -91,25 +110,42 @@ fn find_fingerings(
     // Use standard guitar
     let guitar = Guitar::default();
 
-    // Generate fingerings
-    let fingerings = generate_fingerings(&chord, &guitar, &options);
+    // Generate fingerings for the search chord (shape when using capo)
+    let fingerings = generate_fingerings(&search_chord, &guitar, &options);
 
     if fingerings.is_empty() {
         println!(
             "{}",
-            format!("No fingerings found for chord: {chord}").yellow()
+            format!("No fingerings found for chord: {original_chord}").yellow()
         );
         return Ok(());
     }
 
     // Display header
-    println!(
-        "\n{} {} (showing {} of {} found)\n",
-        "Fingerings for".bold(),
-        chord.to_string().green().bold(),
-        fingerings.len().min(limit),
-        fingerings.len()
-    );
+    if let Some(shape) = shape_chord {
+        // Show both actual chord and the shape being used
+        println!(
+            "\n{} {} {} (showing {} of {} found)",
+            "Fingerings for".bold(),
+            chord_str.green().bold(),
+            format!("(Capo {})", capo.unwrap()).yellow(),
+            fingerings.len().min(limit),
+            fingerings.len()
+        );
+        println!(
+            "{} {}\n",
+            "Shape:".dimmed(),
+            shape.to_string().cyan()
+        );
+    } else {
+        println!(
+            "\n{} {} (showing {} of {} found)\n",
+            "Fingerings for".bold(),
+            original_chord.to_string().green().bold(),
+            fingerings.len().min(limit),
+            fingerings.len()
+        );
+    }
 
     // Display each fingering
     for (i, scored) in fingerings.iter().take(limit).enumerate() {

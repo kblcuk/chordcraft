@@ -72,6 +72,41 @@ impl Default for Guitar {
     }
 }
 
+impl Guitar {
+    /// Create a new Guitar with a capo at the specified fret
+    ///
+    /// This transposes the tuning up by the capo position and reduces
+    /// the available fret range accordingly.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chordcraft_core::instrument::{Guitar, Instrument};
+    /// use chordcraft_core::note::PitchClass;
+    ///
+    /// let guitar = Guitar::default();
+    /// let capo_guitar = guitar.with_capo(3);
+    ///
+    /// // Open strings are now 3 semitones higher
+    /// assert_eq!(capo_guitar.tuning()[0].pitch, PitchClass::G);  // E + 3 = G
+    /// ```
+    pub fn with_capo(&self, fret: u8) -> Self {
+        // Transpose tuning up by capo frets
+        // Use the Note::add_semitones method which handles octave changes correctly
+        let new_tuning: Vec<Note> = self.tuning
+            .iter()
+            .map(|note| note.add_semitones(fret as i32))
+            .collect();
+
+        Guitar {
+            tuning: new_tuning,
+            // Reduce available frets (can't play beyond the physical frets)
+            fret_range: (0, self.fret_range.1.saturating_sub(fret)),
+            max_stretch: self.max_stretch,
+        }
+    }
+}
+
 impl Instrument for Guitar {
     fn tuning(&self) -> &[Note] {
         &self.tuning
@@ -112,6 +147,28 @@ impl Default for Ukulele {
     }
 }
 
+impl Ukulele {
+    /// Create a new Ukulele with a capo at the specified fret
+    ///
+    /// This transposes the tuning up by the capo position and reduces
+    /// the available fret range accordingly.
+    pub fn with_capo(&self, fret: u8) -> Self {
+        // Transpose tuning up by capo frets
+        // Use the Note::add_semitones method which handles octave changes correctly
+        let new_tuning: Vec<Note> = self.tuning
+            .iter()
+            .map(|note| note.add_semitones(fret as i32))
+            .collect();
+
+        Ukulele {
+            tuning: new_tuning,
+            // Reduce available frets (can't play beyond the physical frets)
+            fret_range: (0, self.fret_range.1.saturating_sub(fret)),
+            max_stretch: self.max_stretch,
+        }
+    }
+}
+
 impl Instrument for Ukulele {
     fn tuning(&self) -> &[Note] {
         &self.tuning
@@ -140,5 +197,83 @@ impl Instrument for Ukulele {
     // Allow single-note voicings
     fn min_played_strings(&self) -> usize {
         1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::note::PitchClass;
+
+    #[test]
+    fn test_guitar_with_capo_transposes_tuning() {
+        let guitar = Guitar::default();
+        let capo_guitar = guitar.with_capo(2);
+
+        // Open E string (index 0) should now be F# (E + 2 semitones)
+        assert_eq!(capo_guitar.tuning()[0].pitch, PitchClass::FSharp);
+
+        // Open A string (index 1) should now be B (A + 2 semitones)
+        assert_eq!(capo_guitar.tuning()[1].pitch, PitchClass::B);
+
+        // Open D string (index 2) should now be E (D + 2 semitones)
+        assert_eq!(capo_guitar.tuning()[2].pitch, PitchClass::E);
+    }
+
+    #[test]
+    fn test_guitar_with_capo_reduces_fret_range() {
+        let guitar = Guitar::default();
+        let capo_guitar = guitar.with_capo(3);
+
+        // Max fret should be reduced by capo position
+        assert_eq!(capo_guitar.fret_range().1, guitar.fret_range().1 - 3);
+    }
+
+    #[test]
+    fn test_guitar_with_capo_preserves_max_stretch() {
+        let guitar = Guitar::default();
+        let capo_guitar = guitar.with_capo(5);
+
+        // Max stretch should remain the same
+        assert_eq!(capo_guitar.max_stretch(), guitar.max_stretch());
+    }
+
+    #[test]
+    fn test_ukulele_with_capo() {
+        let ukulele = Ukulele::default();
+        let capo_ukulele = ukulele.with_capo(2);
+
+        // Open G string (index 0) should now be A (G + 2 semitones)
+        assert_eq!(capo_ukulele.tuning()[0].pitch, PitchClass::A);
+
+        // Open C string (index 1) should now be D (C + 2 semitones)
+        assert_eq!(capo_ukulele.tuning()[1].pitch, PitchClass::D);
+
+        // Fret range should be reduced
+        assert_eq!(capo_ukulele.fret_range().1, ukulele.fret_range().1 - 2);
+    }
+
+    #[test]
+    fn test_capo_at_zero_is_identity() {
+        let guitar = Guitar::default();
+        let capo_guitar = guitar.with_capo(0);
+
+        // Should be identical to original
+        assert_eq!(guitar.tuning()[0].pitch, capo_guitar.tuning()[0].pitch);
+        assert_eq!(guitar.fret_range(), capo_guitar.fret_range());
+    }
+
+    #[test]
+    fn test_high_capo_position() {
+        let guitar = Guitar::default();
+        let capo_guitar = guitar.with_capo(12);
+
+        // Open E string should now be E an octave higher
+        assert_eq!(capo_guitar.tuning()[0].pitch, PitchClass::E);
+        // But octave should have increased
+        assert_eq!(capo_guitar.tuning()[0].octave, guitar.tuning()[0].octave + 1);
+
+        // Fret range should be significantly reduced
+        assert_eq!(capo_guitar.fret_range().1, guitar.fret_range().1 - 12);
     }
 }

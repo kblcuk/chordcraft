@@ -245,6 +245,30 @@ impl Chord {
         }
     }
 
+    /// Transpose the chord by the specified number of semitones
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chordcraft_core::chord::Chord;
+    /// use chordcraft_core::note::PitchClass;
+    ///
+    /// let c_major = Chord::parse("C").unwrap();
+    /// let d_major = c_major.transpose(2);
+    /// assert_eq!(d_major.root, PitchClass::D);
+    ///
+    /// let f_major = Chord::parse("F").unwrap();
+    /// let d_major_from_f = f_major.transpose(-3);
+    /// assert_eq!(d_major_from_f.root, PitchClass::D);
+    /// ```
+    pub fn transpose(&self, semitones: i32) -> Self {
+        Chord {
+            root: self.root.add_semitones(semitones),
+            quality: self.quality,
+            bass: self.bass.map(|b| b.add_semitones(semitones)),
+        }
+    }
+
     /// Get all notes in this chord (pitch classes)
     pub fn notes(&self) -> Vec<PitchClass> {
         let (required, optional) = self.quality.intervals();
@@ -474,5 +498,52 @@ mod tests {
         assert_eq!(Chord::parse("Cmaj7").unwrap().to_string(), "Cmaj7");
         assert_eq!(Chord::parse("Am").unwrap().to_string(), "Am");
         assert_eq!(Chord::parse("G7").unwrap().to_string(), "G7");
+    }
+
+    #[test]
+    fn test_chord_transpose_up() {
+        let c_major = Chord::parse("C").unwrap();
+        let d_major = c_major.transpose(2);
+
+        assert_eq!(d_major.root, PitchClass::D);
+        assert_eq!(d_major.quality, ChordQuality::Major);
+        assert_eq!(d_major.bass, None);
+    }
+
+    #[test]
+    fn test_chord_transpose_down() {
+        let f_major = Chord::parse("F").unwrap();
+        let d_major = f_major.transpose(-3);
+
+        assert_eq!(d_major.root, PitchClass::D);
+        assert_eq!(d_major.quality, ChordQuality::Major);
+    }
+
+    #[test]
+    fn test_chord_transpose_preserves_quality() {
+        let cmaj7 = Chord::parse("Cmaj7").unwrap();
+        let dmaj7 = cmaj7.transpose(2);
+
+        assert_eq!(dmaj7.root, PitchClass::D);
+        assert_eq!(dmaj7.quality, ChordQuality::Major7);
+    }
+
+    #[test]
+    fn test_chord_transpose_slash_chord() {
+        let c_over_g = Chord::parse("C/G").unwrap();
+        let d_over_a = c_over_g.transpose(2);
+
+        assert_eq!(d_over_a.root, PitchClass::D);
+        assert_eq!(d_over_a.bass, Some(PitchClass::A));
+        assert_eq!(d_over_a.quality, ChordQuality::Major);
+    }
+
+    #[test]
+    fn test_chord_transpose_full_circle() {
+        let c_major = Chord::parse("C").unwrap();
+        let back_to_c = c_major.transpose(12);
+
+        // Transposing up an octave should give us the same pitch class
+        assert_eq!(back_to_c.root, PitchClass::C);
     }
 }
