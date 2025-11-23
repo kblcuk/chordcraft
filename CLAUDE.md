@@ -209,10 +209,10 @@ chordcraft find "Abm7" --voicing core      # Show only core voicings
 
 # Identify chord from fingering
 chordcraft name "x32010"
-chordcraft name "x32010" --key C           # Context hint
 
-# Future: chord progressions
-chordcraft progression "Cmaj7 Am7 Dm7 G7" --optimize-transitions
+# Chord progressions (Phase 5 - Planned)
+chordcraft progression "Cmaj7 Am7 Dm7 G7"
+chordcraft progression "Emaj7 D Bm Cmaj7" --limit 5 --max-distance 3
 ```
 
 **Output format**:
@@ -235,7 +235,545 @@ Abm7 fingerings (top 5):
 Show more? (y/n)
 ```
 
-### Phase 5: Web App (Vue + Rust WASM)
+### Phase 5: Chord Progressions ✓ PLANNED
+
+**Goal**: Find optimal fingering sequences for chord progressions
+
+**Overview**:
+Given a sequence of chords (e.g., "Emaj7 D Bm Cmaj7"), find fingering combinations that are easy to play together by minimizing finger movement and maximizing smooth transitions.
+
+**Core Types** (`progression.rs`):
+
+```rust
+/// Options for progression generation
+pub struct ProgressionOptions {
+    /// Number of alternative progressions to show (default: 3)
+    pub limit: usize,
+    /// Maximum fret distance between consecutive fingerings (default: 3)
+    pub max_fret_distance: u8,
+    /// Number of fingering candidates to consider per chord (default: 20)
+    pub candidates_per_chord: usize,
+    /// Options for generating fingerings for each chord
+    pub generator_options: GeneratorOptions,
+}
+
+/// Scored transition between two fingerings
+pub struct ChordTransition {
+    pub from_chord: String,  // e.g., "Emaj7"
+    pub to_chord: String,    // e.g., "D"
+    pub from_fingering: ScoredFingering,
+    pub to_fingering: ScoredFingering,
+    pub score: i32,          // Transition ease score (higher = easier)
+    pub finger_movements: usize,  // Number of fingers that move
+    pub common_anchors: usize,    // Fingers that stay in place
+    pub position_distance: u8,    // Fret distance between positions
+}
+
+/// Complete progression sequence with all fingerings and transitions
+pub struct ProgressionSequence {
+    pub chords: Vec<String>,           // Chord names in order
+    pub fingerings: Vec<ScoredFingering>,  // Selected fingering for each chord
+    pub transitions: Vec<ChordTransition>, // Transitions between consecutive chords
+    pub total_score: i32,              // Sum of all transition scores
+    pub avg_transition_score: f32,     // Average transition ease
+}
+```
+
+**Algorithm** (`generate_progression()`):
+
+1. **Parse & Generate Candidates**
+   - Parse progression string into `Vec<Chord>`
+   - For each chord, generate top N fingerings using existing generator
+   - Store candidates: `Vec<Vec<ScoredFingering>>`
+
+2. **Score All Transitions** (pairwise)
+   - For each consecutive chord pair (chord[i] → chord[i+1])
+   - Score all fingering combinations (N × N matrix)
+   - Use `score_transition()` to evaluate each transition
+   - Keep only transitions within `max_fret_distance` constraint
+
+3. **Build Complete Progressions** (greedy approach)
+   - Start with top fingering for first chord
+   - For each subsequent chord, pick fingering with best transition from previous
+   - Build K different progressions using different starting fingerings
+   - Alternative: Use dynamic programming for true global optimization (future)
+
+4. **Rank & Return**
+   - Score complete progressions (sum of transition scores)
+   - Sort by total score (descending)
+   - Return top K progressions
+
+**Transition Scoring Function**:
+
+```rust
+fn score_transition<I: Instrument>(
+    from: &Fingering,
+    to: &Fingering,
+    from_pos: u8,
+    to_pos: u8,
+    instrument: &I,
+) -> TransitionScore {
+    let mut score = 100; // Base score
+
+    // 1. FINGER MOVEMENT (Primary - most important)
+    //    Calculate which fingers need to move to new positions
+    let (movements, anchors) = calculate_finger_changes(from, to, instrument);
+    score += (4 - movements as i32) * 30;  // Fewer movements = higher score
+
+    // 2. COMMON ANCHORS (Secondary)
+    //    Bonus for fingers that stay in same position
+    score += (anchors as i32) * 20;
+
+    // 3. SHAPE SIMILARITY (Tertiary)
+    //    Bonus for similar fingering patterns (barre→barre, open→open)
+    let shape_bonus = calculate_shape_similarity(from, to, instrument);
+    score += shape_bonus;
+
+    // 4. POSITION DISTANCE (Quaternary - mentioned by user)
+    //    Penalty for large position jumps
+    let distance = (to_pos as i32 - from_pos as i32).abs();
+    score -= distance * 5;
+
+    TransitionScore {
+        score,
+        movements,
+        anchors,
+        distance: distance as u8,
+    }
+}
+
+/// Calculate how many fingers move and how many stay anchored
+fn calculate_finger_changes<I: Instrument>(
+    from: &Fingering,
+    to: &Fingering,
+    instrument: &I,
+) -> (usize, usize) {
+    // Compare fretted positions across strings
+    // Count strings where fret changes (movement)
+    // Count strings where fret stays same (anchor)
+    // Smart: account for barres (one finger, multiple strings)
+}
+
+/// Calculate similarity between fingering shapes/patterns
+fn calculate_shape_similarity<I: Instrument>(
+    from: &Fingering,
+    to: &Fingering,
+    instrument: &I,
+) -> i32 {
+    let mut bonus = 0;
+
+    // Both use barre in similar position
+    if from.has_barre() && to.has_barre() {
+        bonus += 15;
+    }
+
+    // Both are open position
+    if from.is_open_position_for(instrument) && to.is_open_position_for(instrument) {
+        bonus += 10;
+    }
+
+    // Similar number of fretted strings
+    let from_count = from.strings().iter().filter(|s| s.is_played()).count();
+    let to_count = to.strings().iter().filter(|s| s.is_played()).count();
+    if (from_count as i32 - to_count as i32).abs() <= 1 {
+        bonus += 5;
+    }
+
+    bonus
+}
+```
+
+**Performance Considerations**:
+
+- For 4-chord progression with 20 candidates each:
+  - Candidates: 4 × 20 = 80 fingerings
+  - Transitions: 3 × (20 × 20) = 1,200 transition scores
+  - Progressions: ~20-100 complete sequences to evaluate
+- Expected time: <50ms (well within target)
+- Optimization: Cache transition scores in HashMap if needed
+
+**CLI Integration**:
+
+```bash
+# Basic usage
+chordcraft progression "Emaj7 D Bm Cmaj7"
+
+# With options
+chordcraft progression "Emaj7 D Bm Cmaj7" --limit 5 --max-distance 3
+
+# Prefer certain positions
+chordcraft progression "Cmaj7 Am7 Dm7 G7" --position 3
+
+# Filter by voicing
+chordcraft progression "Cmaj7 Am7 Dm7 G7" --voicing core
+```
+
+**Output Format**:
+
+```
+Progression: Emaj7 → D → Bm → Cmaj7
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Alternative #1
+Total Score: 285 | Avg Transition: 95.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1] Emaj7 - Fret 4
+e|---4---
+B|---5---
+G|---4---
+D|---6---
+A|---7---
+E|---x---
+Score: 85 | Voicing: Full | Notes: E, G#, B, D#
+
+  ↓ Transition Score: 92
+    Movements: 2 fingers | Anchors: 1 | Distance: 2 frets
+
+[2] D - Fret 5
+e|---5---
+B|---7---
+G|---7---
+D|---7---
+A|---5---
+E|---x---
+Score: 78 | Voicing: Full | Notes: D, F#, A
+
+  ↓ Transition Score: 88
+    Movements: 3 fingers | Anchors: 0 | Distance: 2 frets
+
+[3] Bm - Fret 7
+e|---7---
+B|---7---
+G|---7---
+D|---9---
+A|---9---
+E|---7---
+Score: 81 | Voicing: Full | Notes: B, D, F#
+
+  ↓ Transition Score: 105
+    Movements: 1 finger | Anchors: 2 | Distance: 1 fret
+
+[4] Cmaj7 - Fret 8
+e|---8---
+B|---8---
+G|---9---
+D|---9---
+A|---10--
+E|---8---
+Score: 79 | Voicing: Core | Notes: C, E, G, B
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Alternative #2
+Total Score: 278 | Avg Transition: 92.7
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[1] Emaj7 - Fret 0
+...
+```
+
+**Enhanced Features**:
+
+**1. Capo Support** (Prototype in `find` first, then add to progressions)
+
+Makes difficult keys easier by transposing the instrument:
+
+```rust
+// Add to Instrument trait
+trait Instrument {
+    // ... existing methods ...
+
+    /// Create a version of this instrument with a capo at the specified fret
+    fn with_capo(&self, fret: u8) -> Self;
+}
+
+impl Guitar {
+    fn with_capo(&self, fret: u8) -> Self {
+        // Transpose tuning up by capo frets
+        let new_tuning: Vec<Note> = self.tuning()
+            .iter()
+            .map(|note| Note::new(
+                note.pitch.add_semitones(fret as i32),
+                note.octave
+            ))
+            .collect();
+
+        Guitar {
+            tuning: new_tuning,
+            max_fret: self.max_fret - fret,  // Reduce available frets
+            // ... other fields unchanged
+        }
+    }
+}
+```
+
+**CLI Usage:**
+```bash
+# Find F chord with capo on 3rd fret (shows D shape)
+chordcraft find "F" --capo 3
+
+# Progression in F with capo (much easier shapes!)
+chordcraft progression "F Bb Gm C" --capo 3
+```
+
+**Display:**
+- Show "Capo: 3" in output header
+- Fingerings shown relative to capo (0 = capo position)
+- Indicate actual chord vs shape: "D shape (capo 3) → F"
+
+**2. Playing Context: Solo vs Band**
+
+Adjusts voicing preferences based on whether you're playing with a band:
+
+```rust
+pub enum PlayingContext {
+    Solo,  // Singer-songwriter, need full bass coverage
+    Band,  // Bassist/keys cover bass, prefer compact voicings
+}
+
+// Add to GeneratorOptions
+pub struct GeneratorOptions {
+    // ... existing fields ...
+    pub playing_context: PlayingContext,
+}
+```
+
+**Scoring adjustments:**
+
+**Solo mode (default):**
+- Strong bonus for root in bass (+30)
+- Prefer full voicings (+20)
+- Prefer lower positions (fuller sound)
+- Avoid jazzy voicings without bass notes
+
+**Band mode:**
+- Relaxed root in bass (+5 instead of +30)
+- Prefer core/jazzy voicings (stay out of bass player's way)
+- Prefer mid-neck positions (better mix clarity)
+- Bonus for voicings that avoid low E/A strings (+10)
+
+**CLI Usage:**
+```bash
+# Solo mode (default)
+chordcraft find "Fmaj7"
+chordcraft progression "F Bb C F"
+
+# Band mode - lighter voicings
+chordcraft find "Fmaj7" --context band
+chordcraft progression "F Bb C F" --context band
+
+# Combined with capo
+chordcraft progression "F Bb Gm C" --capo 3 --context band
+```
+
+**Implementation Tasks**:
+
+1. ✅ **Capo Support (Phase 5a - Prototype)**
+   - Implement `with_capo()` for Instrument trait
+   - Add `--capo` flag to `find` command
+   - Update output formatting to show capo info
+   - Write tests for capo functionality
+   - Validate approach before adding to progressions
+
+2. ✅ Create `progression.rs` module
+   - Define core types (ProgressionOptions, ChordTransition, ProgressionSequence)
+   - Implement progression parsing
+   - Implement transition scoring functions
+   - Implement progression generation algorithm
+
+3. ✅ Add helper methods to `Fingering`
+   - `has_barre()` - detect if fingering uses barre
+   - Methods needed for finger movement calculation
+
+4. ✅ **Playing Context Support**
+   - Add `PlayingContext` enum
+   - Add `playing_context` field to GeneratorOptions and ProgressionOptions
+   - Adjust scoring in `score_fingering()` based on context
+   - Adjust transition scoring for band mode
+   - Add `--context` flag to CLI commands
+
+5. ✅ Add CLI subcommand
+   - Add `Progression` command to CLI
+   - Parse options (limit, max-distance, position, voicing, context, capo)
+   - Format and display progression output
+
+6. ✅ Write tests
+   - Unit tests for capo support
+   - Unit tests for solo vs band scoring differences
+   - Unit tests for transition scoring
+   - Integration tests for common progressions (I-IV-V, ii-V-I, I-V-vi-IV)
+   - Test capo + band mode combinations
+   - Performance tests (ensure <100ms for 4-chord progressions)
+
+7. ✅ Update documentation
+   - Update CLAUDE.md with implementation status
+   - Add doc comments with examples
+
+**Testing Strategy**:
+
+```rust
+#[test]
+fn test_capo_transposes_tuning() {
+    let guitar = Guitar::default();
+    let capo_guitar = guitar.with_capo(2);
+
+    // Open strings should be 2 semitones higher
+    assert_eq!(
+        capo_guitar.tuning()[0].pitch,
+        guitar.tuning()[0].pitch.add_semitones(2)
+    );
+
+    // Max fret should be reduced
+    assert_eq!(capo_guitar.max_fret, guitar.max_fret - 2);
+}
+
+#[test]
+fn test_find_with_capo_easier_shapes() {
+    let guitar = Guitar::default();
+
+    // F without capo - lots of barres
+    let f_no_capo = generate_fingerings(
+        &Chord::parse("F").unwrap(),
+        &guitar,
+        &GeneratorOptions::default()
+    );
+
+    // F with capo 3 (actually D shapes)
+    let capo_guitar = guitar.with_capo(3);
+    let chord = Chord::parse("F").unwrap().transpose(-3);  // Search for D
+    let f_with_capo = generate_fingerings(
+        &chord,
+        &capo_guitar,
+        &GeneratorOptions::default()
+    );
+
+    // Capo version should have easier shapes (lower avg playability score)
+    let avg_no_capo = f_no_capo.iter().take(5)
+        .map(|f| f.score).sum::<u8>() / 5;
+    let avg_capo = f_with_capo.iter().take(5)
+        .map(|f| f.score).sum::<u8>() / 5;
+
+    assert!(avg_capo > avg_no_capo);
+}
+
+#[test]
+fn test_band_mode_avoids_bass_strings() {
+    let guitar = Guitar::default();
+    let chord = Chord::parse("Cmaj7").unwrap();
+
+    let solo_opts = GeneratorOptions {
+        playing_context: PlayingContext::Solo,
+        ..Default::default()
+    };
+    let band_opts = GeneratorOptions {
+        playing_context: PlayingContext::Band,
+        ..Default::default()
+    };
+
+    let solo_fingerings = generate_fingerings(&chord, &guitar, &solo_opts);
+    let band_fingerings = generate_fingerings(&chord, &guitar, &band_opts);
+
+    // Band mode should prefer fingerings without low E/A
+    let band_low_strings = band_fingerings.iter().take(5)
+        .filter(|f| {
+            f.fingering.strings()[0].is_played() ||
+            f.fingering.strings()[1].is_played()
+        })
+        .count();
+
+    let solo_low_strings = solo_fingerings.iter().take(5)
+        .filter(|f| {
+            f.fingering.strings()[0].is_played() ||
+            f.fingering.strings()[1].is_played()
+        })
+        .count();
+
+    // Band mode should use low strings less frequently
+    assert!(band_low_strings < solo_low_strings);
+}
+
+#[test]
+fn test_transition_score_minimal_movement() {
+    // Test that fingerings with minimal movement score higher
+    let from = Fingering::parse("x32010").unwrap();  // C
+    let to = Fingering::parse("x32013").unwrap();    // C with pinky change
+    // Should score high (only 1 finger moves)
+}
+
+#[test]
+fn test_common_progressions() {
+    // Test classic progressions
+    let guitar = Guitar::default();
+
+    // I-IV-V in C: C-F-G
+    let progression = generate_progression(
+        &["C", "F", "G"],
+        &guitar,
+        &ProgressionOptions::default(),
+    );
+
+    assert!(!progression.is_empty());
+    assert!(progression[0].avg_transition_score > 50.0);
+}
+
+#[test]
+fn test_max_distance_constraint() {
+    let guitar = Guitar::default();
+    let options = ProgressionOptions {
+        max_fret_distance: 3,
+        ..Default::default()
+    };
+
+    let progression = generate_progression(
+        &["C", "G", "Am", "F"],
+        &guitar,
+        &options,
+    );
+
+    // Verify all transitions respect max distance
+    for trans in &progression[0].transitions {
+        assert!(trans.position_distance <= 3);
+    }
+}
+
+#[test]
+fn test_capo_with_band_mode() {
+    let guitar = Guitar::default();
+    let capo_guitar = guitar.with_capo(3);
+
+    let options = ProgressionOptions {
+        playing_context: PlayingContext::Band,
+        ..Default::default()
+    };
+
+    // Should work seamlessly together
+    let progression = generate_progression(
+        &["D", "G", "Em", "A"],  // Easy shapes with capo
+        &capo_guitar,
+        &options,
+    );
+
+    assert!(!progression.is_empty());
+}
+```
+
+**Future Enhancements** (Phase 6+):
+
+- Global optimization using dynamic programming (optimal substructure)
+- Support for repeated sections (verse, chorus patterns)
+- Strumming pattern integration (avoid difficult transitions on beat)
+- Visual finger movement diagrams (which finger goes where)
+- Support for slash chords in progressions (e.g., C/G)
+- Save/load favorite progressions
+
+**Edge Cases to Handle**:
+
+- Single chord (no transitions to optimize)
+- Progression where no fingerings meet distance constraint
+- Very long progressions (10+ chords)
+- Chords with very few fingering options
+
+### Phase 6: Web App (Vue + Rust WASM)
 
 **Goal**: Interactive visual interface
 
@@ -286,11 +824,11 @@ Instead of binary "valid/invalid", classify voicings by use case:
 
 ### Future Extensibility
 
-- **Chord progressions**: Optimize fingering transitions between chords
-- **Voice leading**: Suggest fingerings with minimal movement
+- ✅ **Chord progressions**: Optimize fingering transitions between chords (Phase 5 - Planned)
 - **Scales/modes**: Use same interval system
 - **Rhythm patterns**: Strumming/picking patterns for practice
 - **Sound synthesis**: Generate audio previews (web audio API)
+- **Advanced voice leading**: Global optimization across entire progression (dynamic programming)
 
 ## Code Quality & Architecture Notes
 
@@ -419,6 +957,6 @@ This separation allows:
 
 ---
 
-**Last updated**: Phase 3 complete - Full bidirectional chord-fingering conversion
+**Last updated**: Phase 5 planned - Chord progressions with transition optimization
 **Current focus**: Phases 1-4 complete (Core, Generator, Analyzer, CLI)
-**Next phase**: Phase 5 (Web App with Vue + WASM)
+**Next phase**: Phase 5 (Chord Progressions) - Implementation ready
