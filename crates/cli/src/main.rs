@@ -6,6 +6,16 @@ use chordcraft_core::chord::{Chord, VoicingType};
 use chordcraft_core::generator::{GeneratorOptions, format_fingering_diagram, generate_fingerings};
 use chordcraft_core::instrument::Guitar;
 
+/// Parse voicing type string into VoicingType enum
+fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
+    voicing.and_then(|v| match v.to_lowercase().as_str() {
+        "core" => Some(VoicingType::Core),
+        "full" => Some(VoicingType::Full),
+        "jazzy" | "jazz" => Some(VoicingType::Jazzy),
+        _ => None,
+    })
+}
+
 #[derive(Parser)]
 #[command(name = "chordcraft")]
 #[command(about = "A tool for chord-fingering conversion", long_about = None)]
@@ -128,14 +138,7 @@ fn find_fingerings(
     };
 
     // Parse voicing type
-    let voicing_type = voicing
-        .as_ref()
-        .and_then(|v| match v.to_lowercase().as_str() {
-            "core" => Some(VoicingType::Core),
-            "full" => Some(VoicingType::Full),
-            "jazzy" | "jazz" => Some(VoicingType::Jazzy),
-            _ => None,
-        });
+    let voicing_type = parse_voicing_type(voicing.as_ref());
 
     // Set up options
     let options = GeneratorOptions {
@@ -203,7 +206,6 @@ fn find_progression(
     voicing: Option<String>,
     capo: Option<u8>,
 ) -> Result<()> {
-    use chordcraft_core::chord::VoicingType;
     use chordcraft_core::progression::{ProgressionOptions, generate_progression};
 
     // Parse chord names from the string
@@ -235,14 +237,7 @@ fn find_progression(
     };
 
     // Parse voicing type
-    let voicing_type = voicing
-        .as_ref()
-        .and_then(|v| match v.to_lowercase().as_str() {
-            "core" => Some(VoicingType::Core),
-            "full" => Some(VoicingType::Full),
-            "jazzy" | "jazz" => Some(VoicingType::Jazzy),
-            _ => None,
-        });
+    let voicing_type = parse_voicing_type(voicing.as_ref());
 
     // Set up options
     let gen_options = GeneratorOptions {
