@@ -3,7 +3,9 @@ use clap::{Parser, Subcommand};
 use colored::Colorize;
 
 use chordcraft_core::chord::{Chord, VoicingType};
-use chordcraft_core::generator::{GeneratorOptions, format_fingering_diagram, generate_fingerings};
+use chordcraft_core::generator::{
+    GeneratorOptions, PlayingContext, format_fingering_diagram, generate_fingerings,
+};
 use chordcraft_core::instrument::Guitar;
 
 /// Parse voicing type string into VoicingType enum
@@ -14,6 +16,17 @@ fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
         "jazzy" | "jazz" => Some(VoicingType::Jazzy),
         _ => None,
     })
+}
+
+/// Parse playing context string into PlayingContext enum
+fn parse_playing_context(context: Option<&String>) -> PlayingContext {
+    context
+        .map(|c| match c.to_lowercase().as_str() {
+            "band" => PlayingContext::Band,
+            "solo" => PlayingContext::Solo,
+            _ => PlayingContext::Solo, // Default to solo for invalid input
+        })
+        .unwrap_or(PlayingContext::Solo)
 }
 
 #[derive(Parser)]
@@ -43,6 +56,10 @@ enum Commands {
         /// Voicing type: core, full, or jazzy
         #[arg(short, long)]
         voicing: Option<String>,
+
+        /// Playing context: solo or band (default: solo)
+        #[arg(short = 'x', long)]
+        context: Option<String>,
 
         /// Capo position (fret number)
         #[arg(short, long)]
@@ -80,6 +97,10 @@ enum Commands {
         #[arg(short, long)]
         voicing: Option<String>,
 
+        /// Playing context: solo or band (default: solo)
+        #[arg(short = 'x', long)]
+        context: Option<String>,
+
         /// Capo position (fret number)
         #[arg(short, long)]
         capo: Option<u8>,
@@ -95,9 +116,10 @@ fn main() -> Result<()> {
             limit,
             position,
             voicing,
+            context,
             capo,
         } => {
-            find_fingerings(&chord, limit, position, voicing, capo)?;
+            find_fingerings(&chord, limit, position, voicing, context, capo)?;
         }
         Commands::Name { fingering, capo } => {
             name_chord(&fingering, capo)?;
@@ -108,9 +130,18 @@ fn main() -> Result<()> {
             max_distance,
             position,
             voicing,
+            context,
             capo,
         } => {
-            find_progression(&chords, limit, max_distance, position, voicing, capo)?;
+            find_progression(
+                &chords,
+                limit,
+                max_distance,
+                position,
+                voicing,
+                context,
+                capo,
+            )?;
         }
     }
 
@@ -122,6 +153,7 @@ fn find_fingerings(
     limit: usize,
     position: Option<u8>,
     voicing: Option<String>,
+    context: Option<String>,
     capo: Option<u8>,
 ) -> Result<()> {
     // Parse the chord
@@ -137,14 +169,16 @@ fn find_fingerings(
         (original_chord.clone(), None)
     };
 
-    // Parse voicing type
+    // Parse voicing type and playing context
     let voicing_type = parse_voicing_type(voicing.as_ref());
+    let playing_context = parse_playing_context(context.as_ref());
 
     // Set up options
     let options = GeneratorOptions {
         limit,
         preferred_position: position,
         voicing_type,
+        playing_context,
         ..Default::default()
     };
 
@@ -204,6 +238,7 @@ fn find_progression(
     max_distance: u8,
     position: Option<u8>,
     voicing: Option<String>,
+    context: Option<String>,
     capo: Option<u8>,
 ) -> Result<()> {
     use chordcraft_core::progression::{ProgressionOptions, generate_progression};
@@ -236,13 +271,15 @@ fn find_progression(
         chord_names.clone()
     };
 
-    // Parse voicing type
+    // Parse voicing type and playing context
     let voicing_type = parse_voicing_type(voicing.as_ref());
+    let playing_context = parse_playing_context(context.as_ref());
 
     // Set up options
     let gen_options = GeneratorOptions {
         preferred_position: position,
         voicing_type,
+        playing_context,
         ..Default::default()
     };
 

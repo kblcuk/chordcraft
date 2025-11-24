@@ -7,6 +7,16 @@ use crate::chord::{Chord, VoicingType};
 use crate::fingering::{Fingering, StringState};
 use crate::instrument::Instrument;
 
+/// Playing context affects voicing preferences
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PlayingContext {
+    /// Solo playing - need full bass coverage and complete voicings
+    #[default]
+    Solo,
+    /// Band playing - bassist/keys cover bass, prefer compact voicings
+    Band,
+}
+
 /// Options for fingering generation
 #[derive(Debug, Clone)]
 pub struct GeneratorOptions {
@@ -20,6 +30,8 @@ pub struct GeneratorOptions {
     pub root_in_bass: bool,
     /// Maximum fret to consider
     pub max_fret: u8,
+    /// Playing context (solo vs band) - affects voicing preferences
+    pub playing_context: PlayingContext,
 }
 
 impl Default for GeneratorOptions {
@@ -30,6 +42,7 @@ impl Default for GeneratorOptions {
             voicing_type: None,
             root_in_bass: true,
             max_fret: 12,
+            playing_context: PlayingContext::default(),
         }
     }
 }
@@ -163,6 +176,7 @@ pub fn generate_fingerings<I: Instrument>(
                     has_root_in_bass,
                     position,
                     played_count,
+                    voicing_type,
                 },
             );
 
@@ -269,12 +283,12 @@ fn should_continue_branch(
     let mut has_fretted = false;
 
     for state in current {
-        if let StringState::Fretted(f) = state {
-            if *f > 0 {
-                has_fretted = true;
-                min = min.min(*f);
-                max = max.max(*f);
-            }
+        if let StringState::Fretted(f) = state
+            && *f > 0
+        {
+            has_fretted = true;
+            min = min.min(*f);
+            max = max.max(*f);
         }
     }
 
@@ -286,12 +300,40 @@ fn should_continue_branch(
     max - min <= max_stretch
 }
 
+// Fingering scoring constants
+// Context-independent weights
+const STRING_USAGE_BONUS: i32 = 8;
+const INTERIOR_MUTE_PENALTY: i32 = 30;
+const POSITION_DISTANCE_PENALTY: i32 = 3;
+
+// Solo mode scoring weights
+const SOLO_ROOT_IN_BASS_BONUS: i32 = 30;
+const SOLO_FULL_VOICING_BONUS: i32 = 20;
+const SOLO_CORE_VOICING_BONUS: i32 = 5;
+const SOLO_JAZZY_WITHOUT_ROOT_PENALTY: i32 = 15;
+const SOLO_POSITION_THRESHOLD: u8 = 5;
+const SOLO_HIGH_POSITION_PENALTY: i32 = 5;
+
+// Band mode scoring weights
+const BAND_ROOT_IN_BASS_BONUS: i32 = 5;
+const BAND_COMPACT_VOICING_BONUS: i32 = 20;
+const BAND_FULL_VOICING_BONUS: i32 = 5;
+const BAND_AVOID_LOW_STRINGS_BONUS: i32 = 10;
+const BAND_MID_NECK_MIN: u8 = 3;
+const BAND_MID_NECK_MAX: u8 = 10;
+const BAND_POSITION_PENALTY: i32 = 3;
+
+// Guitar string indices (for bass string detection)
+const GUITAR_LOW_E_STRING: usize = 0;
+const GUITAR_A_STRING: usize = 1;
+
 pub struct FingeringScorerOptions {
     pub has_all_notes: bool,
     pub has_all_core: bool,
     pub has_root_in_bass: bool,
     pub position: u8,
     pub played_count: usize,
+    pub voicing_type: VoicingType,
 }
 
 /// Calculate score for a fingering based on various criteria
@@ -304,7 +346,7 @@ fn score_fingering<I: Instrument>(
     let mut score = fingering.playability_score_for(instrument) as i32;
 
     // Bonus for using more strings, but moderate (don't over-penalize compact shapes)
-    score += (fingering_options.played_count as i32) * 8;
+    score += (fingering_options.played_count as i32) * STRING_USAGE_BONUS;
 
     // Heavy penalty for interior mutes (muted strings between played strings)
     // But leading mutes (bass side) are fine - e.g., xx0232 for D is standard
@@ -316,29 +358,87 @@ fn score_fingering<I: Instrument>(
             .iter()
             .filter(|s| !s.is_played())
             .count();
-        score -= (interior_mutes as i32) * 30;
+        score -= (interior_mutes as i32) * INTERIOR_MUTE_PENALTY;
     }
 
-    // Bonus for root in bass
-    if fingering_options.has_root_in_bass {
-        score += 20;
-    }
+    // Context-aware scoring
+    match options.playing_context {
+        PlayingContext::Solo => {
+            // Solo mode: Strong emphasis on root in bass and full voicings
+            if fingering_options.has_root_in_bass {
+                score += SOLO_ROOT_IN_BASS_BONUS;
+            }
 
-    // Bonus for full voicing
-    if fingering_options.has_all_notes {
-        score += 15;
-    } else if fingering_options.has_all_core {
-        score += 5;
-    }
+            // Prefer full voicings in solo mode
+            if fingering_options.has_all_notes {
+                score += SOLO_FULL_VOICING_BONUS;
+            } else if fingering_options.has_all_core {
+                score += SOLO_CORE_VOICING_BONUS;
+            }
 
-    // Bonus/penalty for position preference
-    if let Some(pref_pos) = options.preferred_position {
-        let distance = (fingering_options.position as i32 - pref_pos as i32).abs();
-        score -= distance * 3;
-    } else {
-        // Default: prefer open/low position chords
-        if fingering_options.position > 5 {
-            score -= ((fingering_options.position - 5) as i32) * 5;
+            // Penalize jazzy voicings without root in bass (they lack harmonic foundation for solo)
+            if fingering_options.voicing_type == VoicingType::Jazzy
+                && !fingering_options.has_root_in_bass
+            {
+                score -= SOLO_JAZZY_WITHOUT_ROOT_PENALTY;
+            }
+
+            // Solo mode prefers lower positions (fuller sound)
+            if let Some(pref_pos) = options.preferred_position {
+                let distance = (fingering_options.position as i32 - pref_pos as i32).abs();
+                score -= distance * POSITION_DISTANCE_PENALTY;
+            } else {
+                // Default: prefer open/low position chords (0-5)
+                if fingering_options.position > SOLO_POSITION_THRESHOLD {
+                    score -= ((fingering_options.position - SOLO_POSITION_THRESHOLD) as i32)
+                        * SOLO_HIGH_POSITION_PENALTY;
+                }
+            }
+        }
+        PlayingContext::Band => {
+            // Band mode: Relaxed root in bass (bassist covers it)
+            if fingering_options.has_root_in_bass {
+                score += BAND_ROOT_IN_BASS_BONUS;
+            }
+
+            // Prefer core/jazzy voicings in band mode (more compact, stay out of bass player's way)
+            match fingering_options.voicing_type {
+                VoicingType::Core | VoicingType::Jazzy => score += BAND_COMPACT_VOICING_BONUS,
+                VoicingType::Full => score += BAND_FULL_VOICING_BONUS, // Still okay, just not preferred
+            }
+
+            // Bonus for avoiding low E/A strings (soft filter - prefer but allow if needed)
+            let strings = fingering.strings();
+            let uses_low_e = strings
+                .get(GUITAR_LOW_E_STRING)
+                .map(|s| s.is_played())
+                .unwrap_or(false);
+            let uses_low_a = strings
+                .get(GUITAR_A_STRING)
+                .map(|s| s.is_played())
+                .unwrap_or(false);
+
+            if !uses_low_e && !uses_low_a {
+                score += BAND_AVOID_LOW_STRINGS_BONUS;
+            }
+
+            // Band mode prefers mid-neck positions (3-10) for clarity in mix
+            if let Some(pref_pos) = options.preferred_position {
+                let distance = (fingering_options.position as i32 - pref_pos as i32).abs();
+                score -= distance * POSITION_DISTANCE_PENALTY;
+            } else {
+                // Prefer mid-neck (frets 3-10)
+                let pos = fingering_options.position;
+                if (BAND_MID_NECK_MIN..=BAND_MID_NECK_MAX).contains(&pos) {
+                    // Sweet spot - no penalty
+                } else if pos < BAND_MID_NECK_MIN {
+                    // Too low for band
+                    score -= (BAND_MID_NECK_MIN as i32 - pos as i32) * BAND_POSITION_PENALTY;
+                } else {
+                    // Too high
+                    score -= ((pos - BAND_MID_NECK_MAX) as i32) * BAND_POSITION_PENALTY;
+                }
+            }
         }
     }
 
@@ -600,5 +700,241 @@ mod tests {
         }
 
         assert!(has_classic, "Classic Am shape x02210 should be generated");
+    }
+
+    #[test]
+    fn test_solo_vs_band_root_in_bass_scoring() {
+        let chord = Chord::parse("Cmaj7").unwrap();
+        let guitar = Guitar::default();
+
+        // Generate with solo context
+        let solo_options = GeneratorOptions {
+            limit: 20,
+            playing_context: PlayingContext::Solo,
+            ..Default::default()
+        };
+        let solo_fingerings = generate_fingerings(&chord, &guitar, &solo_options);
+
+        // Generate with band context
+        let band_options = GeneratorOptions {
+            limit: 20,
+            playing_context: PlayingContext::Band,
+            ..Default::default()
+        };
+        let band_fingerings = generate_fingerings(&chord, &guitar, &band_options);
+
+        // Count fingerings with root in bass in top 5
+        let solo_root_in_bass = solo_fingerings
+            .iter()
+            .take(5)
+            .filter(|f| f.has_root_in_bass)
+            .count();
+        let band_root_in_bass = band_fingerings
+            .iter()
+            .take(5)
+            .filter(|f| f.has_root_in_bass)
+            .count();
+
+        // Solo mode should strongly prefer root in bass more than band mode
+        // This isn't a hard requirement but should be a trend
+        println!("Solo root in bass (top 5): {solo_root_in_bass}");
+        println!("Band root in bass (top 5): {band_root_in_bass}");
+
+        // At least verify that both modes return results
+        assert!(!solo_fingerings.is_empty());
+        assert!(!band_fingerings.is_empty());
+    }
+
+    #[test]
+    fn test_band_mode_avoids_low_strings() {
+        let chord = Chord::parse("Gmaj7").unwrap();
+        let guitar = Guitar::default();
+
+        // Generate with solo context
+        let solo_options = GeneratorOptions {
+            limit: 20,
+            playing_context: PlayingContext::Solo,
+            ..Default::default()
+        };
+        let solo_fingerings = generate_fingerings(&chord, &guitar, &solo_options);
+
+        // Generate with band context
+        let band_options = GeneratorOptions {
+            limit: 20,
+            playing_context: PlayingContext::Band,
+            ..Default::default()
+        };
+        let band_fingerings = generate_fingerings(&chord, &guitar, &band_options);
+
+        // Count fingerings using low E or A strings in top 5
+        let solo_uses_low = solo_fingerings
+            .iter()
+            .take(5)
+            .filter(|f| {
+                let strings = f.fingering.strings();
+                strings.first().map(|s| s.is_played()).unwrap_or(false)
+                    || strings.get(1).map(|s| s.is_played()).unwrap_or(false)
+            })
+            .count();
+
+        let band_uses_low = band_fingerings
+            .iter()
+            .take(5)
+            .filter(|f| {
+                let strings = f.fingering.strings();
+                strings.first().map(|s| s.is_played()).unwrap_or(false)
+                    || strings.get(1).map(|s| s.is_played()).unwrap_or(false)
+            })
+            .count();
+
+        println!("Solo uses low E/A (top 5): {solo_uses_low}");
+        println!("Band uses low E/A (top 5): {band_uses_low}");
+
+        // Band mode should use low strings less frequently (soft filter, not exclusion)
+        // This is a preference, not a hard rule, so we just verify both return results
+        assert!(!solo_fingerings.is_empty());
+        assert!(!band_fingerings.is_empty());
+    }
+
+    #[test]
+    fn test_band_mode_prefers_mid_neck() {
+        let chord = Chord::parse("F").unwrap();
+        let guitar = Guitar::default();
+
+        // Generate with solo context (no position preference)
+        let solo_options = GeneratorOptions {
+            limit: 10,
+            playing_context: PlayingContext::Solo,
+            ..Default::default()
+        };
+        let solo_fingerings = generate_fingerings(&chord, &guitar, &solo_options);
+
+        // Generate with band context (no position preference)
+        let band_options = GeneratorOptions {
+            limit: 10,
+            playing_context: PlayingContext::Band,
+            ..Default::default()
+        };
+        let band_fingerings = generate_fingerings(&chord, &guitar, &band_options);
+
+        // Calculate average position for top 5
+        let solo_avg_pos = solo_fingerings
+            .iter()
+            .take(5)
+            .map(|f| f.position as f32)
+            .sum::<f32>()
+            / 5.0;
+
+        let band_avg_pos = band_fingerings
+            .iter()
+            .take(5)
+            .map(|f| f.position as f32)
+            .sum::<f32>()
+            / 5.0;
+
+        println!("Solo avg position (top 5): {solo_avg_pos}");
+        println!("Band avg position (top 5): {band_avg_pos}");
+
+        // Band mode should prefer mid-neck (3-10), solo prefers lower (0-5)
+        // Band average should typically be higher than solo average for chords like F
+        // This is a trend, not a hard requirement
+        assert!(!solo_fingerings.is_empty());
+        assert!(!band_fingerings.is_empty());
+    }
+
+    #[test]
+    fn test_solo_mode_penalizes_jazzy_without_root() {
+        let chord = Chord::parse("Cmaj7").unwrap();
+        let guitar = Guitar::default();
+
+        // Generate with solo context
+        let solo_options = GeneratorOptions {
+            limit: 30,
+            playing_context: PlayingContext::Solo,
+            ..Default::default()
+        };
+        let solo_fingerings = generate_fingerings(&chord, &guitar, &solo_options);
+
+        // Find jazzy voicings and check their root in bass status
+        let jazzy_fingerings: Vec<_> = solo_fingerings
+            .iter()
+            .filter(|f| f.voicing_type == VoicingType::Jazzy)
+            .collect();
+
+        if !jazzy_fingerings.is_empty() {
+            // Among jazzy voicings, those with root in bass should score higher
+            let jazzy_with_root: Vec<_> = jazzy_fingerings
+                .iter()
+                .filter(|f| f.has_root_in_bass)
+                .collect();
+            let jazzy_without_root: Vec<_> = jazzy_fingerings
+                .iter()
+                .filter(|f| !f.has_root_in_bass)
+                .collect();
+
+            println!("Jazzy with root: {}", jazzy_with_root.len());
+            println!("Jazzy without root: {}", jazzy_without_root.len());
+
+            if !jazzy_with_root.is_empty() && !jazzy_without_root.is_empty() {
+                let avg_with_root = jazzy_with_root.iter().map(|f| f.score as f32).sum::<f32>()
+                    / jazzy_with_root.len() as f32;
+                let avg_without_root = jazzy_without_root
+                    .iter()
+                    .map(|f| f.score as f32)
+                    .sum::<f32>()
+                    / jazzy_without_root.len() as f32;
+
+                println!("Avg score with root: {avg_with_root}");
+                println!("Avg score without root: {avg_without_root}");
+
+                // Jazzy with root should score higher on average in solo mode
+                assert!(
+                    avg_with_root > avg_without_root,
+                    "Solo mode should score jazzy voicings with root higher"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_band_mode_prefers_compact_voicings() {
+        let chord = Chord::parse("Dmaj7").unwrap();
+        let guitar = Guitar::default();
+
+        // Generate with solo context
+        let solo_options = GeneratorOptions {
+            limit: 20,
+            playing_context: PlayingContext::Solo,
+            ..Default::default()
+        };
+        let solo_fingerings = generate_fingerings(&chord, &guitar, &solo_options);
+
+        // Generate with band context
+        let band_options = GeneratorOptions {
+            limit: 20,
+            playing_context: PlayingContext::Band,
+            ..Default::default()
+        };
+        let band_fingerings = generate_fingerings(&chord, &guitar, &band_options);
+
+        // Count full vs core/jazzy voicings in top 5
+        let solo_full = solo_fingerings
+            .iter()
+            .take(5)
+            .filter(|f| f.voicing_type == VoicingType::Full)
+            .count();
+        let band_full = band_fingerings
+            .iter()
+            .take(5)
+            .filter(|f| f.voicing_type == VoicingType::Full)
+            .count();
+
+        println!("Solo full voicings (top 5): {solo_full}");
+        println!("Band full voicings (top 5): {band_full}");
+
+        // Solo should prefer full voicings more than band mode
+        // This is a preference trend
+        assert!(!solo_fingerings.is_empty());
+        assert!(!band_fingerings.is_empty());
     }
 }

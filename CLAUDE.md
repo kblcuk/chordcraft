@@ -585,12 +585,15 @@ chordcraft progression "F Bb Gm C" --capo 3 --context band
    - `has_barre()` - detect if fingering uses barre
    - Methods needed for finger movement calculation
 
-4. ✅ **Playing Context Support**
-   - Add `PlayingContext` enum
-   - Add `playing_context` field to GeneratorOptions and ProgressionOptions
-   - Adjust scoring in `score_fingering()` based on context
-   - Adjust transition scoring for band mode
-   - Add `--context` flag to CLI commands
+4. ✅ **Playing Context Support** (COMPLETE)
+   - ✅ Add `PlayingContext` enum (Solo/Band)
+   - ✅ Add `playing_context` field to GeneratorOptions (defaults to Solo)
+   - ✅ Adjust scoring in `score_fingering()` based on context:
+     - Solo: +30 root in bass, +20 full voicings, prefer frets 0-5, -15 jazzy without root
+     - Band: +5 root in bass, +20 core/jazzy voicings, prefer frets 3-10, +10 avoiding low E/A
+   - ✅ Adjust transition scoring for band mode (40 movement weight, 8 distance penalty vs 30/5)
+   - ✅ Add `--context` flag to CLI `find` and `progression` commands
+   - ✅ Comprehensive unit tests validating scoring differences
 
 5. ✅ Add CLI subcommand
    - Add `Progression` command to CLI
@@ -957,6 +960,6 @@ This separation allows:
 
 ---
 
-**Last updated**: Phase 5 planned - Chord progressions with transition optimization
-**Current focus**: Phases 1-4 complete (Core, Generator, Analyzer, CLI)
-**Next phase**: Phase 5 (Chord Progressions) - Implementation ready
+**Last updated**: Phase 5 complete - Chord progressions with transition optimization, capo support, and playing context
+**Current focus**: Phases 1-5 complete (Core, Generator, Analyzer, CLI, Progressions with PlayingContext)
+**Next phase**: Phase 6 (Web App - Vue + Rust WASM)

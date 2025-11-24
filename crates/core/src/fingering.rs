@@ -224,10 +224,10 @@ impl Fingering {
         let mut fret_groups: HashMap<u8, Vec<usize>> = HashMap::new();
 
         for (string_idx, state) in self.strings.iter().enumerate() {
-            if let StringState::Fretted(fret) = state {
-                if *fret > 0 {
-                    fret_groups.entry(*fret).or_default().push(string_idx);
-                }
+            if let StringState::Fretted(fret) = state
+                && *fret > 0
+            {
+                fret_groups.entry(*fret).or_default().push(string_idx);
             }
         }
 
@@ -283,11 +283,11 @@ impl Fingering {
         let mut frets_map: BTreeMap<u8, Vec<usize>> = BTreeMap::new();
 
         for (string_idx, state) in self.strings.iter().enumerate() {
-            if let StringState::Fretted(fret) = state {
-                if *fret > 0 {
-                    // Exclude open strings (don't need fingers)
-                    frets_map.entry(*fret).or_default().push(string_idx);
-                }
+            if let StringState::Fretted(fret) = state
+                && *fret > 0
+            {
+                // Exclude open strings (don't need fingers)
+                frets_map.entry(*fret).or_default().push(string_idx);
             }
         }
 

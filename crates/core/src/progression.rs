@@ -5,7 +5,7 @@
 
 use crate::chord::Chord;
 use crate::fingering::Fingering;
-use crate::generator::{GeneratorOptions, ScoredFingering, generate_fingerings};
+use crate::generator::{GeneratorOptions, PlayingContext, ScoredFingering, generate_fingerings};
 use crate::instrument::Instrument;
 
 // Transition scoring constants
@@ -37,6 +37,12 @@ const STRING_COUNT_SIMILARITY_BONUS: i32 = 5;
 /// Penalty multiplier for fret distance (Quaternary factor)
 /// Each fret of distance reduces score by this amount
 const DISTANCE_PENALTY: i32 = 5;
+
+// Band mode adjustments - prioritize compact movements over full voicings
+/// Band mode movement weight (increased emphasis on minimal movement)
+const BAND_MOVEMENT_WEIGHT: i32 = 40;
+/// Band mode distance penalty (stronger penalty for position jumps)
+const BAND_DISTANCE_PENALTY: i32 = 8;
 
 /// Options for progression generation
 #[derive(Debug, Clone)]
@@ -185,6 +191,7 @@ fn build_progression_sequence<I: Instrument>(
                 from,
                 to,
                 instrument,
+                options.generator_options.playing_context,
             );
 
             // Skip if transition exceeds max distance
@@ -230,6 +237,7 @@ fn score_transition<I: Instrument>(
     from_scored: &ScoredFingering,
     to_scored: &ScoredFingering,
     instrument: &I,
+    playing_context: PlayingContext,
 ) -> ChordTransition {
     let from = &from_scored.fingering;
     let to = &to_scored.fingering;
@@ -238,9 +246,16 @@ fn score_transition<I: Instrument>(
 
     let mut score = BASE_SCORE;
 
+    // Context-aware weight selection
+    let (movement_weight, distance_penalty) = match playing_context {
+        PlayingContext::Solo => (MOVEMENT_WEIGHT, DISTANCE_PENALTY),
+        PlayingContext::Band => (BAND_MOVEMENT_WEIGHT, BAND_DISTANCE_PENALTY),
+    };
+
     // 1. FINGER MOVEMENT (Primary - most important)
+    // Band mode uses higher weight to prioritize compact movements
     let (movements, anchors) = calculate_finger_changes(from, to);
-    score += (4_i32.saturating_sub(movements as i32)) * MOVEMENT_WEIGHT;
+    score += (4_i32.saturating_sub(movements as i32)) * movement_weight;
 
     // 2. COMMON ANCHORS (Secondary)
     score += (anchors as i32) * ANCHOR_BONUS;
@@ -250,8 +265,9 @@ fn score_transition<I: Instrument>(
     score += shape_bonus;
 
     // 4. POSITION DISTANCE (Quaternary)
+    // Band mode uses stronger penalty for position jumps
     let distance = (to_pos as i32 - from_pos as i32).unsigned_abs() as u8;
-    score -= (distance as i32) * DISTANCE_PENALTY;
+    score -= (distance as i32) * distance_penalty;
 
     ChordTransition {
         from_chord,
