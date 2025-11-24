@@ -33,7 +33,7 @@ pub mod progression;
 pub use analyzer::{ChordMatch, analyze_fingering};
 pub use chord::{Chord, ChordQuality};
 pub use fingering::Fingering;
-pub use instrument::{Guitar, Instrument};
+pub use instrument::{CapoedInstrument, Guitar, Instrument};
 pub use interval::Interval;
 pub use note::{Note, PitchClass};
 
@@ -60,6 +60,9 @@ pub mod error {
 
         #[error("Could not identify chord from fingering")]
         ChordNotIdentified,
+
+        #[error("Invalid capo position: {0} (must be between {1} and {2})")]
+        InvalidCapoPosition(u8, u8, u8),
     }
 
     pub type Result<T> = std::result::Result<T, ChordCraftError>;
