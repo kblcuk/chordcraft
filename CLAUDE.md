@@ -776,26 +776,69 @@ fn test_capo_with_band_mode() {
 - Very long progressions (10+ chords)
 - Chords with very few fingering options
 
-### Phase 6: Web App (Vue + Rust WASM)
+### Phase 6: Web App (Svelte + Rust WASM) ✓ PARTIALLY COMPLETE
 
 **Goal**: Interactive visual interface
 
-**Features**:
+**Status**: Basic web app is functional with all three modes (find, name, progression)
 
-- Interactive fretboard visualization
-- Input modes: click fretboard OR type chord name
-- Real-time suggestions as you type
-- Voicing filter (core/full/jazzy)
-- Position preference slider
-- Instrument/tuning selector
-- Save favorites (localStorage initially)
+**Completed Features**:
+- ✅ Three modes with tab-based navigation
+  - Find Fingerings: Input chord name, get fingerings
+  - Name Chord: Input tab notation, identify chord
+  - Progression: Input chord sequence, get optimal transitions
+- ✅ WASM integration with full API exposure
+  - All options available (limit, capo, voicing, position, playing context)
+  - Fast generation (<15ms per chord)
+  - 232 KB bundle size
+- ✅ Basic results display
+  - Tab notation, score, voicing type, position
+  - Notes, root in bass indicator
+  - Transition scores and finger movements (progressions)
+- ✅ Responsive UI with Tailwind CSS
+- ✅ Error handling and loading states
 
-**Tech stack**:
+**Remaining Features** (Phase 6b):
+- ⏳ **Advanced Controls** (HIGH PRIORITY)
+  - Limit slider (1-50 fingerings)
+  - Capo selector (0-12)
+  - Voicing filter toggles (core/full/jazzy/all)
+  - Position preference slider (0-12 frets)
+  - Playing context toggle (solo/band)
+  - Instrument selector (future: ukulele, bass)
 
+- ⏳ **Chord Diagrams** (HIGH PRIORITY)
+  - SVG-based fretboard visualization
+  - Show finger positions on diagram
+  - Highlight root notes
+  - Indicate barres and finger numbers
+  - Click-to-copy tab notation
+
+- ⏳ **Interactive Fretboard Input** (MEDIUM PRIORITY)
+  - Click strings/frets to build fingering
+  - Visual feedback as you click
+  - Auto-analyze as you build
+  - Suggest similar fingerings
+
+- ⏳ **Enhanced UX** (MEDIUM PRIORITY)
+  - Chord name autocomplete
+  - Common progressions presets (I-IV-V, ii-V-I, etc.)
+  - "Show more" pagination for results
+  - Keyboard shortcuts (Enter to search, etc.)
+  - Save favorites to localStorage
+  - Share fingerings via URL
+
+- ⏳ **Mobile Optimization** (LOW PRIORITY)
+  - Touch-friendly chord diagrams
+  - Responsive fretboard input
+  - Optimized layout for small screens
+
+**Tech Stack**:
 - Rust core compiled to WASM (wasm-pack)
-- Vue 3 with Composition API
-- SVG-based fretboard component
+- Svelte 5 with TypeScript
+- Tailwind CSS for styling
 - Vite for build tooling
+- SVG for chord diagrams (planned)
 
 ## Key Design Decisions
 
@@ -960,6 +1003,9 @@ This separation allows:
 
 ---
 
-**Last updated**: Phase 5 complete - Chord progressions with transition optimization, capo support, and playing context
-**Current focus**: Phases 1-5 complete (Core, Generator, Analyzer, CLI, Progressions with PlayingContext)
-**Next phase**: Phase 6 (Web App - Vue + Rust WASM)
+**Last updated**: Phase 6 partially complete - Basic Svelte web app with all three modes operational
+**Current status**:
+- ✅ Phases 1-5 complete (Core, Generator, Analyzer, CLI, Progressions)
+- ✅ Phase 6a complete (Basic Svelte web app with WASM integration)
+- ⏳ Phase 6b in progress (Advanced controls, chord diagrams, enhanced UX)
+**Next priorities**: Advanced controls OR chord diagram visualization

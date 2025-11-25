@@ -2,3 +2,5 @@
 /target/
 # local claude settings
 .claude/
+# Node
+node_modules/
