@@ -131,12 +131,10 @@ pub fn generate_fingerings<I: Instrument>(
 				VoicingType::Jazzy
 			};
 
-			// Apply voicing type filter
+			// Apply voicing type filter - compare actual voicing type
 			if let Some(required_voicing) = &options.voicing_type {
-				match required_voicing {
-					VoicingType::Full if !has_all_notes => return None,
-					VoicingType::Core if !has_all_core => return None,
-					_ => {}
+				if voicing_type != *required_voicing {
+					return None;
 				}
 			}
 
@@ -935,5 +933,132 @@ mod tests {
 		// This is a preference trend
 		assert!(!solo_fingerings.is_empty());
 		assert!(!band_fingerings.is_empty());
+	}
+
+	#[test]
+	fn test_voicing_type_filter_core_only() {
+		let chord = Chord::parse("Cmaj7").unwrap();
+		let guitar = Guitar::default();
+
+		// Request only Core voicings
+		let core_options = GeneratorOptions {
+			limit: 20,
+			voicing_type: Some(VoicingType::Core),
+			..Default::default()
+		};
+		let core_fingerings = generate_fingerings(&chord, &guitar, &core_options);
+
+		// ALL results should be Core voicing type
+		assert!(!core_fingerings.is_empty(), "Should find some core voicings");
+
+		for fingering in &core_fingerings {
+			assert_eq!(
+				fingering.voicing_type,
+				VoicingType::Core,
+				"Requested Core but got {:?} for fingering: {}",
+				fingering.voicing_type,
+				fingering.fingering
+			);
+		}
+	}
+
+	#[test]
+	fn test_voicing_type_filter_full_only() {
+		let chord = Chord::parse("Cmaj7").unwrap();
+		let guitar = Guitar::default();
+
+		// Request only Full voicings
+		let full_options = GeneratorOptions {
+			limit: 20,
+			voicing_type: Some(VoicingType::Full),
+			..Default::default()
+		};
+		let full_fingerings = generate_fingerings(&chord, &guitar, &full_options);
+
+		// ALL results should be Full voicing type
+		assert!(!full_fingerings.is_empty(), "Should find some full voicings");
+
+		for fingering in &full_fingerings {
+			assert_eq!(
+				fingering.voicing_type,
+				VoicingType::Full,
+				"Requested Full but got {:?} for fingering: {}",
+				fingering.voicing_type,
+				fingering.fingering
+			);
+		}
+	}
+
+	#[test]
+	fn test_voicing_type_filter_jazzy_only() {
+		let chord = Chord::parse("Cmaj7").unwrap();
+		let guitar = Guitar::default();
+
+		// Request only Jazzy voicings
+		let jazzy_options = GeneratorOptions {
+			limit: 20,
+			voicing_type: Some(VoicingType::Jazzy),
+			..Default::default()
+		};
+		let jazzy_fingerings = generate_fingerings(&chord, &guitar, &jazzy_options);
+
+		// ALL results should be Jazzy voicing type
+		assert!(!jazzy_fingerings.is_empty(), "Should find some jazzy voicings");
+
+		for fingering in &jazzy_fingerings {
+			assert_eq!(
+				fingering.voicing_type,
+				VoicingType::Jazzy,
+				"Requested Jazzy but got {:?} for fingering: {}",
+				fingering.voicing_type,
+				fingering.fingering
+			);
+		}
+	}
+
+	#[test]
+	fn test_voicing_type_combinations_with_context() {
+		let chord = Chord::parse("Gmaj7").unwrap();
+		let guitar = Guitar::default();
+
+		// Core + Solo
+		let core_solo = GeneratorOptions {
+			limit: 10,
+			voicing_type: Some(VoicingType::Core),
+			playing_context: PlayingContext::Solo,
+			..Default::default()
+		};
+		let results = generate_fingerings(&chord, &guitar, &core_solo);
+		assert!(results.iter().all(|f| f.voicing_type == VoicingType::Core));
+
+		// Core + Band
+		let core_band = GeneratorOptions {
+			limit: 10,
+			voicing_type: Some(VoicingType::Core),
+			playing_context: PlayingContext::Band,
+			..Default::default()
+		};
+		let results = generate_fingerings(&chord, &guitar, &core_band);
+		assert!(results.iter().all(|f| f.voicing_type == VoicingType::Core));
+
+		// Full + Solo
+		let full_solo = GeneratorOptions {
+			limit: 10,
+			voicing_type: Some(VoicingType::Full),
+			playing_context: PlayingContext::Solo,
+			..Default::default()
+		};
+		let results = generate_fingerings(&chord, &guitar, &full_solo);
+		assert!(results.iter().all(|f| f.voicing_type == VoicingType::Full));
+
+		// Full + Band
+		let full_band = GeneratorOptions {
+			limit: 10,
+			voicing_type: Some(VoicingType::Full),
+			playing_context: PlayingContext::Band,
+			..Default::default()
+		};
+		let results = generate_fingerings(&chord, &guitar, &full_band);
+		assert!(results.iter().all(|f| f.voicing_type == VoicingType::Full));
 	}
 }
