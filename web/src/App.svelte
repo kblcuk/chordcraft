@@ -9,6 +9,7 @@
 		type ChordMatch,
 		type ProgressionSequence,
 	} from './lib/wasm';
+	import ChordDiagram from './lib/ChordDiagram.svelte';
 
 	type Mode = 'find' | 'name' | 'progression';
 	let currentMode: Mode = 'find';
@@ -188,37 +189,67 @@
 				{/if}
 
 				{#if findResults.length > 0}
-					<div class="mt-6 space-y-4">
+					<div class="mt-6 space-y-6">
 						<h3 class="text-lg font-medium text-gray-900">
 							Found {findResults.length} fingerings:
 						</h3>
-						{#each findResults as fingering, i}
-							<div class="p-4 bg-gray-50 rounded-md border border-gray-200">
-								<div class="flex justify-between items-start mb-2">
-									<div>
-										<span class="text-lg font-mono font-bold"
-											>{fingering.tab}</span
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+							{#each findResults as fingering, i}
+								<div
+									class="bg-white rounded-lg border-2 border-gray-200 p-4 hover:border-blue-400 transition-colors"
+								>
+									<!-- Chord Diagram -->
+									<div class="flex justify-center mb-3">
+										<ChordDiagram
+											tab={fingering.tab}
+											notes={fingering.notes}
+											rootNote={fingering.notes[0] || ''}
+											size="medium"
+										/>
+									</div>
+
+									<!-- Tab Notation -->
+									<div class="text-center mb-2">
+										<code
+											class="text-lg font-bold font-mono bg-gray-100 px-3 py-1 rounded"
 										>
-										<span class="ml-3 text-sm text-gray-600">
+											{fingering.tab}
+										</code>
+									</div>
+
+									<!-- Metadata -->
+									<div class="flex flex-wrap gap-2 justify-center mb-2">
+										<span
+											class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+										>
+											{fingering.voicingType}
+										</span>
+										<span
+											class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded"
+										>
 											Score: {fingering.score}
 										</span>
+										<span
+											class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded"
+										>
+											Fret {fingering.position}
+										</span>
 									</div>
-									<span
-										class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
-									>
-										{fingering.voicingType}
-									</span>
+
+									<!-- Notes and Root in Bass -->
+									<div class="text-xs text-center text-gray-600 space-y-1">
+										<div>Notes: {fingering.notes.join(', ')}</div>
+										<div>
+											{#if fingering.hasRootInBass}
+												<span class="text-green-600">✓ Root in bass</span>
+											{:else}
+												<span class="text-gray-400">No root in bass</span>
+											{/if}
+										</div>
+									</div>
 								</div>
-								<div class="text-sm text-gray-600">
-									Position: Fret {fingering.position} | Notes: {fingering.notes.join(
-										', '
-									)} |
-									{fingering.hasRootInBass
-										? '✓ Root in bass'
-										: '✗ No root in bass'}
-								</div>
-							</div>
-						{/each}
+							{/each}
+						</div>
 					</div>
 				{/if}
 			</div>
@@ -330,45 +361,128 @@
 				{/if}
 
 				{#if progressionResults.length > 0}
-					<div class="mt-6 space-y-6">
+					<div class="mt-6 space-y-8">
 						{#each progressionResults as sequence, i}
-							<div class="border border-gray-300 rounded-lg p-5">
-								<div class="flex justify-between items-center mb-4">
-									<h3 class="text-lg font-semibold text-gray-900">
+							<div class="border-2 border-gray-300 rounded-lg p-6 bg-white">
+								<div class="flex justify-between items-center mb-6">
+									<h3 class="text-xl font-bold text-gray-900">
 										Alternative #{i + 1}
 									</h3>
-									<div class="text-sm text-gray-600">
-										Avg Transition Score: {sequence.avgTransitionScore.toFixed(
-											1
-										)}
+									<div class="text-sm">
+										<span class="text-gray-600">Avg Transition:</span>
+										<span class="ml-1 font-semibold text-blue-600">
+											{sequence.avgTransitionScore.toFixed(1)}
+										</span>
 									</div>
 								</div>
 
-								<div class="space-y-4">
+								<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 									{#each sequence.fingerings as fingering, j}
-										<div class="bg-gray-50 rounded-md p-4">
-											<div class="flex justify-between items-start">
-												<div>
-													<span class="font-semibold text-gray-900"
-														>{sequence.chords[j]}</span
-													>
-													<span class="ml-3 font-mono text-lg"
-														>{fingering.tab}</span
-													>
+										<div class="relative">
+											<div
+												class="bg-gray-50 rounded-lg p-4 border-2 border-gray-200"
+											>
+												<!-- Chord Name -->
+												<div class="text-center mb-3">
+													<h4 class="text-lg font-bold text-gray-900">
+														{sequence.chords[j]}
+													</h4>
 												</div>
-												<span class="text-sm text-gray-600">
-													Fret {fingering.position} | {fingering.voicingType}
-												</span>
+
+												<!-- Chord Diagram -->
+												<div class="flex justify-center mb-3">
+													<ChordDiagram
+														tab={fingering.tab}
+														notes={fingering.notes}
+														rootNote={fingering.notes[0] || ''}
+														size="small"
+													/>
+												</div>
+
+												<!-- Tab Notation -->
+												<div class="text-center mb-2">
+													<code
+														class="text-sm font-mono bg-white px-2 py-1 rounded border"
+													>
+														{fingering.tab}
+													</code>
+												</div>
+
+												<!-- Metadata -->
+												<div
+													class="flex flex-wrap gap-1 justify-center text-xs"
+												>
+													<span
+														class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded"
+													>
+														{fingering.voicingType}
+													</span>
+													<span
+														class="px-2 py-0.5 bg-gray-200 text-gray-700 rounded"
+													>
+														Fret {fingering.position}
+													</span>
+												</div>
 											</div>
 
+											<!-- Transition Arrow -->
 											{#if j < sequence.transitions.length}
 												<div
-													class="mt-2 pt-2 border-t border-gray-200 text-sm text-gray-600"
+													class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 hidden lg:block"
 												>
-													→ Transition: {sequence.transitions[j]
-														.fingerMovements} fingers move,
-													{sequence.transitions[j].commonAnchors} anchored
-													(score: {sequence.transitions[j].score})
+													<div
+														class="bg-white border-2 border-green-500 rounded-full p-2 shadow-md"
+													>
+														<svg
+															class="w-5 h-5 text-green-600"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M13 7l5 5m0 0l-5 5m5-5H6"
+															/>
+														</svg>
+													</div>
+													<div class="mt-1 text-center">
+														<div
+															class="text-xs font-semibold text-green-600"
+														>
+															Score: {sequence.transitions[j].score}
+														</div>
+														<div class="text-xs text-gray-500">
+															{sequence.transitions[j]
+																.fingerMovements} move{sequence
+																.transitions[j].fingerMovements !==
+															1
+																? 's'
+																: ''}
+														</div>
+													</div>
+												</div>
+
+												<!-- Mobile Transition Info -->
+												<div
+													class="lg:hidden mt-3 p-2 bg-green-50 rounded border border-green-200 text-center"
+												>
+													<div class="text-sm text-green-700">
+														→ Next: {sequence.transitions[j]
+															.fingerMovements} finger{sequence
+															.transitions[j].fingerMovements !== 1
+															? 's'
+															: ''} move,
+														{sequence.transitions[j].commonAnchors} anchor{sequence
+															.transitions[j].commonAnchors !== 1
+															? 's'
+															: ''}
+														<span class="font-semibold"
+															>(score: {sequence.transitions[j]
+																.score})</span
+														>
+													</div>
 												</div>
 											{/if}
 										</div>
