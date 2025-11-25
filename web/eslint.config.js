@@ -17,7 +17,7 @@ export default [
 			},
 			globals: {
 				...globals.browser,
-				...globals.es2021,
+				...globals.es2025,
 			},
 		},
 		plugins: {
@@ -59,11 +59,20 @@ export default [
 		},
 	},
 	{
+		files: ['*.config.ts', '*.config.js'],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+	},
+	{
 		ignores: [
 			'node_modules/**',
 			'dist/**',
 			'build/**',
 			'.svelte-kit/**',
+			'.vite/**',
 			'vite.config.ts.timestamp-*',
 		],
 	},
