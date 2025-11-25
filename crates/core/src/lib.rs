@@ -40,33 +40,33 @@ pub use note::{Note, PitchClass};
 
 /// Error types for the chordcraft-core library
 pub mod error {
-    use thiserror::Error;
+	use thiserror::Error;
 
-    #[derive(Error, Debug)]
-    pub enum ChordCraftError {
-        #[error("Invalid chord name: {0}")]
-        InvalidChordName(String),
+	#[derive(Error, Debug)]
+	pub enum ChordCraftError {
+		#[error("Invalid chord name: {0}")]
+		InvalidChordName(String),
 
-        #[error("Invalid note name: {0}")]
-        InvalidNote(String),
+		#[error("Invalid note name: {0}")]
+		InvalidNote(String),
 
-        #[error("Invalid interval: {0}")]
-        InvalidInterval(String),
+		#[error("Invalid interval: {0}")]
+		InvalidInterval(String),
 
-        #[error("Invalid fingering: {0}")]
-        InvalidFingering(String),
+		#[error("Invalid fingering: {0}")]
+		InvalidFingering(String),
 
-        #[error("No fingerings found for chord: {0}")]
-        NoFingeringsFound(String),
+		#[error("No fingerings found for chord: {0}")]
+		NoFingeringsFound(String),
 
-        #[error("Could not identify chord from fingering")]
-        ChordNotIdentified,
+		#[error("Could not identify chord from fingering")]
+		ChordNotIdentified,
 
-        #[error("Invalid capo position: {0} (must be between {1} and {2})")]
-        InvalidCapoPosition(u8, u8, u8),
-    }
+		#[error("Invalid capo position: {0} (must be between {1} and {2})")]
+		InvalidCapoPosition(u8, u8, u8),
+	}
 
-    pub type Result<T> = std::result::Result<T, ChordCraftError>;
+	pub type Result<T> = std::result::Result<T, ChordCraftError>;
 }
 
 pub use error::{ChordCraftError, Result};

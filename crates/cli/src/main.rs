@@ -4,29 +4,29 @@ use colored::Colorize;
 
 use chordcraft_core::chord::{Chord, VoicingType};
 use chordcraft_core::generator::{
-    GeneratorOptions, PlayingContext, format_fingering_diagram, generate_fingerings,
+	GeneratorOptions, PlayingContext, format_fingering_diagram, generate_fingerings,
 };
 use chordcraft_core::instrument::Guitar;
 
 /// Parse voicing type string into VoicingType enum
 fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
-    voicing.and_then(|v| match v.to_lowercase().as_str() {
-        "core" => Some(VoicingType::Core),
-        "full" => Some(VoicingType::Full),
-        "jazzy" | "jazz" => Some(VoicingType::Jazzy),
-        _ => None,
-    })
+	voicing.and_then(|v| match v.to_lowercase().as_str() {
+		"core" => Some(VoicingType::Core),
+		"full" => Some(VoicingType::Full),
+		"jazzy" | "jazz" => Some(VoicingType::Jazzy),
+		_ => None,
+	})
 }
 
 /// Parse playing context string into PlayingContext enum
 fn parse_playing_context(context: Option<&String>) -> PlayingContext {
-    context
-        .map(|c| match c.to_lowercase().as_str() {
-            "band" => PlayingContext::Band,
-            "solo" => PlayingContext::Solo,
-            _ => PlayingContext::Solo, // Default to solo for invalid input
-        })
-        .unwrap_or(PlayingContext::Solo)
+	context
+		.map(|c| match c.to_lowercase().as_str() {
+			"band" => PlayingContext::Band,
+			"solo" => PlayingContext::Solo,
+			_ => PlayingContext::Solo, // Default to solo for invalid input
+		})
+		.unwrap_or(PlayingContext::Solo)
 }
 
 #[derive(Parser)]
@@ -34,492 +34,492 @@ fn parse_playing_context(context: Option<&String>) -> PlayingContext {
 #[command(about = "A tool for chord-fingering conversion", long_about = None)]
 #[command(version)]
 struct Cli {
-    #[command(subcommand)]
-    command: Commands,
+	#[command(subcommand)]
+	command: Commands,
 }
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Find fingerings for a chord
-    Find {
-        /// Chord name (e.g., "Cmaj7", "Abm", "G7")
-        chord: String,
+	/// Find fingerings for a chord
+	Find {
+		/// Chord name (e.g., "Cmaj7", "Abm", "G7")
+		chord: String,
 
-        /// Number of fingerings to show
-        #[arg(short, long, default_value = "5")]
-        limit: usize,
+		/// Number of fingerings to show
+		#[arg(short, long, default_value = "5")]
+		limit: usize,
 
-        /// Prefer fingerings near this fret position
-        #[arg(short, long)]
-        position: Option<u8>,
+		/// Prefer fingerings near this fret position
+		#[arg(short, long)]
+		position: Option<u8>,
 
-        /// Voicing type: core, full, or jazzy
-        #[arg(short, long)]
-        voicing: Option<String>,
+		/// Voicing type: core, full, or jazzy
+		#[arg(short, long)]
+		voicing: Option<String>,
 
-        /// Playing context: solo or band (default: solo)
-        #[arg(short = 'x', long)]
-        context: Option<String>,
+		/// Playing context: solo or band (default: solo)
+		#[arg(short = 'x', long)]
+		context: Option<String>,
 
-        /// Capo position (fret number)
-        #[arg(short, long)]
-        capo: Option<u8>,
-    },
+		/// Capo position (fret number)
+		#[arg(short, long)]
+		capo: Option<u8>,
+	},
 
-    /// Identify chord from fingering notation
-    Name {
-        /// Tab notation (e.g., "x32010", "022100")
-        fingering: String,
+	/// Identify chord from fingering notation
+	Name {
+		/// Tab notation (e.g., "x32010", "022100")
+		fingering: String,
 
-        /// Capo position (fret number)
-        #[arg(short, long)]
-        capo: Option<u8>,
-    },
+		/// Capo position (fret number)
+		#[arg(short, long)]
+		capo: Option<u8>,
+	},
 
-    /// Find optimal fingerings for a chord progression
-    Progression {
-        /// Chord names separated by spaces (e.g., "C Am F G")
-        chords: String,
+	/// Find optimal fingerings for a chord progression
+	Progression {
+		/// Chord names separated by spaces (e.g., "C Am F G")
+		chords: String,
 
-        /// Number of alternative progressions to show
-        #[arg(short, long, default_value = "3")]
-        limit: usize,
+		/// Number of alternative progressions to show
+		#[arg(short, long, default_value = "3")]
+		limit: usize,
 
-        /// Maximum fret distance between consecutive chords
-        #[arg(short = 'd', long, default_value = "3")]
-        max_distance: u8,
+		/// Maximum fret distance between consecutive chords
+		#[arg(short = 'd', long, default_value = "3")]
+		max_distance: u8,
 
-        /// Prefer fingerings near this fret position
-        #[arg(short, long)]
-        position: Option<u8>,
+		/// Prefer fingerings near this fret position
+		#[arg(short, long)]
+		position: Option<u8>,
 
-        /// Voicing type: core, full, or jazzy
-        #[arg(short, long)]
-        voicing: Option<String>,
+		/// Voicing type: core, full, or jazzy
+		#[arg(short, long)]
+		voicing: Option<String>,
 
-        /// Playing context: solo or band (default: solo)
-        #[arg(short = 'x', long)]
-        context: Option<String>,
+		/// Playing context: solo or band (default: solo)
+		#[arg(short = 'x', long)]
+		context: Option<String>,
 
-        /// Capo position (fret number)
-        #[arg(short, long)]
-        capo: Option<u8>,
-    },
+		/// Capo position (fret number)
+		#[arg(short, long)]
+		capo: Option<u8>,
+	},
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
+	let cli = Cli::parse();
 
-    match cli.command {
-        Commands::Find {
-            chord,
-            limit,
-            position,
-            voicing,
-            context,
-            capo,
-        } => {
-            find_fingerings(&chord, limit, position, voicing, context, capo)?;
-        }
-        Commands::Name { fingering, capo } => {
-            name_chord(&fingering, capo)?;
-        }
-        Commands::Progression {
-            chords,
-            limit,
-            max_distance,
-            position,
-            voicing,
-            context,
-            capo,
-        } => {
-            find_progression(
-                &chords,
-                limit,
-                max_distance,
-                position,
-                voicing,
-                context,
-                capo,
-            )?;
-        }
-    }
+	match cli.command {
+		Commands::Find {
+			chord,
+			limit,
+			position,
+			voicing,
+			context,
+			capo,
+		} => {
+			find_fingerings(&chord, limit, position, voicing, context, capo)?;
+		}
+		Commands::Name { fingering, capo } => {
+			name_chord(&fingering, capo)?;
+		}
+		Commands::Progression {
+			chords,
+			limit,
+			max_distance,
+			position,
+			voicing,
+			context,
+			capo,
+		} => {
+			find_progression(
+				&chords,
+				limit,
+				max_distance,
+				position,
+				voicing,
+				context,
+				capo,
+			)?;
+		}
+	}
 
-    Ok(())
+	Ok(())
 }
 
 fn find_fingerings(
-    chord_str: &str,
-    limit: usize,
-    position: Option<u8>,
-    voicing: Option<String>,
-    context: Option<String>,
-    capo: Option<u8>,
+	chord_str: &str,
+	limit: usize,
+	position: Option<u8>,
+	voicing: Option<String>,
+	context: Option<String>,
+	capo: Option<u8>,
 ) -> Result<()> {
-    // Parse the chord
-    let original_chord =
-        Chord::parse(chord_str).with_context(|| format!("Invalid chord name: '{chord_str}'"))?;
+	// Parse the chord
+	let original_chord =
+		Chord::parse(chord_str).with_context(|| format!("Invalid chord name: '{chord_str}'"))?;
 
-    // If using capo, we generate fingerings for the SHAPE chord (transposed down)
-    // Otherwise, generate for the actual chord
-    let (search_chord, shape_chord) = if let Some(capo_fret) = capo {
-        let shape = original_chord.transpose(-(capo_fret as i32));
-        (shape.clone(), Some(shape))
-    } else {
-        (original_chord.clone(), None)
-    };
+	// If using capo, we generate fingerings for the SHAPE chord (transposed down)
+	// Otherwise, generate for the actual chord
+	let (search_chord, shape_chord) = if let Some(capo_fret) = capo {
+		let shape = original_chord.transpose(-(capo_fret as i32));
+		(shape.clone(), Some(shape))
+	} else {
+		(original_chord.clone(), None)
+	};
 
-    // Parse voicing type and playing context
-    let voicing_type = parse_voicing_type(voicing.as_ref());
-    let playing_context = parse_playing_context(context.as_ref());
+	// Parse voicing type and playing context
+	let voicing_type = parse_voicing_type(voicing.as_ref());
+	let playing_context = parse_playing_context(context.as_ref());
 
-    // Set up options
-    let options = GeneratorOptions {
-        limit,
-        preferred_position: position,
-        voicing_type,
-        playing_context,
-        ..Default::default()
-    };
+	// Set up options
+	let options = GeneratorOptions {
+		limit,
+		preferred_position: position,
+		voicing_type,
+		playing_context,
+		..Default::default()
+	};
 
-    // Use standard guitar
-    let guitar = Guitar::default();
+	// Use standard guitar
+	let guitar = Guitar::default();
 
-    // Generate fingerings for the search chord (shape when using capo)
-    let fingerings = generate_fingerings(&search_chord, &guitar, &options);
+	// Generate fingerings for the search chord (shape when using capo)
+	let fingerings = generate_fingerings(&search_chord, &guitar, &options);
 
-    if fingerings.is_empty() {
-        println!(
-            "{}",
-            format!("No fingerings found for chord: {original_chord}").yellow()
-        );
-        return Ok(());
-    }
+	if fingerings.is_empty() {
+		println!(
+			"{}",
+			format!("No fingerings found for chord: {original_chord}").yellow()
+		);
+		return Ok(());
+	}
 
-    // Display header
-    if let Some(shape) = shape_chord {
-        // Show both actual chord and the shape being used
-        println!(
-            "\n{} {} {} (showing {} of {} found)",
-            "Fingerings for".bold(),
-            chord_str.green().bold(),
-            format!("(Capo {})", capo.unwrap()).yellow(),
-            fingerings.len().min(limit),
-            fingerings.len()
-        );
-        println!("{} {}\n", "Shape:".dimmed(), shape.to_string().cyan());
-    } else {
-        println!(
-            "\n{} {} (showing {} of {} found)\n",
-            "Fingerings for".bold(),
-            original_chord.to_string().green().bold(),
-            fingerings.len().min(limit),
-            fingerings.len()
-        );
-    }
+	// Display header
+	if let Some(shape) = shape_chord {
+		// Show both actual chord and the shape being used
+		println!(
+			"\n{} {} {} (showing {} of {} found)",
+			"Fingerings for".bold(),
+			chord_str.green().bold(),
+			format!("(Capo {})", capo.unwrap()).yellow(),
+			fingerings.len().min(limit),
+			fingerings.len()
+		);
+		println!("{} {}\n", "Shape:".dimmed(), shape.to_string().cyan());
+	} else {
+		println!(
+			"\n{} {} (showing {} of {} found)\n",
+			"Fingerings for".bold(),
+			original_chord.to_string().green().bold(),
+			fingerings.len().min(limit),
+			fingerings.len()
+		);
+	}
 
-    // Display each fingering
-    for (i, scored) in fingerings.iter().take(limit).enumerate() {
-        println!(
-            "{}. {}",
-            (i + 1).to_string().cyan().bold(),
-            scored.fingering
-        );
-        println!("{}", format_fingering_diagram(scored, &guitar));
-        println!();
-    }
+	// Display each fingering
+	for (i, scored) in fingerings.iter().take(limit).enumerate() {
+		println!(
+			"{}. {}",
+			(i + 1).to_string().cyan().bold(),
+			scored.fingering
+		);
+		println!("{}", format_fingering_diagram(scored, &guitar));
+		println!();
+	}
 
-    Ok(())
+	Ok(())
 }
 
 fn find_progression(
-    chords_str: &str,
-    limit: usize,
-    max_distance: u8,
-    position: Option<u8>,
-    voicing: Option<String>,
-    context: Option<String>,
-    capo: Option<u8>,
+	chords_str: &str,
+	limit: usize,
+	max_distance: u8,
+	position: Option<u8>,
+	voicing: Option<String>,
+	context: Option<String>,
+	capo: Option<u8>,
 ) -> Result<()> {
-    use chordcraft_core::progression::{ProgressionOptions, generate_progression};
+	use chordcraft_core::progression::{ProgressionOptions, generate_progression};
 
-    // Parse chord names from the string
-    let chord_names: Vec<&str> = chords_str.split_whitespace().collect();
+	// Parse chord names from the string
+	let chord_names: Vec<&str> = chords_str.split_whitespace().collect();
 
-    if chord_names.is_empty() {
-        println!("{}", "No chords provided".yellow());
-        return Ok(());
-    }
+	if chord_names.is_empty() {
+		println!("{}", "No chords provided".yellow());
+		return Ok(());
+	}
 
-    // If using capo, transpose all chords down and store for both search and display
-    let transposed_chords: Vec<String> = if let Some(capo_fret) = capo {
-        chord_names
-            .iter()
-            .filter_map(|name| {
-                Chord::parse(name)
-                    .ok()
-                    .map(|c| c.transpose(-(capo_fret as i32)).to_string())
-            })
-            .collect()
-    } else {
-        vec![]
-    };
+	// If using capo, transpose all chords down and store for both search and display
+	let transposed_chords: Vec<String> = if let Some(capo_fret) = capo {
+		chord_names
+			.iter()
+			.filter_map(|name| {
+				Chord::parse(name)
+					.ok()
+					.map(|c| c.transpose(-(capo_fret as i32)).to_string())
+			})
+			.collect()
+	} else {
+		vec![]
+	};
 
-    let search_chords: Vec<&str> = if capo.is_some() {
-        transposed_chords.iter().map(|s| s.as_str()).collect()
-    } else {
-        chord_names.clone()
-    };
+	let search_chords: Vec<&str> = if capo.is_some() {
+		transposed_chords.iter().map(|s| s.as_str()).collect()
+	} else {
+		chord_names.clone()
+	};
 
-    // Parse voicing type and playing context
-    let voicing_type = parse_voicing_type(voicing.as_ref());
-    let playing_context = parse_playing_context(context.as_ref());
+	// Parse voicing type and playing context
+	let voicing_type = parse_voicing_type(voicing.as_ref());
+	let playing_context = parse_playing_context(context.as_ref());
 
-    // Set up options
-    let gen_options = GeneratorOptions {
-        preferred_position: position,
-        voicing_type,
-        playing_context,
-        ..Default::default()
-    };
+	// Set up options
+	let gen_options = GeneratorOptions {
+		preferred_position: position,
+		voicing_type,
+		playing_context,
+		..Default::default()
+	};
 
-    let options = ProgressionOptions {
-        limit,
-        max_fret_distance: max_distance,
-        generator_options: gen_options,
-        ..Default::default()
-    };
+	let options = ProgressionOptions {
+		limit,
+		max_fret_distance: max_distance,
+		generator_options: gen_options,
+		..Default::default()
+	};
 
-    // Use standard guitar
-    let guitar = Guitar::default();
+	// Use standard guitar
+	let guitar = Guitar::default();
 
-    // Generate progressions
-    let progressions = generate_progression(&search_chords, &guitar, &options);
+	// Generate progressions
+	let progressions = generate_progression(&search_chords, &guitar, &options);
 
-    if progressions.is_empty() {
-        println!("{}", "No valid progressions found".yellow());
-        return Ok(());
-    }
+	if progressions.is_empty() {
+		println!("{}", "No valid progressions found".yellow());
+		return Ok(());
+	}
 
-    // Display the results
-    display_progressions(&progressions, &chord_names, capo, &guitar);
+	// Display the results
+	display_progressions(&progressions, &chord_names, capo, &guitar);
 
-    Ok(())
+	Ok(())
 }
 
 /// Display progression results with formatted output
 fn display_progressions(
-    progressions: &[chordcraft_core::progression::ProgressionSequence],
-    chord_names: &[&str],
-    capo: Option<u8>,
-    guitar: &Guitar,
+	progressions: &[chordcraft_core::progression::ProgressionSequence],
+	chord_names: &[&str],
+	capo: Option<u8>,
+	guitar: &Guitar,
 ) {
-    // Display header
-    let chord_display = chord_names.join(" → ");
-    if let Some(capo_fret) = capo {
-        println!(
-            "\n{} {} {}\n",
-            "Progression:".bold(),
-            chord_display.green().bold(),
-            format!("(Capo {capo_fret})").yellow()
-        );
-    } else {
-        println!(
-            "\n{} {}\n",
-            "Progression:".bold(),
-            chord_display.green().bold()
-        );
-    }
+	// Display header
+	let chord_display = chord_names.join(" → ");
+	if let Some(capo_fret) = capo {
+		println!(
+			"\n{} {} {}\n",
+			"Progression:".bold(),
+			chord_display.green().bold(),
+			format!("(Capo {capo_fret})").yellow()
+		);
+	} else {
+		println!(
+			"\n{} {}\n",
+			"Progression:".bold(),
+			chord_display.green().bold()
+		);
+	}
 
-    // Display each progression alternative
-    for (alt_idx, progression) in progressions.iter().enumerate() {
-        println!("{}", "━".repeat(60).dimmed());
-        println!(
-            "{} #{}",
-            "Alternative".bold(),
-            (alt_idx + 1).to_string().cyan().bold()
-        );
-        println!(
-            "{}: {} | {}: {:.1}",
-            "Total Score".bold(),
-            progression.total_score,
-            "Avg Transition".bold(),
-            progression.avg_transition_score
-        );
-        println!("{}", "━".repeat(60).dimmed());
-        println!();
+	// Display each progression alternative
+	for (alt_idx, progression) in progressions.iter().enumerate() {
+		println!("{}", "━".repeat(60).dimmed());
+		println!(
+			"{} #{}",
+			"Alternative".bold(),
+			(alt_idx + 1).to_string().cyan().bold()
+		);
+		println!(
+			"{}: {} | {}: {:.1}",
+			"Total Score".bold(),
+			progression.total_score,
+			"Avg Transition".bold(),
+			progression.avg_transition_score
+		);
+		println!("{}", "━".repeat(60).dimmed());
+		println!();
 
-        // Display each chord and transition
-        for (i, fingering) in progression.fingerings.iter().enumerate() {
-            let chord_name = if capo.is_some() {
-                chord_names[i]
-            } else {
-                &progression.chords[i]
-            };
+		// Display each chord and transition
+		for (i, fingering) in progression.fingerings.iter().enumerate() {
+			let chord_name = if capo.is_some() {
+				chord_names[i]
+			} else {
+				&progression.chords[i]
+			};
 
-            println!(
-                "[{}] {} - Fret {}",
-                (i + 1).to_string().cyan().bold(),
-                chord_name.green().bold(),
-                fingering.position
-            );
+			println!(
+				"[{}] {} - Fret {}",
+				(i + 1).to_string().cyan().bold(),
+				chord_name.green().bold(),
+				fingering.position
+			);
 
-            // Display the fingering
-            let diagram = format_fingering_diagram(fingering, guitar);
-            for line in diagram.lines() {
-                println!("  {line}");
-            }
+			// Display the fingering
+			let diagram = format_fingering_diagram(fingering, guitar);
+			for line in diagram.lines() {
+				println!("  {line}");
+			}
 
-            // Display transition to next chord (if not the last)
-            if i < progression.transitions.len() {
-                let trans = &progression.transitions[i];
-                println!();
-                println!(
-                    "  {} {}: {}",
-                    "↓".bold(),
-                    "Transition Score".dimmed(),
-                    trans.score.to_string().cyan()
-                );
-                println!(
-                    "    {}: {} fingers | {}: {} | {}: {} frets",
-                    "Movements".dimmed(),
-                    trans.finger_movements,
-                    "Anchors".dimmed(),
-                    trans.common_anchors,
-                    "Distance".dimmed(),
-                    trans.position_distance
-                );
-                println!();
-            }
-        }
+			// Display transition to next chord (if not the last)
+			if i < progression.transitions.len() {
+				let trans = &progression.transitions[i];
+				println!();
+				println!(
+					"  {} {}: {}",
+					"↓".bold(),
+					"Transition Score".dimmed(),
+					trans.score.to_string().cyan()
+				);
+				println!(
+					"    {}: {} fingers | {}: {} | {}: {} frets",
+					"Movements".dimmed(),
+					trans.finger_movements,
+					"Anchors".dimmed(),
+					trans.common_anchors,
+					"Distance".dimmed(),
+					trans.position_distance
+				);
+				println!();
+			}
+		}
 
-        println!();
-    }
+		println!();
+	}
 }
 
 fn name_chord(fingering_str: &str, capo: Option<u8>) -> Result<()> {
-    use chordcraft_core::analyzer::analyze_fingering;
-    use chordcraft_core::fingering::Fingering;
+	use chordcraft_core::analyzer::analyze_fingering;
+	use chordcraft_core::fingering::Fingering;
 
-    // Parse the fingering
-    let fingering = Fingering::parse(fingering_str)
-        .with_context(|| format!("Invalid fingering notation: '{fingering_str}'"))?;
+	// Parse the fingering
+	let fingering = Fingering::parse(fingering_str)
+		.with_context(|| format!("Invalid fingering notation: '{fingering_str}'"))?;
 
-    let guitar = Guitar::default();
+	let guitar = Guitar::default();
 
-    // Get the notes
-    let pitches = fingering.unique_pitch_classes(&guitar);
+	// Get the notes
+	let pitches = fingering.unique_pitch_classes(&guitar);
 
-    // Display header with capo info
-    if let Some(capo_fret) = capo {
-        println!(
-            "\n{} {} {}\n",
-            "Analyzing fingering:".bold(),
-            fingering_str.green().bold(),
-            format!("(Capo {capo_fret})").yellow()
-        );
-    } else {
-        println!(
-            "\n{} {}\n",
-            "Analyzing fingering:".bold(),
-            fingering_str.green().bold()
-        );
-    }
+	// Display header with capo info
+	if let Some(capo_fret) = capo {
+		println!(
+			"\n{} {} {}\n",
+			"Analyzing fingering:".bold(),
+			fingering_str.green().bold(),
+			format!("(Capo {capo_fret})").yellow()
+		);
+	} else {
+		println!(
+			"\n{} {}\n",
+			"Analyzing fingering:".bold(),
+			fingering_str.green().bold()
+		);
+	}
 
-    println!(
-        "Notes played: {}\n",
-        pitches
-            .iter()
-            .map(|p| p.to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
-    );
+	println!(
+		"Notes played: {}\n",
+		pitches
+			.iter()
+			.map(|p| p.to_string())
+			.collect::<Vec<_>>()
+			.join(", ")
+	);
 
-    // Analyze the fingering
-    let matches = analyze_fingering(&fingering, &guitar);
+	// Analyze the fingering
+	let matches = analyze_fingering(&fingering, &guitar);
 
-    if matches.is_empty() {
-        println!("{}", "Could not identify chord (not enough notes)".yellow());
-        return Ok(());
-    }
+	if matches.is_empty() {
+		println!("{}", "Could not identify chord (not enough notes)".yellow());
+		return Ok(());
+	}
 
-    // If using capo, transpose all identified chords UP by capo amount
-    // (the fingering shows the shape, but the actual sound is transposed up)
-    let transposed_matches: Vec<_> = if let Some(capo_fret) = capo {
-        matches
-            .iter()
-            .map(|m| {
-                let mut transposed = m.clone();
-                transposed.chord = m.chord.transpose(capo_fret as i32);
-                transposed
-            })
-            .collect()
-    } else {
-        matches.clone()
-    };
+	// If using capo, transpose all identified chords UP by capo amount
+	// (the fingering shows the shape, but the actual sound is transposed up)
+	let transposed_matches: Vec<_> = if let Some(capo_fret) = capo {
+		matches
+			.iter()
+			.map(|m| {
+				let mut transposed = m.clone();
+				transposed.chord = m.chord.transpose(capo_fret as i32);
+				transposed
+			})
+			.collect()
+	} else {
+		matches.clone()
+	};
 
-    // Display the top match
-    let top = &transposed_matches[0];
-    let shape_chord = &matches[0].chord;
+	// Display the top match
+	let top = &transposed_matches[0];
+	let shape_chord = &matches[0].chord;
 
-    if capo.is_some() {
-        println!(
-            "{} {} {} {}\n",
-            "Best match:".bold().green(),
-            top.chord.to_string().green().bold(),
-            "(".dimmed(),
-            format!("{shape_chord} shape)").dimmed()
-        );
-    } else {
-        println!(
-            "{} {}\n",
-            "Best match:".bold().green(),
-            top.chord.to_string().green().bold()
-        );
-    }
+	if capo.is_some() {
+		println!(
+			"{} {} {} {}\n",
+			"Best match:".bold().green(),
+			top.chord.to_string().green().bold(),
+			"(".dimmed(),
+			format!("{shape_chord} shape)").dimmed()
+		);
+	} else {
+		println!(
+			"{} {}\n",
+			"Best match:".bold().green(),
+			top.chord.to_string().green().bold()
+		);
+	}
 
-    println!("  Confidence: {:.0}%", top.completeness * 100.0);
-    println!(
-        "  Root in bass: {}",
-        if top.root_in_bass {
-            "Yes".green()
-        } else {
-            "No".yellow()
-        }
-    );
-    println!("  Score: {}", top.score);
+	println!("  Confidence: {:.0}%", top.completeness * 100.0);
+	println!(
+		"  Root in bass: {}",
+		if top.root_in_bass {
+			"Yes".green()
+		} else {
+			"No".yellow()
+		}
+	);
+	println!("  Score: {}", top.score);
 
-    // Display alternatives if there are any
-    if transposed_matches.len() > 1 {
-        println!("\n{}", "Alternative interpretations:".bold());
-        for (i, (m, shape)) in transposed_matches
-            .iter()
-            .zip(matches.iter())
-            .skip(1)
-            .take(4)
-            .enumerate()
-        {
-            if capo.is_some() {
-                let shape_name = &shape.chord;
-                println!(
-                    "  {}. {} {} (confidence: {:.0}%, score: {})",
-                    i + 1,
-                    m.chord.to_string().cyan(),
-                    format!("({shape_name} shape)").dimmed(),
-                    m.completeness * 100.0,
-                    m.score
-                );
-            } else {
-                println!(
-                    "  {}. {} (confidence: {:.0}%, score: {})",
-                    i + 1,
-                    m.chord.to_string().cyan(),
-                    m.completeness * 100.0,
-                    m.score
-                );
-            }
-        }
-    }
+	// Display alternatives if there are any
+	if transposed_matches.len() > 1 {
+		println!("\n{}", "Alternative interpretations:".bold());
+		for (i, (m, shape)) in transposed_matches
+			.iter()
+			.zip(matches.iter())
+			.skip(1)
+			.take(4)
+			.enumerate()
+		{
+			if capo.is_some() {
+				let shape_name = &shape.chord;
+				println!(
+					"  {}. {} {} (confidence: {:.0}%, score: {})",
+					i + 1,
+					m.chord.to_string().cyan(),
+					format!("({shape_name} shape)").dimmed(),
+					m.completeness * 100.0,
+					m.score
+				);
+			} else {
+				println!(
+					"  {}. {} (confidence: {:.0}%, score: {})",
+					i + 1,
+					m.chord.to_string().cyan(),
+					m.completeness * 100.0,
+					m.score
+				);
+			}
+		}
+	}
 
-    Ok(())
+	Ok(())
 }
