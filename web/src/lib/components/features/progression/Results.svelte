@@ -1,5 +1,4 @@
 <script lang="ts">
-	import FingeringCard from '$lib/components/shared/FingeringCard.svelte';
 	import ChordDiagram from '$lib/ChordDiagram.svelte';
 	import type { ProgressionSequence } from '$lib/wasm';
 
@@ -8,14 +7,14 @@
 
 {#if sequences.length > 0}
 	<div class="mt-6 space-y-8">
-		{#each sequences as sequence, i}
-			<div class="rounded-lg border-2 border-gray-300 bg-white p-6">
+		{#each sequences as sequence, i (sequence.fingerings.map((f) => f.tab).join('-'))}
+			<div class="rounded-lg border-2 border-border bg-card p-6">
 				<div class="mb-6 flex items-center justify-between">
-					<h3 class="text-xl font-bold text-gray-900">
+					<h3 class="text-xl font-bold text-foreground">
 						Alternative #{i + 1}
 					</h3>
 					<div class="text-sm">
-						<span class="text-gray-600">Avg Transition:</span>
+						<span class="text-muted-foreground">Avg Transition:</span>
 						<span class="ml-1 font-semibold text-blue-600">
 							{sequence.avgTransitionScore.toFixed(1)}
 						</span>
@@ -23,12 +22,12 @@
 				</div>
 
 				<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-					{#each sequence.fingerings as fingering, j}
+					{#each sequence.fingerings as fingering, j (fingering.tab)}
 						<div class="relative">
-							<div class="rounded-lg border-2 border-gray-200 bg-gray-50 p-4">
+							<div class="rounded-lg border-2 border-border bg-background p-4">
 								<!-- Chord Name -->
 								<div class="mb-3 text-center">
-									<h4 class="text-lg font-bold text-gray-900">
+									<h4 class="text-lg font-bold text-foreground">
 										{sequence.chords[j]}
 									</h4>
 								</div>
@@ -46,7 +45,7 @@
 								<!-- Tab Notation -->
 								<div class="mb-2 text-center">
 									<code
-										class="rounded border bg-white px-2 py-1 font-mono text-sm"
+										class="rounded border border-border bg-card px-2 py-1 font-mono text-sm"
 									>
 										{fingering.tab}
 									</code>
@@ -57,7 +56,7 @@
 									<span class="rounded bg-blue-100 px-2 py-0.5 text-blue-800">
 										{fingering.voicingType}
 									</span>
-									<span class="rounded bg-gray-200 px-2 py-0.5 text-gray-700">
+									<span class="rounded bg-muted px-2 py-0.5 text-foreground">
 										Fret {fingering.position}
 									</span>
 								</div>
@@ -69,10 +68,10 @@
 									class="absolute top-1/2 -right-3 z-10 hidden -translate-y-1/2 lg:block"
 								>
 									<div
-										class="rounded-full border-2 border-green-500 bg-white p-2 shadow-md"
+										class="rounded-full border-2 border-green-500 bg-card p-2 shadow-md dark:border-green-600"
 									>
 										<svg
-											class="h-5 w-5 text-green-600"
+											class="h-5 w-5 text-green-600 dark:text-green-500"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
@@ -86,10 +85,12 @@
 										</svg>
 									</div>
 									<div class="mt-1 text-center">
-										<div class="text-xs font-semibold text-green-600">
+										<div
+											class="text-xs font-semibold text-green-600 dark:text-green-500"
+										>
 											Score: {sequence.transitions[j].score}
 										</div>
-										<div class="text-xs text-gray-500">
+										<div class="text-xs text-muted-foreground">
 											{sequence.transitions[j].fingerMovements} move{sequence
 												.transitions[j].fingerMovements !== 1
 												? 's'

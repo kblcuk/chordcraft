@@ -17,9 +17,30 @@ vi.mock('$lib/wasm', () => ({
 		{
 			chords: ['C', 'F', 'G'],
 			fingerings: [
-				{ tab: 'x32010', score: 85, voicingType: 'full', hasRootInBass: true, position: 0, notes: ['C', 'E', 'G'] },
-				{ tab: 'xx3211', score: 82, voicingType: 'full', hasRootInBass: true, position: 1, notes: ['F', 'A', 'C'] },
-				{ tab: '320003', score: 88, voicingType: 'full', hasRootInBass: true, position: 0, notes: ['G', 'B', 'D'] },
+				{
+					tab: 'x32010',
+					score: 85,
+					voicingType: 'full',
+					hasRootInBass: true,
+					position: 0,
+					notes: ['C', 'E', 'G'],
+				},
+				{
+					tab: 'xx3211',
+					score: 82,
+					voicingType: 'full',
+					hasRootInBass: true,
+					position: 1,
+					notes: ['F', 'A', 'C'],
+				},
+				{
+					tab: '320003',
+					score: 88,
+					voicingType: 'full',
+					hasRootInBass: true,
+					position: 0,
+					notes: ['G', 'B', 'D'],
+				},
 			],
 			transitions: [
 				{ score: 90, movements: 2, anchors: 1, distance: 1 },
@@ -76,7 +97,7 @@ describe('Progression Page - Core User Flows', () => {
 
 	it('should clear input and results when store.clear() is called', () => {
 		// Set up some state first by updating the store
-		progressionStore.setOptions({ progressionInput: 'C F G' });
+		progressionStore.setProgressionInput('C F G');
 
 		let state = get(progressionStore);
 		expect(state.progressionInput).toBe('C F G');

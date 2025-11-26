@@ -66,7 +66,7 @@ describe('Find Page - Core User Flows', () => {
 
 	it('should clear input and results when store.clear() is called', () => {
 		// Set up some state first by updating the store
-		findStore.setOptions({ chordInput: 'Cmaj7' });
+		findStore.setChordInput('Cmaj7');
 
 		let state = get(findStore);
 		expect(state.chordInput).toBe('Cmaj7');

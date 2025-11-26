@@ -20,9 +20,9 @@
 	});
 </script>
 
-<div class="rounded-lg border bg-white p-6 shadow-sm">
-	<h2 class="mb-4 text-xl font-semibold text-gray-900">Name Chord</h2>
-	<p class="mb-4 text-gray-600">Enter tab notation to identify a chord.</p>
+<div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+	<h2 class="mb-4 text-xl font-semibold text-foreground">Name Chord</h2>
+	<p class="mb-4 text-muted-foreground">Enter tab notation to identify a chord.</p>
 
 	<!-- Input -->
 	<Input

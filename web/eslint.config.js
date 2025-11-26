@@ -1,79 +1,38 @@
+import { fileURLToPath } from 'node:url';
+import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
-import tseslint from '@typescript-eslint/eslint-plugin';
-import tsparser from '@typescript-eslint/parser';
 import svelte from 'eslint-plugin-svelte';
-import svelteParser from 'svelte-eslint-parser';
+import { defineConfig } from 'eslint/config';
 import globals from 'globals';
+import ts from 'typescript-eslint';
+import svelteConfig from './svelte.config.js';
 
-export default [
+const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+
+export default defineConfig(
+	includeIgnoreFile(gitignorePath),
 	js.configs.recommended,
+	...ts.configs.recommended,
+	...svelte.configs.recommended,
 	{
-		files: ['**/*.ts', '**/*.tsx'],
 		languageOptions: {
-			parser: tsparser,
-			parserOptions: {
-				ecmaVersion: 'latest',
-				sourceType: 'module',
-			},
-			globals: {
-				...globals.browser,
-				...globals.es2025,
-			},
-		},
-		plugins: {
-			'@typescript-eslint': tseslint,
+			globals: { ...globals.browser, ...globals.node },
 		},
 		rules: {
-			...tseslint.configs.recommended.rules,
-			'@typescript-eslint/no-unused-vars': [
-				'warn',
-				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
-			],
+			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
+			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
+			'no-undef': 'off',
 		},
 	},
 	{
-		files: ['**/*.svelte'],
+		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
 		languageOptions: {
-			parser: svelteParser,
 			parserOptions: {
-				parser: tsparser,
-				ecmaVersion: 'latest',
-				sourceType: 'module',
-			},
-			globals: {
-				...globals.browser,
-				...globals.es2021,
+				projectService: true,
+				extraFileExtensions: ['.svelte'],
+				parser: ts.parser,
+				svelteConfig,
 			},
 		},
-		plugins: {
-			svelte,
-		},
-		rules: {
-			...svelte.configs.recommended.rules,
-			// Svelte-specific rules
-			'svelte/no-unused-svelte-ignore': 'warn',
-			'svelte/valid-compile': 'error',
-			// Relax some rules for Svelte reactivity
-			'no-unused-vars': 'off',
-			'@typescript-eslint/no-unused-vars': 'off',
-		},
-	},
-	{
-		files: ['*.config.ts', '*.config.js'],
-		languageOptions: {
-			globals: {
-				...globals.node,
-			},
-		},
-	},
-	{
-		ignores: [
-			'node_modules/**',
-			'dist/**',
-			'build/**',
-			'.svelte-kit/**',
-			'.vite/**',
-			'vite.config.ts.timestamp-*',
-		],
-	},
-];
+	}
+);

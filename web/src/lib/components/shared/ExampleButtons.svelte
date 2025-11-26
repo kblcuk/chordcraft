@@ -19,9 +19,9 @@
 </script>
 
 <div>
-	<p class="mb-2 text-sm font-medium text-gray-700">Quick Examples:</p>
+	<p class="mb-2 text-sm font-medium text-foreground">Quick Examples:</p>
 	<div class="flex flex-wrap gap-2">
-		{#each examples as example}
+		{#each examples as example (typeof example === 'string' ? example : example.label)}
 			<Button
 				onclick={() => onSelect(getValue(example))}
 				{disabled}
@@ -32,7 +32,7 @@
 					{example}
 				{:else}
 					<span class="font-mono">{example.tab}</span>
-					<span class="ml-1 text-gray-500">({example.label})</span>
+					<span class="ml-1 text-muted-foreground">({example.label})</span>
 				{/if}
 			</Button>
 		{/each}

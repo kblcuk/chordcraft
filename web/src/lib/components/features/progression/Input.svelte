@@ -34,9 +34,9 @@
 <div class="space-y-4">
 	<!-- Common Progressions -->
 	<div>
-		<p class="mb-2 text-sm font-medium text-gray-700">Common Progressions:</p>
+		<p class="mb-2 text-sm font-medium text-foreground">Common Progressions:</p>
 		<div class="flex flex-wrap gap-2">
-			{#each commonProgressions as progression}
+			{#each commonProgressions as progression (progression.name)}
 				<Button
 					onclick={() => handleExample(progression.chords)}
 					{disabled}
@@ -66,7 +66,7 @@
 				<ClearButton onclick={onClear} />
 			{/if}
 		</div>
-		<p class="mt-1 text-xs text-gray-500">Press Enter or click away to generate</p>
+		<p class="mt-1 text-xs text-muted-foreground">Press Enter or click away to generate</p>
 	</div>
 
 	<Button

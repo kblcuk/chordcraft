@@ -43,9 +43,9 @@
 		</Collapsible.Trigger>
 
 		<Collapsible.Content class="mt-6">
-			<div class="space-y-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
+			<div class="space-y-6 rounded-lg border border-border bg-background p-6">
 				<div class="mb-4 flex items-center justify-between">
-					<h3 class="text-lg font-semibold text-gray-900">Advanced Options</h3>
+					<h3 class="text-lg font-semibold text-foreground">Advanced Options</h3>
 					<Button variant="ghost" size="sm" onclick={onReset} class="text-sm underline">
 						Reset to defaults
 					</Button>

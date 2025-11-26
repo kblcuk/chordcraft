@@ -23,9 +23,9 @@
 	});
 </script>
 
-<div class="rounded-lg border bg-white p-6 shadow-sm">
-	<h2 class="mb-4 text-xl font-semibold text-gray-900">Chord Progression</h2>
-	<p class="mb-4 text-gray-600">
+<div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+	<h2 class="mb-4 text-xl font-semibold text-foreground">Chord Progression</h2>
+	<p class="mb-4 text-muted-foreground">
 		Enter a sequence of chords to find optimal fingering transitions.
 	</p>
 

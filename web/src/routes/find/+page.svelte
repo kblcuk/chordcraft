@@ -23,9 +23,9 @@
 	});
 </script>
 
-<div class="rounded-lg border bg-white p-6 shadow-sm">
-	<h2 class="mb-4 text-xl font-semibold text-gray-900">Find Fingerings</h2>
-	<p class="mb-4 text-gray-600">Enter a chord name to see all possible fingerings.</p>
+<div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+	<h2 class="mb-4 text-xl font-semibold text-foreground">Find Fingerings</h2>
+	<p class="mb-4 text-muted-foreground">Enter a chord name to see all possible fingerings.</p>
 
 	<!-- Input -->
 	<Input

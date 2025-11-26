@@ -197,7 +197,7 @@
 		const byFret = groupByFret(fretted);
 
 		return Array.from(byFret.entries())
-			.filter(([_, strings]) => strings.length >= 2)
+			.filter(([, strings]) => strings.length >= 2)
 			.map(([fret, strings]) => {
 				const sorted = [...strings].sort((a, b) => a - b);
 				return {
@@ -272,7 +272,7 @@
 	// ============================================================================
 
 	$: positions = parseTab(tab);
-	$: [minFret, maxFret] = calculateFretRange(positions);
+	$: [minFret] = calculateFretRange(positions);
 	$: isHighPosition = minFret > 0;
 	$: barres = detectBarres(positions);
 	$: fingerNumbers = assignFingerNumbers(positions);
@@ -315,7 +315,7 @@
 	{/if}
 
 	<!-- Strings (vertical lines) -->
-	{#each Array(STRING_COUNT).fill(0) as _, stringIndex}
+	{#each [...Array(STRING_COUNT).keys()] as stringIndex (stringIndex)}
 		{@const x = MARGIN_SIDE + stringIndex * stringSpacing}
 		<line
 			x1={x}
@@ -329,7 +329,7 @@
 	{/each}
 
 	<!-- Frets (horizontal lines) -->
-	{#each Array(VISIBLE_FRETS + 1).fill(0) as _, fretIndex}
+	{#each [...Array(VISIBLE_FRETS + 1).keys()] as fretIndex (fretIndex)}
 		{@const y = getFretYPos(minFret + fretIndex)}
 		{@const isNut = fretIndex === 0 && minFret === 0}
 		<line
@@ -344,7 +344,7 @@
 	{/each}
 
 	<!-- Barres (lines behind finger dots) -->
-	{#each barres as barre}
+	{#each barres as barre (`${barre.fret}-${barre.fromString}-${barre.toString}`)}
 		{@const y = getPosition(0, barre.fret).y - fretSpacing / 2}
 		{@const x1 = MARGIN_SIDE + barre.fromString * stringSpacing}
 		{@const x2 = MARGIN_SIDE + barre.toString * stringSpacing}
@@ -361,7 +361,7 @@
 	{/each}
 
 	<!-- Finger positions (dots) -->
-	{#each fingerPositions as pos}
+	{#each fingerPositions as pos (pos)}
 		{@const { x, y } = getPosition(pos.string, pos.fret)}
 		{@const displayY = getDisplayY(pos.fret, y)}
 		{@const isOpen = pos.fret === 0}
@@ -399,7 +399,7 @@
 	{/each}
 
 	<!-- Muted string indicators (X) at top -->
-	{#each positions.filter((p) => p.fret === -1) as pos}
+	{#each positions.filter((p) => p.fret === -1) as pos (pos)}
 		{@const x = MARGIN_SIDE + pos.string * stringSpacing}
 		<text
 			{x}

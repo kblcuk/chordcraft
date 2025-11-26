@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { ModeWatcher } from 'mode-watcher';
 	import { initializeWasm } from '$lib/wasm';
 	import Header from '$lib/components/shared/Header.svelte';
 	import Navigation from '$lib/components/shared/Navigation.svelte';
@@ -21,8 +22,9 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-background">
 	<Header bind:wasmReady />
+	<ModeWatcher />
 
 	<!-- Navigation -->
 	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

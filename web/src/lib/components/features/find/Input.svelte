@@ -52,7 +52,7 @@
 				<ClearButton onclick={onClear} />
 			{/if}
 		</div>
-		<p class="mt-1 text-xs text-gray-500">Press Enter or click away to search</p>
+		<p class="mt-1 text-xs text-muted-foreground">Press Enter or click away to search</p>
 	</div>
 
 	<Button

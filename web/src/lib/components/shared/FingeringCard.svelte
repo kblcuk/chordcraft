@@ -12,7 +12,7 @@
 </script>
 
 <div
-	class="rounded-lg border-2 border-gray-200 bg-white p-4 transition-colors hover:border-blue-400"
+	class="rounded-lg border-2 border-border bg-card p-4 transition-colors hover:border-blue-400 dark:hover:border-blue-600"
 >
 	<!-- Chord Diagram -->
 	<div class="mb-3 flex justify-center">
@@ -26,7 +26,7 @@
 
 	<!-- Tab Notation -->
 	<div class="mb-2 text-center">
-		<code class="rounded bg-gray-100 px-3 py-1 font-mono text-lg font-bold">
+		<code class="rounded bg-muted px-3 py-1 font-mono text-lg font-bold">
 			{fingering.tab}
 		</code>
 	</div>
@@ -36,22 +36,22 @@
 		<span class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
 			{fingering.voicingType}
 		</span>
-		<span class="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+		<span class="rounded bg-muted px-2 py-1 text-xs font-medium text-foreground">
 			Score: {fingering.score}
 		</span>
-		<span class="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+		<span class="rounded bg-muted px-2 py-1 text-xs font-medium text-foreground">
 			Fret {fingering.position}
 		</span>
 	</div>
 
 	<!-- Notes and Root in Bass -->
-	<div class="space-y-1 text-center text-xs text-gray-600">
+	<div class="space-y-1 text-center text-xs text-muted-foreground">
 		<div>Notes: {fingering.notes.join(', ')}</div>
 		<div>
 			{#if fingering.hasRootInBass}
-				<span class="text-green-600">✓ Root in bass</span>
+				<span class="text-green-600 dark:text-green-500">✓ Root in bass</span>
 			{:else}
-				<span class="text-gray-400">No root in bass</span>
+				<span class="text-muted-foreground/70">No root in bass</span>
 			{/if}
 		</div>
 	</div>

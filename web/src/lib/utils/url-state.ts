@@ -5,6 +5,12 @@
 import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
 
+export const routes = [
+	{ path: '/find', label: 'Find Fingerings' },
+	{ path: '/name', label: 'Name Chord' },
+	{ path: '/progression', label: 'Progression' },
+] as const;
+
 /**
  * Parse a URL search params object into a plain object
  */
@@ -36,12 +42,18 @@ export function updateUrlParams(
 	});
 
 	const query = searchParams.toString();
-	const url = query ? `?${query}` : window.location.pathname;
+	const pathname = window.location.pathname;
+	const url = query ? `${pathname}?${query}` : pathname;
 
+	// We can enalbe this back when goto supports query params:
+	// https://github.com/sveltejs/kit/issues/14750
+	// eslint-disable-next-line svelte/no-navigation-without-resolve
 	goto(url, {
 		replaceState: options.replaceState ?? true,
 		keepFocus: options.keepFocus ?? true,
 		noScroll: true,
+	}).catch(() => {
+		// Ignore navigation errors (user might navigate away before this completes)
 	});
 }
 

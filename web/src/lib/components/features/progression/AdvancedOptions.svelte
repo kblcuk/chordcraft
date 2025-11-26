@@ -41,7 +41,7 @@
 			step={1}
 			onValueChange={(v: number) => onChange({ limit: v })}
 		/>
-		<div class="mt-1 flex justify-between text-xs text-gray-500">
+		<div class="mt-1 flex justify-between text-xs text-muted-foreground">
 			<span>1</span>
 			<span>10</span>
 		</div>
@@ -61,11 +61,13 @@
 			step={1}
 			onValueChange={(v: number) => onChange({ maxDistance: v })}
 		/>
-		<div class="mt-1 flex justify-between text-xs text-gray-500">
+		<div class="mt-1 flex justify-between text-xs text-muted-foreground">
 			<span>1 fret</span>
 			<span>12 frets</span>
 		</div>
-		<p class="mt-2 text-xs text-gray-500">Maximum fret jump between consecutive fingerings</p>
+		<p class="mt-2 text-xs text-muted-foreground">
+			Maximum fret jump between consecutive fingerings
+		</p>
 	</div>
 
 	<!-- Capo Selector -->
@@ -75,10 +77,10 @@
 			id="prog-capo"
 			value={capo}
 			onchange={(e) => onChange({ capo: Number(e.currentTarget.value) })}
-			class="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+			class="w-full rounded-md border border-border px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 		>
 			<option value={0}>No capo</option>
-			{#each Array(12).fill(0) as _, i}
+			{#each [...Array(12).keys()] as i (i)}
 				<option value={i + 1}>Fret {i + 1}</option>
 			{/each}
 		</select>
@@ -96,9 +98,9 @@
 					onchange={() => onChange({ context: 'solo' })}
 					class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 				/>
-				<span class="ml-2 text-sm text-gray-700">
+				<span class="ml-2 text-sm text-foreground">
 					Solo
-					<span class="text-gray-500">(full bass)</span>
+					<span class="text-muted-foreground">(full bass)</span>
 				</span>
 			</label>
 			<label class="flex cursor-pointer items-center">
@@ -109,9 +111,9 @@
 					onchange={() => onChange({ context: 'band' })}
 					class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 				/>
-				<span class="ml-2 text-sm text-gray-700">
+				<span class="ml-2 text-sm text-foreground">
 					Band
-					<span class="text-gray-500">(lighter)</span>
+					<span class="text-muted-foreground">(lighter)</span>
 				</span>
 			</label>
 		</div>

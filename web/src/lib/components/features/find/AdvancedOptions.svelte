@@ -45,7 +45,7 @@
 			step={5}
 			onValueChange={(v: number) => onChange({ limit: v })}
 		/>
-		<div class="mt-1 flex justify-between text-xs text-gray-500">
+		<div class="mt-1 flex justify-between text-xs text-muted-foreground">
 			<span>5</span>
 			<span>50</span>
 		</div>
@@ -58,10 +58,10 @@
 			id="find-capo"
 			value={capo}
 			onchange={(e) => onChange({ capo: Number(e.currentTarget.value) })}
-			class="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+			class="w-full rounded-md border border-border px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 		>
 			<option value={0}>No capo</option>
-			{#each Array(12).fill(0) as _, i}
+			{#each [...Array(12).keys()] as i (i)}
 				<option value={i + 1}>Fret {i + 1}</option>
 			{/each}
 		</select>
@@ -77,11 +77,11 @@
 				const val = e.currentTarget.value;
 				onChange({ position: val === '' ? null : Number(val) });
 			}}
-			class="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+			class="w-full rounded-md border border-border px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 		>
 			<option value={null}>Any position</option>
 			<option value={0}>Open position (0-5)</option>
-			{#each Array(12).fill(0) as _, i}
+			{#each [...Array(12).keys()] as i (i)}
 				<option value={i + 1}>Around fret {i + 1}</option>
 			{/each}
 		</select>
@@ -99,9 +99,9 @@
 					onchange={() => onChange({ context: 'solo' })}
 					class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 				/>
-				<span class="ml-2 text-sm text-gray-700">
+				<span class="ml-2 text-sm text-foreground">
 					Solo
-					<span class="text-gray-500">(full bass)</span>
+					<span class="text-muted-foreground">(full bass)</span>
 				</span>
 			</label>
 			<label class="flex cursor-pointer items-center">
@@ -112,9 +112,9 @@
 					onchange={() => onChange({ context: 'band' })}
 					class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 				/>
-				<span class="ml-2 text-sm text-gray-700">
+				<span class="ml-2 text-sm text-foreground">
 					Band
-					<span class="text-gray-500">(lighter)</span>
+					<span class="text-muted-foreground">(lighter)</span>
 				</span>
 			</label>
 		</div>
@@ -133,9 +133,9 @@
 				onchange={() => onChange({ voicing: 'all' })}
 				class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 			/>
-			<span class="ml-2 text-sm text-gray-700">
+			<span class="ml-2 text-sm text-foreground">
 				All
-				<span class="text-gray-500">(show everything)</span>
+				<span class="text-muted-foreground">(show everything)</span>
 			</span>
 		</label>
 		<label class="flex cursor-pointer items-center">
@@ -146,9 +146,9 @@
 				onchange={() => onChange({ voicing: 'core' })}
 				class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 			/>
-			<span class="ml-2 text-sm text-gray-700">
+			<span class="ml-2 text-sm text-foreground">
 				Core
-				<span class="text-gray-500">(essential)</span>
+				<span class="text-muted-foreground">(essential)</span>
 			</span>
 		</label>
 		<label class="flex cursor-pointer items-center">
@@ -159,9 +159,9 @@
 				onchange={() => onChange({ voicing: 'full' })}
 				class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 			/>
-			<span class="ml-2 text-sm text-gray-700">
+			<span class="ml-2 text-sm text-foreground">
 				Full
-				<span class="text-gray-500">(complete)</span>
+				<span class="text-muted-foreground">(complete)</span>
 			</span>
 		</label>
 		<label class="flex cursor-pointer items-center">
@@ -172,9 +172,9 @@
 				onchange={() => onChange({ voicing: 'jazzy' })}
 				class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 			/>
-			<span class="ml-2 text-sm text-gray-700">
+			<span class="ml-2 text-sm text-foreground">
 				Jazzy
-				<span class="text-gray-500">(extended)</span>
+				<span class="text-muted-foreground">(extended)</span>
 			</span>
 		</label>
 	</div>
