@@ -1,5 +1,5 @@
 {
-	"plugins": ["prettier-plugin-svelte"],
+	"plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
 	"semi": true,
 	"singleQuote": true,
 	"trailingComma": "es5",
@@ -13,5 +13,6 @@
 				"parser": "svelte"
 			}
 		}
-	]
+	],
+	"tailwindStylesheet": "./src/app.css"
 }

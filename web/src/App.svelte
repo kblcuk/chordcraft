@@ -1,4 +1,6 @@
 <script lang="ts">
+	import './app.css';
+
 	import { onMount } from 'svelte';
 
 	import {
@@ -10,18 +12,18 @@
 		type ChordMatch,
 		type ProgressionSequence,
 	} from './lib/wasm';
+
 	import ChordDiagram from './lib/ChordDiagram.svelte';
 
 	type Mode = 'find' | 'name' | 'progression';
-	let currentMode: Mode = 'find';
 
+	let currentMode: Mode = 'find';
 	// Find mode state
 	let findChordInput = '';
 	let findResults: ScoredFingering[] = [];
 	let findLoading = false;
 	let findError = '';
 	let findHasSearched = false; // Track if user has performed initial search
-
 	// Advanced options state (Find mode)
 	let showAdvancedFind = false;
 	let findLimit = 10;
@@ -29,29 +31,26 @@
 	let findVoicing: 'all' | 'core' | 'full' | 'jazzy' = 'all';
 	let findPosition: number | null = null; // null = any position
 	let findContext: 'solo' | 'band' = 'solo';
-
 	// Name mode state
 	let nameTabInput = '';
 	let nameResults: ChordMatch[] = [];
 	let nameLoading = false;
 	let nameError = '';
-
 	// Progression mode state
 	let progressionInput = '';
 	let progressionResults: ProgressionSequence[] = [];
 	let progressionLoading = false;
 	let progressionError = '';
 	let progressionHasSearched = false; // Track if user has performed initial search
-
 	// Advanced options state (Progression mode)
 	let showAdvancedProgression = false;
 	let progressionLimit = 3;
 	let progressionMaxDistance = 3;
 	let progressionCapo = 0;
 	let progressionContext: 'solo' | 'band' = 'solo';
-
 	// Initialize WASM on mount
 	let wasmReady = false;
+
 	onMount(async () => {
 		try {
 			await initializeWasm();
@@ -64,7 +63,6 @@
 	// Find fingerings handler
 	async function handleFind() {
 		if (!findChordInput.trim() || findLoading) return; // Guard against concurrent calls
-
 		findLoading = true;
 		findError = '';
 		findResults = [];
@@ -137,7 +135,6 @@
 	// Analyze chord handler
 	async function handleAnalyze() {
 		if (!nameTabInput.trim()) return;
-
 		nameLoading = true;
 		nameError = '';
 		nameResults = [];
@@ -154,13 +151,13 @@
 	// Generate progression handler
 	async function handleProgression() {
 		if (!progressionInput.trim() || progressionLoading) return; // Guard against concurrent calls
-
 		progressionLoading = true;
 		progressionError = '';
 		progressionResults = [];
 
 		try {
 			const chords = progressionInput.trim().split(/\s+/);
+
 			progressionResults = await generateProgression(chords, {
 				limit: progressionLimit,
 				maxFretDistance: progressionMaxDistance,
@@ -238,7 +235,10 @@
 		{ name: 'ii-V-I Jazz', chords: 'Dm7 G7 Cmaj7' },
 		{ name: 'I-vi-IV-V', chords: 'C Am F G' },
 		{ name: '12-Bar Blues', chords: 'C7 F7 C7 G7' },
-		{ name: 'Coltrane Changes', chords: 'Cmaj7 Ebmaj7 Abmaj7 Bmaj7' },
+		{
+			name: 'Coltrane Changes',
+			chords: 'Cmaj7 Ebmaj7 Abmaj7 Bmaj7',
+		},
 	];
 
 	// Helper functions to load examples
@@ -280,8 +280,8 @@
 
 <main class="min-h-screen bg-gray-50">
 	<!-- Header -->
-	<header class="bg-white shadow-sm border-b">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+	<header class="border-b bg-white shadow-sm">
+		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 			<h1 class="text-3xl font-bold text-gray-900">ChordCraft</h1>
 			<p class="mt-1 text-sm text-gray-500">
 				Chord-Fingering Conversion Tool
@@ -295,11 +295,11 @@
 	</header>
 
 	<!-- Mode Switcher -->
-	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-		<nav class="flex space-x-2 bg-white rounded-lg p-1 shadow-sm border">
+	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+		<nav class="flex space-x-2 rounded-lg border bg-white p-1 shadow-sm">
 			<button
 				onclick={() => (currentMode = 'find')}
-				class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors {currentMode ===
+				class="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors {currentMode ===
 				'find'
 					? 'bg-blue-600 text-white'
 					: 'text-gray-600 hover:bg-gray-100'}"
@@ -308,7 +308,7 @@
 			</button>
 			<button
 				onclick={() => (currentMode = 'name')}
-				class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors {currentMode ===
+				class="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors {currentMode ===
 				'name'
 					? 'bg-blue-600 text-white'
 					: 'text-gray-600 hover:bg-gray-100'}"
@@ -317,7 +317,7 @@
 			</button>
 			<button
 				onclick={() => (currentMode = 'progression')}
-				class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors {currentMode ===
+				class="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors {currentMode ===
 				'progression'
 					? 'bg-blue-600 text-white'
 					: 'text-gray-600 hover:bg-gray-100'}"
@@ -328,21 +328,21 @@
 	</div>
 
 	<!-- Content Area -->
-	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 		{#if currentMode === 'find'}
-			<div class="bg-white rounded-lg shadow-sm border p-6">
-				<h2 class="text-xl font-semibold text-gray-900 mb-4">Find Fingerings</h2>
-				<p class="text-gray-600 mb-4">Enter a chord name to see all possible fingerings.</p>
+			<div class="rounded-lg border bg-white p-6 shadow-sm">
+				<h2 class="mb-4 text-xl font-semibold text-gray-900">Find Fingerings</h2>
+				<p class="mb-4 text-gray-600">Enter a chord name to see all possible fingerings.</p>
 
 				<!-- Example Chords -->
 				<div class="mb-6">
-					<p class="text-sm font-medium text-gray-700 mb-2">Quick Examples:</p>
+					<p class="mb-2 text-sm font-medium text-gray-700">Quick Examples:</p>
 					<div class="flex flex-wrap gap-2">
 						{#each exampleChords as chord}
 							<button
 								onclick={() => loadExampleChord(chord)}
 								disabled={!wasmReady || findLoading}
-								class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								class="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{chord}
 							</button>
@@ -354,7 +354,7 @@
 					<div>
 						<label
 							for="chord-input"
-							class="block text-sm font-medium text-gray-700 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700"
 						>
 							Chord Name
 						</label>
@@ -366,17 +366,17 @@
 								onkeydown={(e) => e.key === 'Enter' && handleFind()}
 								onblur={handleFind}
 								placeholder="e.g., Cmaj7, Abm7, G7"
-								class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								disabled={!wasmReady}
 							/>
 							{#if findChordInput}
 								<button
 									onclick={clearFindInput}
-									class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+									class="rounded-md border border-gray-300 px-3 py-2 transition-colors hover:bg-gray-50"
 									title="Clear input"
 								>
 									<svg
-										class="w-5 h-5 text-gray-500"
+										class="h-5 w-5 text-gray-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -391,7 +391,7 @@
 								</button>
 							{/if}
 						</div>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="mt-1 text-xs text-gray-500">
 							Press Enter or click away to search
 						</p>
 					</div>
@@ -400,25 +400,25 @@
 						<button
 							onclick={handleFind}
 							disabled={!wasmReady || findLoading || !findChordInput.trim()}
-							class="px-4 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							class="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{findLoading ? 'Finding...' : 'Search'}
 						</button>
 
 						<button
 							onclick={() => (showAdvancedFind = !showAdvancedFind)}
-							class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2"
+							class="flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50"
 						>
 							<span>Advanced</span>
 							{#if activeFindFilters > 0}
 								<span
-									class="bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full"
+									class="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white"
 								>
 									{activeFindFilters}
 								</span>
 							{/if}
 							<svg
-								class="w-4 h-4 transition-transform {showAdvancedFind
+								class="h-4 w-4 transition-transform {showAdvancedFind
 									? 'rotate-180'
 									: ''}"
 								fill="none"
@@ -438,23 +438,23 @@
 
 				<!-- Advanced Options -->
 				{#if showAdvancedFind}
-					<div class="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200 space-y-6">
-						<div class="flex justify-between items-center mb-4">
+					<div class="mt-6 space-y-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
+						<div class="mb-4 flex items-center justify-between">
 							<h3 class="text-lg font-semibold text-gray-900">Advanced Options</h3>
 							<button
 								onclick={resetFindOptions}
-								class="text-sm text-gray-600 hover:text-gray-900 underline"
+								class="text-sm text-gray-600 underline hover:text-gray-900"
 							>
 								Reset to defaults
 							</button>
 						</div>
 
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 							<!-- Limit Slider -->
 							<div>
 								<label
 									for="find-limit"
-									class="block text-sm font-medium text-gray-700 mb-2"
+									class="mb-2 block text-sm font-medium text-gray-700"
 								>
 									Number of Fingerings: {findLimit}
 								</label>
@@ -465,9 +465,9 @@
 									max="50"
 									step="5"
 									bind:value={findLimit}
-									class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+									class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-blue-600"
 								/>
-								<div class="flex justify-between text-xs text-gray-500 mt-1">
+								<div class="mt-1 flex justify-between text-xs text-gray-500">
 									<span>5</span>
 									<span>50</span>
 								</div>
@@ -477,14 +477,14 @@
 							<div>
 								<label
 									for="find-capo"
-									class="block text-sm font-medium text-gray-700 mb-2"
+									class="mb-2 block text-sm font-medium text-gray-700"
 								>
 									Capo Position
 								</label>
 								<select
 									id="find-capo"
 									bind:value={findCapo}
-									class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+									class="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								>
 									<option value={0}>No capo</option>
 									{#each Array(12).fill(0) as _, i}
@@ -497,14 +497,14 @@
 							<div>
 								<label
 									for="find-position"
-									class="block text-sm font-medium text-gray-700 mb-2"
+									class="mb-2 block text-sm font-medium text-gray-700"
 								>
 									Preferred Position
 								</label>
 								<select
 									id="find-position"
 									bind:value={findPosition}
-									class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+									class="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								>
 									<option value={null}>Any position</option>
 									<option value={0}>Open position (0-5)</option>
@@ -516,28 +516,28 @@
 
 							<!-- Playing Context -->
 							<div>
-								<div class="block text-sm font-medium text-gray-700 mb-2">
+								<div class="mb-2 block text-sm font-medium text-gray-700">
 									Playing Context
 								</div>
 								<div class="flex gap-4">
-									<label class="flex items-center cursor-pointer">
+									<label class="flex cursor-pointer items-center">
 										<input
 											type="radio"
 											bind:group={findContext}
 											value="solo"
-											class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+											class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 										/>
 										<span class="ml-2 text-sm text-gray-700">
 											Solo
 											<span class="text-gray-500">(full bass)</span>
 										</span>
 									</label>
-									<label class="flex items-center cursor-pointer">
+									<label class="flex cursor-pointer items-center">
 										<input
 											type="radio"
 											bind:group={findContext}
 											value="band"
-											class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+											class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 										/>
 										<span class="ml-2 text-sm text-gray-700">
 											Band
@@ -550,52 +550,52 @@
 
 						<!-- Voicing Filter -->
 						<div>
-							<div class="block text-sm font-medium text-gray-700 mb-3">
+							<div class="mb-3 block text-sm font-medium text-gray-700">
 								Voicing Type
 							</div>
 							<div class="grid grid-cols-2 gap-2">
-								<label class="flex items-center cursor-pointer">
+								<label class="flex cursor-pointer items-center">
 									<input
 										type="radio"
 										bind:group={findVoicing}
 										value="all"
-										class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+										class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 									/>
 									<span class="ml-2 text-sm text-gray-700">
 										All
 										<span class="text-gray-500">(show everything)</span>
 									</span>
 								</label>
-								<label class="flex items-center cursor-pointer">
+								<label class="flex cursor-pointer items-center">
 									<input
 										type="radio"
 										bind:group={findVoicing}
 										value="core"
-										class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+										class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 									/>
 									<span class="ml-2 text-sm text-gray-700">
 										Core
 										<span class="text-gray-500">(essential)</span>
 									</span>
 								</label>
-								<label class="flex items-center cursor-pointer">
+								<label class="flex cursor-pointer items-center">
 									<input
 										type="radio"
 										bind:group={findVoicing}
 										value="full"
-										class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+										class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 									/>
 									<span class="ml-2 text-sm text-gray-700">
 										Full
 										<span class="text-gray-500">(complete)</span>
 									</span>
 								</label>
-								<label class="flex items-center cursor-pointer">
+								<label class="flex cursor-pointer items-center">
 									<input
 										type="radio"
 										bind:group={findVoicing}
 										value="jazzy"
-										class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+										class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 									/>
 									<span class="ml-2 text-sm text-gray-700">
 										Jazzy
@@ -608,7 +608,7 @@
 				{/if}
 
 				{#if findError}
-					<div class="mt-6 p-4 bg-red-50 rounded-md border border-red-200">
+					<div class="mt-6 rounded-md border border-red-200 bg-red-50 p-4">
 						<p class="text-sm text-red-700">{findError}</p>
 					</div>
 				{/if}
@@ -618,13 +618,13 @@
 						<h3 class="text-lg font-medium text-gray-900">
 							Found {findResults.length} fingerings:
 						</h3>
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 							{#each findResults as fingering, i}
 								<div
-									class="bg-white rounded-lg border-2 border-gray-200 p-4 hover:border-blue-400 transition-colors"
+									class="rounded-lg border-2 border-gray-200 bg-white p-4 transition-colors hover:border-blue-400"
 								>
 									<!-- Chord Diagram -->
-									<div class="flex justify-center mb-3">
+									<div class="mb-3 flex justify-center">
 										<ChordDiagram
 											tab={fingering.tab}
 											notes={fingering.notes}
@@ -634,35 +634,35 @@
 									</div>
 
 									<!-- Tab Notation -->
-									<div class="text-center mb-2">
+									<div class="mb-2 text-center">
 										<code
-											class="text-lg font-bold font-mono bg-gray-100 px-3 py-1 rounded"
+											class="rounded bg-gray-100 px-3 py-1 font-mono text-lg font-bold"
 										>
 											{fingering.tab}
 										</code>
 									</div>
 
 									<!-- Metadata -->
-									<div class="flex flex-wrap gap-2 justify-center mb-2">
+									<div class="mb-2 flex flex-wrap justify-center gap-2">
 										<span
-											class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+											class="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
 										>
 											{fingering.voicingType}
 										</span>
 										<span
-											class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded"
+											class="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700"
 										>
 											Score: {fingering.score}
 										</span>
 										<span
-											class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded"
+											class="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700"
 										>
 											Fret {fingering.position}
 										</span>
 									</div>
 
 									<!-- Notes and Root in Bass -->
-									<div class="text-xs text-center text-gray-600 space-y-1">
+									<div class="space-y-1 text-center text-xs text-gray-600">
 										<div>Notes: {fingering.notes.join(', ')}</div>
 										<div>
 											{#if fingering.hasRootInBass}
@@ -679,22 +679,22 @@
 				{/if}
 			</div>
 		{:else if currentMode === 'name'}
-			<div class="bg-white rounded-lg shadow-sm border p-6">
-				<h2 class="text-xl font-semibold text-gray-900 mb-4">Name Chord</h2>
-				<p class="text-gray-600 mb-4">Enter tab notation to identify a chord.</p>
+			<div class="rounded-lg border bg-white p-6 shadow-sm">
+				<h2 class="mb-4 text-xl font-semibold text-gray-900">Name Chord</h2>
+				<p class="mb-4 text-gray-600">Enter tab notation to identify a chord.</p>
 
 				<!-- Example Tabs -->
 				<div class="mb-6">
-					<p class="text-sm font-medium text-gray-700 mb-2">Quick Examples:</p>
+					<p class="mb-2 text-sm font-medium text-gray-700">Quick Examples:</p>
 					<div class="flex flex-wrap gap-2">
 						{#each exampleTabs as example}
 							<button
 								onclick={() => loadExampleTab(example.tab)}
 								disabled={!wasmReady || nameLoading}
-								class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								class="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<span class="font-mono">{example.tab}</span>
-								<span class="text-gray-500 ml-1">({example.label})</span>
+								<span class="ml-1 text-gray-500">({example.label})</span>
 							</button>
 						{/each}
 					</div>
@@ -702,7 +702,7 @@
 
 				<div class="space-y-4">
 					<div>
-						<label for="tab-input" class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="tab-input" class="mb-2 block text-sm font-medium text-gray-700">
 							Tab Notation
 						</label>
 						<div class="flex gap-2">
@@ -713,17 +713,17 @@
 								onkeydown={(e) => e.key === 'Enter' && handleAnalyze()}
 								onblur={handleAnalyze}
 								placeholder="e.g., x32010"
-								class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+								class="flex-1 rounded-md border border-gray-300 px-4 py-2 font-mono focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								disabled={!wasmReady}
 							/>
 							{#if nameTabInput}
 								<button
 									onclick={clearNameInput}
-									class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+									class="rounded-md border border-gray-300 px-3 py-2 transition-colors hover:bg-gray-50"
 									title="Clear input"
 								>
 									<svg
-										class="w-5 h-5 text-gray-500"
+										class="h-5 w-5 text-gray-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -738,7 +738,7 @@
 								</button>
 							{/if}
 						</div>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="mt-1 text-xs text-gray-500">
 							Press Enter or click away to identify
 						</p>
 					</div>
@@ -746,14 +746,14 @@
 					<button
 						onclick={handleAnalyze}
 						disabled={!wasmReady || nameLoading || !nameTabInput.trim()}
-						class="px-4 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						class="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{nameLoading ? 'Analyzing...' : 'Identify'}
 					</button>
 				</div>
 
 				{#if nameError}
-					<div class="mt-6 p-4 bg-red-50 rounded-md border border-red-200">
+					<div class="mt-6 rounded-md border border-red-200 bg-red-50 p-4">
 						<p class="text-sm text-red-700">{nameError}</p>
 					</div>
 				{/if}
@@ -762,8 +762,8 @@
 					<div class="mt-6 space-y-3">
 						<h3 class="text-lg font-medium text-gray-900">Possible matches:</h3>
 						{#each nameResults as match, i}
-							<div class="p-4 bg-gray-50 rounded-md border border-gray-200">
-								<div class="flex justify-between items-center">
+							<div class="rounded-md border border-gray-200 bg-gray-50 p-4">
+								<div class="flex items-center justify-between">
 									<div>
 										<span class="text-xl font-bold text-gray-900"
 											>{match.name}</span
@@ -774,7 +774,7 @@
 									</div>
 									{#if i === 0}
 										<span
-											class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded"
+											class="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800"
 										>
 											Best Match
 										</span>
@@ -787,21 +787,21 @@
 				{/if}
 			</div>
 		{:else if currentMode === 'progression'}
-			<div class="bg-white rounded-lg shadow-sm border p-6">
-				<h2 class="text-xl font-semibold text-gray-900 mb-4">Chord Progression</h2>
-				<p class="text-gray-600 mb-4">
+			<div class="rounded-lg border bg-white p-6 shadow-sm">
+				<h2 class="mb-4 text-xl font-semibold text-gray-900">Chord Progression</h2>
+				<p class="mb-4 text-gray-600">
 					Enter a sequence of chords to find optimal fingering transitions.
 				</p>
 
 				<!-- Common Progressions -->
 				<div class="mb-6">
-					<p class="text-sm font-medium text-gray-700 mb-2">Common Progressions:</p>
+					<p class="mb-2 text-sm font-medium text-gray-700">Common Progressions:</p>
 					<div class="flex flex-wrap gap-2">
 						{#each commonProgressions as progression}
 							<button
 								onclick={() => loadProgression(progression.chords)}
 								disabled={!wasmReady || progressionLoading}
-								class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+								class="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{progression.name}
 							</button>
@@ -813,7 +813,7 @@
 					<div>
 						<label
 							for="progression-input"
-							class="block text-sm font-medium text-gray-700 mb-2"
+							class="mb-2 block text-sm font-medium text-gray-700"
 						>
 							Chord Progression (space-separated)
 						</label>
@@ -825,17 +825,17 @@
 								onkeydown={(e) => e.key === 'Enter' && handleProgression()}
 								onblur={handleProgression}
 								placeholder="e.g., Cmaj7 Am7 Dm7 G7"
-								class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+								class="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								disabled={!wasmReady}
 							/>
 							{#if progressionInput}
 								<button
 									onclick={clearProgressionInput}
-									class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+									class="rounded-md border border-gray-300 px-3 py-2 transition-colors hover:bg-gray-50"
 									title="Clear input"
 								>
 									<svg
-										class="w-5 h-5 text-gray-500"
+										class="h-5 w-5 text-gray-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -850,7 +850,7 @@
 								</button>
 							{/if}
 						</div>
-						<p class="text-xs text-gray-500 mt-1">
+						<p class="mt-1 text-xs text-gray-500">
 							Press Enter or click away to generate
 						</p>
 					</div>
@@ -859,25 +859,25 @@
 						<button
 							onclick={handleProgression}
 							disabled={!wasmReady || progressionLoading || !progressionInput.trim()}
-							class="px-4 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							class="rounded-md border border-gray-300 px-4 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{progressionLoading ? 'Generating...' : 'Generate'}
 						</button>
 
 						<button
 							onclick={() => (showAdvancedProgression = !showAdvancedProgression)}
-							class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2"
+							class="flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50"
 						>
 							<span>Advanced</span>
 							{#if activeProgressionFilters > 0}
 								<span
-									class="bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full"
+									class="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white"
 								>
 									{activeProgressionFilters}
 								</span>
 							{/if}
 							<svg
-								class="w-4 h-4 transition-transform {showAdvancedProgression
+								class="h-4 w-4 transition-transform {showAdvancedProgression
 									? 'rotate-180'
 									: ''}"
 								fill="none"
@@ -897,23 +897,23 @@
 
 				<!-- Advanced Options -->
 				{#if showAdvancedProgression}
-					<div class="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200 space-y-6">
-						<div class="flex justify-between items-center mb-4">
+					<div class="mt-6 space-y-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
+						<div class="mb-4 flex items-center justify-between">
 							<h3 class="text-lg font-semibold text-gray-900">Advanced Options</h3>
 							<button
 								onclick={resetProgressionOptions}
-								class="text-sm text-gray-600 hover:text-gray-900 underline"
+								class="text-sm text-gray-600 underline hover:text-gray-900"
 							>
 								Reset to defaults
 							</button>
 						</div>
 
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 							<!-- Number of Alternatives -->
 							<div>
 								<label
 									for="prog-limit"
-									class="block text-sm font-medium text-gray-700 mb-2"
+									class="mb-2 block text-sm font-medium text-gray-700"
 								>
 									Number of Alternatives: {progressionLimit}
 								</label>
@@ -924,9 +924,9 @@
 									max="10"
 									step="1"
 									bind:value={progressionLimit}
-									class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+									class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-blue-600"
 								/>
-								<div class="flex justify-between text-xs text-gray-500 mt-1">
+								<div class="mt-1 flex justify-between text-xs text-gray-500">
 									<span>1</span>
 									<span>10</span>
 								</div>
@@ -936,7 +936,7 @@
 							<div>
 								<label
 									for="prog-distance"
-									class="block text-sm font-medium text-gray-700 mb-2"
+									class="mb-2 block text-sm font-medium text-gray-700"
 								>
 									Max Fret Distance: {progressionMaxDistance}
 								</label>
@@ -947,13 +947,13 @@
 									max="12"
 									step="1"
 									bind:value={progressionMaxDistance}
-									class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+									class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-blue-600"
 								/>
-								<div class="flex justify-between text-xs text-gray-500 mt-1">
+								<div class="mt-1 flex justify-between text-xs text-gray-500">
 									<span>1 fret</span>
 									<span>12 frets</span>
 								</div>
-								<p class="text-xs text-gray-500 mt-2">
+								<p class="mt-2 text-xs text-gray-500">
 									Maximum fret jump between consecutive fingerings
 								</p>
 							</div>
@@ -962,14 +962,14 @@
 							<div>
 								<label
 									for="prog-capo"
-									class="block text-sm font-medium text-gray-700 mb-2"
+									class="mb-2 block text-sm font-medium text-gray-700"
 								>
 									Capo Position
 								</label>
 								<select
 									id="prog-capo"
 									bind:value={progressionCapo}
-									class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+									class="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
 								>
 									<option value={0}>No capo</option>
 									{#each Array(12).fill(0) as _, i}
@@ -980,28 +980,28 @@
 
 							<!-- Playing Context -->
 							<div>
-								<div class="block text-sm font-medium text-gray-700 mb-2">
+								<div class="mb-2 block text-sm font-medium text-gray-700">
 									Playing Context
 								</div>
 								<div class="flex gap-4">
-									<label class="flex items-center cursor-pointer">
+									<label class="flex cursor-pointer items-center">
 										<input
 											type="radio"
 											bind:group={progressionContext}
 											value="solo"
-											class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+											class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 										/>
 										<span class="ml-2 text-sm text-gray-700">
 											Solo
 											<span class="text-gray-500">(full bass)</span>
 										</span>
 									</label>
-									<label class="flex items-center cursor-pointer">
+									<label class="flex cursor-pointer items-center">
 										<input
 											type="radio"
 											bind:group={progressionContext}
 											value="band"
-											class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+											class="h-4 w-4 text-blue-600 focus:ring-blue-500"
 										/>
 										<span class="ml-2 text-sm text-gray-700">
 											Band
@@ -1015,7 +1015,7 @@
 				{/if}
 
 				{#if progressionError}
-					<div class="mt-6 p-4 bg-red-50 rounded-md border border-red-200">
+					<div class="mt-6 rounded-md border border-red-200 bg-red-50 p-4">
 						<p class="text-sm text-red-700">{progressionError}</p>
 					</div>
 				{/if}
@@ -1023,8 +1023,8 @@
 				{#if progressionResults.length > 0}
 					<div class="mt-6 space-y-8">
 						{#each progressionResults as sequence, i}
-							<div class="border-2 border-gray-300 rounded-lg p-6 bg-white">
-								<div class="flex justify-between items-center mb-6">
+							<div class="rounded-lg border-2 border-gray-300 bg-white p-6">
+								<div class="mb-6 flex items-center justify-between">
 									<h3 class="text-xl font-bold text-gray-900">
 										Alternative #{i + 1}
 									</h3>
@@ -1036,21 +1036,21 @@
 									</div>
 								</div>
 
-								<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+								<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
 									{#each sequence.fingerings as fingering, j}
 										<div class="relative">
 											<div
-												class="bg-gray-50 rounded-lg p-4 border-2 border-gray-200"
+												class="rounded-lg border-2 border-gray-200 bg-gray-50 p-4"
 											>
 												<!-- Chord Name -->
-												<div class="text-center mb-3">
+												<div class="mb-3 text-center">
 													<h4 class="text-lg font-bold text-gray-900">
 														{sequence.chords[j]}
 													</h4>
 												</div>
 
 												<!-- Chord Diagram -->
-												<div class="flex justify-center mb-3">
+												<div class="mb-3 flex justify-center">
 													<ChordDiagram
 														tab={fingering.tab}
 														notes={fingering.notes}
@@ -1060,9 +1060,9 @@
 												</div>
 
 												<!-- Tab Notation -->
-												<div class="text-center mb-2">
+												<div class="mb-2 text-center">
 													<code
-														class="text-sm font-mono bg-white px-2 py-1 rounded border"
+														class="rounded border bg-white px-2 py-1 font-mono text-sm"
 													>
 														{fingering.tab}
 													</code>
@@ -1070,15 +1070,15 @@
 
 												<!-- Metadata -->
 												<div
-													class="flex flex-wrap gap-1 justify-center text-xs"
+													class="flex flex-wrap justify-center gap-1 text-xs"
 												>
 													<span
-														class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded"
+														class="rounded bg-blue-100 px-2 py-0.5 text-blue-800"
 													>
 														{fingering.voicingType}
 													</span>
 													<span
-														class="px-2 py-0.5 bg-gray-200 text-gray-700 rounded"
+														class="rounded bg-gray-200 px-2 py-0.5 text-gray-700"
 													>
 														Fret {fingering.position}
 													</span>
@@ -1088,13 +1088,13 @@
 											<!-- Transition Arrow -->
 											{#if j < sequence.transitions.length}
 												<div
-													class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 hidden lg:block"
+													class="absolute top-1/2 -right-3 z-10 hidden -translate-y-1/2 lg:block"
 												>
 													<div
-														class="bg-white border-2 border-green-500 rounded-full p-2 shadow-md"
+														class="rounded-full border-2 border-green-500 bg-white p-2 shadow-md"
 													>
 														<svg
-															class="w-5 h-5 text-green-600"
+															class="h-5 w-5 text-green-600"
 															fill="none"
 															stroke="currentColor"
 															viewBox="0 0 24 24"
@@ -1126,7 +1126,7 @@
 
 												<!-- Mobile Transition Info -->
 												<div
-													class="lg:hidden mt-3 p-2 bg-green-50 rounded border border-green-200 text-center"
+													class="mt-3 rounded border border-green-200 bg-green-50 p-2 text-center lg:hidden"
 												>
 													<div class="text-sm text-green-700">
 														→ Next: {sequence.transitions[j]
@@ -1157,7 +1157,7 @@
 	</div>
 
 	<!-- Footer -->
-	<footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-12">
+	<footer class="mx-auto mt-12 max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 		<div class="text-center text-sm text-gray-500">
 			<p>Built with Rust (WASM) + Svelte + Tailwind CSS</p>
 			<p class="mt-1">
