@@ -1,47 +1,194 @@
-# Svelte + TS + Vite
+# ChordCraft Web App
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+Interactive web application for chord-fingering conversion, built with SvelteKit and Rust WASM.
 
-## Recommended IDE Setup
+## Features
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+- 🎸 **Find Fingerings**: Input chord name, get multiple fingering options with diagrams
+- 🎯 **Name Chord**: Input tab notation, identify the chord
+- 🎵 **Progressions**: Input chord sequence, get optimal transition fingerings
+- ⚙️ **Advanced Options**: Capo, voicing filters, position preferences, playing context (solo/band)
+- 📊 **Visual Diagrams**: SVG-based fretboard visualization with finger positions
 
-## Need an official Svelte framework?
+## Tech Stack
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+- **SvelteKit** - Full-stack framework with Svelte 5
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **Rust WASM** - High-performance chord generation (via `chordcraft-wasm`)
+- **Vite** - Fast build tooling (integrated with SvelteKit)
+- **Vitest** - Unit testing framework
 
-## Technical considerations
+## Development
 
-**Why use this over SvelteKit?**
+### Prerequisites
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+- Node.js 18+ (for pnpm/npm)
+- pnpm (recommended) or npm
+- Rust toolchain with `wasm-pack` (to build WASM module)
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+### Setup
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+```bash
+# Install dependencies
+pnpm install
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+# Build WASM module (from workspace root)
+cd ../crates/wasm
+wasm-pack build --target web
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+# Back to web directory
+cd ../../web
 
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store';
-export default writable(0);
+# Start dev server
+pnpm dev
 ```
+
+The app will be available at `http://localhost:5173`
+
+### Available Scripts
+
+```bash
+# Development
+pnpm dev              # Start dev server with HMR
+pnpm build            # Build for production
+pnpm preview          # Preview production build
+
+# Testing
+pnpm test             # Run tests in watch mode
+pnpm test:run         # Run tests once (CI)
+pnpm test:ui          # Open Vitest UI
+pnpm test:coverage    # Generate coverage report
+
+# Code Quality
+pnpm check            # Run svelte-check and TypeScript
+pnpm lint             # Run ESLint
+pnpm lint:fix         # Fix ESLint errors
+pnpm format           # Format with Prettier
+pnpm format:check     # Check formatting
+```
+
+## Project Structure
+
+```
+web/
+├── src/
+│   ├── routes/              # SvelteKit routes
+│   │   ├── +layout.svelte   # Root layout
+│   │   ├── +page.svelte     # Home page
+│   │   ├── find/            # Find fingerings route
+│   │   ├── name/            # Name chord route
+│   │   └── progression/     # Chord progressions route
+│   ├── lib/                 # Shared components & utilities
+│   │   ├── ChordDiagram.svelte      # Fretboard visualization
+│   │   ├── ChordDiagram.test.ts     # Component tests
+│   │   └── ...
+│   └── app.html             # HTML template
+├── static/                  # Static assets
+├── tests/                   # E2E tests (future)
+├── package.json
+├── svelte.config.js         # SvelteKit config
+├── vite.config.ts           # Vite config (WASM plugins)
+├── vitest.config.ts         # Vitest config
+├── tailwind.config.js       # Tailwind config
+└── tsconfig.json            # TypeScript config
+```
+
+## Key Components
+
+### ChordDiagram
+
+SVG-based fretboard visualization component.
+
+**Props:**
+- `tab` - Tab notation (e.g., "x32010")
+- `notes` - Array of note names (e.g., ["C", "E", "G"])
+- `rootNote` - Root note for highlighting (e.g., "C")
+- `size` - "small" | "medium" | "large" (default: "medium")
+
+**Features:**
+- Finger position dots with numbering
+- Root note highlighting (blue dots)
+- Barre detection and rendering
+- Open/muted string indicators
+- Fret number labels for high positions
+- Multi-digit fret support (e.g., "(10)(12)")
+
+**Usage:**
+```svelte
+<ChordDiagram
+  tab="x32010"
+  notes={['C', 'E', 'G']}
+  rootNote="C"
+  size="medium"
+/>
+```
+
+## WASM Integration
+
+The web app uses the `chordcraft-wasm` package, which exposes the Rust core library to JavaScript.
+
+**Key Functions:**
+- `findFingerings(chord, options)` - Generate fingerings for a chord
+- `nameChord(tab)` - Identify chord from tab notation
+- `generateProgression(chords, options)` - Optimize chord progression transitions
+
+**Options:**
+- `limit` - Max fingerings to return (default: 20)
+- `capo` - Capo fret (0-12)
+- `voicingFilter` - Array of ["core", "full", "jazzy"]
+- `position` - Preferred fret position (0-24)
+- `playingContext` - "solo" | "band"
+- `maxFretDistance` - Max distance between progression fingerings (1-12)
+
+## Testing
+
+We follow a **user-centric testing approach**: test what users see and interact with, not implementation details.
+
+See [TESTING.md](./TESTING.md) for detailed testing philosophy and guidelines.
+
+**Current Coverage:**
+- ✅ ChordDiagram component (22 tests)
+- ✅ Tab parsing (various formats)
+- ✅ Visual elements rendering
+- ✅ Size variants
+- ⏳ Route components (future)
+- ⏳ E2E tests (future)
+
+## Deployment
+
+The app is configured for static site generation (SSG) using `@sveltejs/adapter-static`.
+
+```bash
+# Build for production
+pnpm build
+
+# Output will be in build/ directory
+# Deploy build/ to any static host (Vercel, Netlify, GitHub Pages, etc.)
+```
+
+## Known Limitations
+
+### Testing `bind:value` with `<select>`
+
+Svelte's two-way binding for select elements doesn't sync properly in testing environments (happy-dom/jsdom). We verify UI elements render correctly, and rely on WASM unit tests for parameter passing logic.
+
+See [TESTING_NOTES.md](./TESTING_NOTES.md) for detailed explanation.
+
+## Future Enhancements
+
+- Interactive fretboard input (click to build fingering)
+- Chord name autocomplete
+- Save favorites to localStorage
+- Share fingerings via URL
+- Copy tab notation to clipboard
+- Mobile optimizations (touch-friendly diagrams)
+- E2E tests with Playwright
+
+## Contributing
+
+See [../CLAUDE.md](../CLAUDE.md) for architecture overview and implementation details.
+
+## License
+
+MIT OR Apache-2.0

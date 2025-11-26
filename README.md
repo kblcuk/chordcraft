@@ -12,7 +12,7 @@ A multi-platform tool for bidirectional chord-fingering conversion, supporting g
 
 ## Project Status
 
-🚧 **Early Development** - Core music theory implementation in progress
+✅ **Functional** - Core features implemented (CLI + Web App)
 
 ## Installation
 
@@ -35,10 +35,16 @@ cargo run -p chordcraft-cli -- find "Cmaj7"
 chordcraft find "Abm7"
 chordcraft find "Abm7" --limit 3
 chordcraft find "Abm7" --position 7        # Prefer fingerings near 7th fret
+chordcraft find "Abm7" --capo 3            # With capo on 3rd fret
+chordcraft find "Abm7" --context band      # For band playing (lighter voicings)
 
-# Identify chord from fingering (coming soon)
+# Identify chord from fingering
 chordcraft name "x32010"
-chordcraft name "x32010" --key C           # With context hint
+chordcraft name "022100"
+
+# Chord progressions (optimize transitions)
+chordcraft progression "Cmaj7 Am7 Dm7 G7"
+chordcraft progression "I-IV-V" --limit 5 --max-distance 3
 ```
 
 ## Development
@@ -60,8 +66,8 @@ cargo build --workspace
 
 - `crates/core` - Core music theory library (Rust)
 - `crates/cli` - Command-line interface tool
-- `crates/wasm` - WebAssembly bindings (future)
-- `web/` - Vue web application (future)
+- `crates/wasm` - WebAssembly bindings for web
+- `web/` - SvelteKit web application
 
 ## Contributing
 

@@ -7,7 +7,7 @@ A multi-platform tool for bidirectional chord-fingering conversion:
 - **Chord → Fingering**: Input chord name (e.g., "Abm7"), get multiple fingering options
 - **Fingering → Chord**: Input tab notation (e.g., "x32010"), identify the chord
 - **Multi-instrument**: Guitar-first, but designed to support bass, ukulele, mandolin, and eventually keys
-- **Multi-platform**: CLI tool (immediate use), web app (Vue), potential mobile apps later
+- **Multi-platform**: CLI tool (immediate use), web app (SvelteKit), potential mobile apps later
 
 ## Architecture
 
@@ -26,10 +26,10 @@ A multi-platform tool for bidirectional chord-fingering conversion:
 │  Tool │   │(for web)│   │(future)│
 └───────┘   └────┬────┘   └────────┘
                  │
-            ┌────▼────┐
-            │   Vue   │
-            │ Web App │
-            └─────────┘
+            ┌────▼──────┐
+            │ SvelteKit │
+            │  Web App  │
+            └───────────┘
 ```
 
 ## Repository Structure
@@ -55,14 +55,16 @@ chordcraft/
 │   │   ├── src/
 │   │   │   └── main.rs
 │   │   └── Cargo.toml
-│   └── wasm/              # WASM bindings (future)
+│   └── wasm/              # WASM bindings
 │       ├── src/
 │       │   └── lib.rs
 │       └── Cargo.toml
-└── web/                   # Vue application (future)
+└── web/                   # SvelteKit application
     ├── src/
+    │   ├── routes/        # SvelteKit routes (find, name, progression)
+    │   └── lib/           # Shared components (ChordDiagram, etc.)
     ├── package.json
-    └── vite.config.js
+    └── svelte.config.js
 ```
 
 ## Implementation Phases
@@ -847,10 +849,10 @@ fn test_capo_with_band_mode() {
 
 **Tech Stack**:
 - Rust core compiled to WASM (wasm-pack)
-- Svelte 5 with TypeScript
+- SvelteKit (with Svelte 5 and TypeScript)
 - Tailwind CSS for styling
-- Vite for build tooling
-- SVG for chord diagrams (planned)
+- Vite for build tooling (integrated via SvelteKit)
+- SVG for chord diagrams
 
 ## Key Design Decisions
 
@@ -1011,7 +1013,7 @@ This separation allows:
 - Guitar fingering: Physical constraints, common voicings
 - Rust libraries: Consider `midly` for MIDI (future), `nom` for parsing
 - WASM: `wasm-pack`, `wasm-bindgen`
-- Vue: Vue 3 docs, Vite
+- SvelteKit: Svelte 5 docs, SvelteKit docs, Vite
 
 ---
 
