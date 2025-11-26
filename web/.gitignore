@@ -1,5 +1,10 @@
 # vite & vitest
 .vite
+
+# sveltekit build and cache
+build
+.svelte-kit
+
 # Logs
 logs
 *.log

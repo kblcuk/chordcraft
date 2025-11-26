@@ -297,7 +297,7 @@
 	{width}
 	{height}
 	viewBox="0 0 {width} {height}"
-	class="bg-white rounded-lg border border-gray-200 p-1"
+	class="rounded-lg border border-gray-200 bg-white p-1"
 	xmlns="http://www.w3.org/2000/svg"
 >
 	<!-- Fret number indicator (for high positions) -->
@@ -386,7 +386,7 @@
 				<text
 					{x}
 					y={displayY}
-					class="select-none pointer-events-none font-bold"
+					class="pointer-events-none font-bold select-none"
 					text-anchor="middle"
 					dominant-baseline="central"
 					fill="white"
@@ -404,7 +404,7 @@
 		<text
 			{x}
 			y={marginTop - 14}
-			class="select-none font-bold"
+			class="font-bold select-none"
 			text-anchor="middle"
 			font-size="14"
 			fill={COLORS.mutedString}
