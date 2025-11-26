@@ -9,15 +9,30 @@ Interactive web application for chord-fingering conversion, built with SvelteKit
 - 🎵 **Progressions**: Input chord sequence, get optimal transition fingerings
 - ⚙️ **Advanced Options**: Capo, voicing filters, position preferences, playing context (solo/band)
 - 📊 **Visual Diagrams**: SVG-based fretboard visualization with finger positions
+- 🌙 **Dark Mode**: Full dark mode support with seamless theme switching
 
 ## Tech Stack
 
 - **SvelteKit** - Full-stack framework with Svelte 5
 - **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
+- **Tailwind CSS** - Utility-first styling with semantic color system
+- **mode-watcher** - Automatic dark mode detection and management
 - **Rust WASM** - High-performance chord generation (via `chordcraft-wasm`)
 - **Vite** - Fast build tooling (integrated with SvelteKit)
 - **Vitest** - Unit testing framework
+
+### Color System
+
+The app uses a semantic color system that automatically adapts to dark mode:
+
+- `bg-background` - Main background
+- `bg-card` - Card/panel backgrounds
+- `bg-muted` - Muted backgrounds (inputs, secondary elements)
+- `text-foreground` - Primary text
+- `text-muted-foreground` - Secondary text
+- `border-border` - Borders and dividers
+
+These semantic colors are defined in `src/app.css` with CSS custom properties that change based on the `.dark` class.
 
 ## Development
 
@@ -101,12 +116,14 @@ web/
 SVG-based fretboard visualization component.
 
 **Props:**
+
 - `tab` - Tab notation (e.g., "x32010")
 - `notes` - Array of note names (e.g., ["C", "E", "G"])
 - `rootNote` - Root note for highlighting (e.g., "C")
 - `size` - "small" | "medium" | "large" (default: "medium")
 
 **Features:**
+
 - Finger position dots with numbering
 - Root note highlighting (blue dots)
 - Barre detection and rendering
@@ -115,13 +132,9 @@ SVG-based fretboard visualization component.
 - Multi-digit fret support (e.g., "(10)(12)")
 
 **Usage:**
+
 ```svelte
-<ChordDiagram
-  tab="x32010"
-  notes={['C', 'E', 'G']}
-  rootNote="C"
-  size="medium"
-/>
+<ChordDiagram tab="x32010" notes={['C', 'E', 'G']} rootNote="C" size="medium" />
 ```
 
 ## WASM Integration
@@ -129,11 +142,13 @@ SVG-based fretboard visualization component.
 The web app uses the `chordcraft-wasm` package, which exposes the Rust core library to JavaScript.
 
 **Key Functions:**
+
 - `findFingerings(chord, options)` - Generate fingerings for a chord
 - `nameChord(tab)` - Identify chord from tab notation
 - `generateProgression(chords, options)` - Optimize chord progression transitions
 
 **Options:**
+
 - `limit` - Max fingerings to return (default: 20)
 - `capo` - Capo fret (0-12)
 - `voicingFilter` - Array of ["core", "full", "jazzy"]
@@ -148,6 +163,7 @@ We follow a **user-centric testing approach**: test what users see and interact 
 See [TESTING.md](./TESTING.md) for detailed testing philosophy and guidelines.
 
 **Current Coverage:**
+
 - ✅ ChordDiagram component (22 tests)
 - ✅ Tab parsing (various formats)
 - ✅ Visual elements rendering

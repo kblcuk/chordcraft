@@ -297,7 +297,7 @@
 	{width}
 	{height}
 	viewBox="0 0 {width} {height}"
-	class="rounded-lg border border-gray-200 bg-white p-1"
+	class="rounded-lg border border-border bg-white p-1 dark:bg-white"
 	xmlns="http://www.w3.org/2000/svg"
 >
 	<!-- Fret number indicator (for high positions) -->
