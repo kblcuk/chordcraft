@@ -34,11 +34,12 @@
 		</Label>
 		<Slider
 			id="prog-limit"
-			value={[limit]}
+			type="single"
+			value={limit}
 			min={1}
 			max={10}
 			step={1}
-			onValueChange={(v) => onChange({ limit: v[0] })}
+			onValueChange={(v: number) => onChange({ limit: v })}
 		/>
 		<div class="mt-1 flex justify-between text-xs text-gray-500">
 			<span>1</span>
@@ -53,11 +54,12 @@
 		</Label>
 		<Slider
 			id="prog-distance"
-			value={[maxDistance]}
+			type="single"
+			value={maxDistance}
 			min={1}
 			max={12}
 			step={1}
-			onValueChange={(v) => onChange({ maxDistance: v[0] })}
+			onValueChange={(v: number) => onChange({ maxDistance: v })}
 		/>
 		<div class="mt-1 flex justify-between text-xs text-gray-500">
 			<span>1 fret</span>

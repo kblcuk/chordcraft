@@ -87,11 +87,11 @@
 	}
 
 	// Track previous filter values to detect actual changes
-	let prevFindLimit = findLimit;
-	let prevFindCapo = findCapo;
-	let prevFindVoicing = findVoicing;
-	let prevFindPosition = findPosition;
-	let prevFindContext = findContext;
+	let prevFindLimit: number = findLimit;
+	let prevFindCapo: number = findCapo;
+	let prevFindVoicing: 'all' | 'core' | 'full' | 'jazzy' = findVoicing;
+	let prevFindPosition: number | null = findPosition;
+	let prevFindContext: 'solo' | 'band' = findContext;
 
 	// Auto-execute when filters change (after initial search)
 	$: {
@@ -176,10 +176,10 @@
 	}
 
 	// Track previous filter values to detect actual changes
-	let prevProgressionLimit = progressionLimit;
-	let prevProgressionMaxDistance = progressionMaxDistance;
-	let prevProgressionCapo = progressionCapo;
-	let prevProgressionContext = progressionContext;
+	let prevProgressionLimit: number = progressionLimit;
+	let prevProgressionMaxDistance: number = progressionMaxDistance;
+	let prevProgressionCapo: number = progressionCapo;
+	let prevProgressionContext: 'solo' | 'band' = progressionContext;
 
 	// Auto-execute when filters change (after initial search)
 	$: {

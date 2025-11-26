@@ -38,11 +38,12 @@
 		</Label>
 		<Slider
 			id="find-limit"
-			value={[limit]}
+			type="single"
+			value={limit}
 			min={5}
 			max={50}
 			step={5}
-			onValueChange={(v) => onChange({ limit: v[0] })}
+			onValueChange={(v: number) => onChange({ limit: v })}
 		/>
 		<div class="mt-1 flex justify-between text-xs text-gray-500">
 			<span>5</span>
