@@ -3,7 +3,6 @@
 	import ClearButton from '$lib/components/shared/ClearButton.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Button } from '$lib/components/ui/button';
 	import { exampleChords } from '$lib/utils/examples';
 
 	let {
@@ -44,6 +43,7 @@
 				bind:value
 				onkeydown={handleKeydown}
 				onblur={onSearch}
+				{loading}
 				placeholder="e.g., Cmaj7, Abm7, G7"
 				{disabled}
 				class="flex-1"
@@ -54,13 +54,4 @@
 		</div>
 		<p class="mt-1 text-xs text-muted-foreground">Press Enter or click away to search</p>
 	</div>
-
-	<Button
-		onclick={onSearch}
-		disabled={disabled || loading || !value.trim()}
-		variant="outline"
-		size="sm"
-	>
-		{loading ? 'Finding...' : 'Search'}
-	</Button>
 </div>
