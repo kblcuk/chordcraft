@@ -6,7 +6,7 @@ A multi-platform tool for bidirectional chord-fingering conversion:
 
 - **Chord → Fingering**: Input chord name (e.g., "Abm7"), get multiple fingering options
 - **Fingering → Chord**: Input tab notation (e.g., "x32010"), identify the chord
-- **Multi-instrument**: Guitar-first, but designed to support bass, ukulele, mandolin, and eventually keys
+- **Multi-instrument**: Guitar fully supported (CLI/web). Ukulele core library ready, CLI/web integration planned. Designed for bass, mandolin, and eventually keys.
 - **Multi-platform**: CLI tool (immediate use), web app (SvelteKit), potential mobile apps later
 
 ## Architecture
@@ -111,13 +111,14 @@ chordcraft/
     - max_stretch: 4 frets
     - min_played_strings: 3 (50% of 6 strings)
     - max_fingers: 4
-  - **Ukulele** (standard tuning GCEA)
+  - **Ukulele** (standard tuning GCEA) - Core library only, CLI/web integration planned
     - max_stretch: 5 frets (easier on shorter scale)
     - min_played_strings: 1 (allows minimal voicings like C="0003")
     - open_position_threshold: 5 frets
     - Only 4 strings, so lower min doesn't cause performance issues
+  - **Guitar** is the only instrument currently exposed in CLI and web app
   - Support for alternate tunings (future)
-  - Other stringed instruments (future)
+  - Other stringed instruments: bass, mandolin (future)
 
 - [x] **Fingering representation** (`fingering.rs`)
   - Tab notation format (e.g., "x32010")
@@ -151,10 +152,12 @@ chordcraft/
 6. Deduplicate using HashSet on StringState vectors
 7. Return top N fingerings, sorted by score
 
-**Performance**:
+**Performance** (release build, benchmarked 2025-11-28):
 
-- Simple chords (3 notes): ~4-5ms
-- Complex chords (4+ notes): ~8-10ms
+- Simple chords (C major): ~1-2ms
+- 7th chords (Cmaj7): ~3-4ms
+- Complex extended chords (Cmaj9): ~9-10ms
+- Chord analysis (tabs → name): ~6µs
 - Early pruning reduces search space by 99%+ for complex chords
 
 **Voicing Classifications**:
@@ -198,7 +201,7 @@ chordcraft/
 
 - ✅ `find` command fully implemented with all options
 - ✅ `name` command implemented with analyzer integration
-- ⏳ Chord progressions (future - Phase 6)
+- ✅ `progression` command fully implemented with all options
 
 **Commands**:
 
@@ -237,7 +240,7 @@ Abm7 fingerings (top 5):
 Show more? (y/n)
 ```
 
-### Phase 5: Chord Progressions ✓ PLANNED
+### Phase 5: Chord Progressions ✓ COMPLETE
 
 **Goal**: Find optimal fingering sequences for chord progressions
 
@@ -476,35 +479,35 @@ Total Score: 278 | Avg Transition: 92.7
 
 **Enhanced Features**:
 
-**1. Capo Support** (Prototype in `find` first, then add to progressions)
+**1. Capo Support** ✅ COMPLETE
 
 Makes difficult keys easier by transposing the instrument:
 
 ```rust
-// Add to Instrument trait
-trait Instrument {
-    // ... existing methods ...
-
-    /// Create a version of this instrument with a capo at the specified fret
-    fn with_capo(&self, fret: u8) -> Self;
+// Capo is implemented via a generic wrapper type
+pub struct CapoedInstrument<I: Instrument> {
+    inner: I,
+    tuning: Vec<Note>,
+    fret_range: (u8, u8),
 }
 
-impl Guitar {
-    fn with_capo(&self, fret: u8) -> Self {
-        // Transpose tuning up by capo frets
-        let new_tuning: Vec<Note> = self.tuning()
-            .iter()
-            .map(|note| Note::new(
-                note.pitch.add_semitones(fret as i32),
-                note.octave
-            ))
-            .collect();
+impl<I: Instrument> CapoedInstrument<I> {
+    pub fn new(instrument: I, fret: u8) -> Result<Self> {
+        // Validates capo position and transposes tuning
+        // ...
+    }
+}
 
-        Guitar {
-            tuning: new_tuning,
-            max_fret: self.max_fret - fret,  // Reduce available frets
-            // ... other fields unchanged
-        }
+// Concrete implementations on specific instruments
+impl Guitar {
+    pub fn with_capo(&self, fret: u8) -> Result<CapoedInstrument<Guitar>> {
+        CapoedInstrument::new(self.clone(), fret)
+    }
+}
+
+impl Ukulele {
+    pub fn with_capo(&self, fret: u8) -> Result<CapoedInstrument<Ukulele>> {
+        CapoedInstrument::new(self.clone(), fret)
     }
 }
 ```
@@ -570,12 +573,12 @@ chordcraft progression "F Bb Gm C" --capo 3 --context band
 
 **Implementation Tasks**:
 
-1. ✅ **Capo Support (Phase 5a - Prototype)**
-   - Implement `with_capo()` for Instrument trait
-   - Add `--capo` flag to `find` command
-   - Update output formatting to show capo info
-   - Write tests for capo functionality
-   - Validate approach before adding to progressions
+1. ✅ **Capo Support** (COMPLETE)
+   - ✅ Implemented `CapoedInstrument<I>` generic wrapper type
+   - ✅ Added `with_capo()` methods to Guitar and Ukulele
+   - ✅ Added `--capo` flag to all CLI commands (find, name, progression)
+   - ✅ Full capo support in WASM bindings
+   - ✅ Comprehensive tests for capo functionality
 
 2. ✅ Create `progression.rs` module
    - Define core types (ProgressionOptions, ChordTransition, ProgressionSequence)
@@ -614,153 +617,17 @@ chordcraft progression "F Bb Gm C" --capo 3 --context band
    - Update CLAUDE.md with implementation status
    - Add doc comments with examples
 
-**Testing Strategy**:
+**Tests**:
 
-```rust
-#[test]
-fn test_capo_transposes_tuning() {
-    let guitar = Guitar::default();
-    let capo_guitar = guitar.with_capo(2);
+Comprehensive test coverage including:
+- Capo transposition and fret range reduction
+- Solo vs band mode scoring differences
+- Transition scoring for finger movements
+- Common progressions (I-IV-V, ii-V-I, etc.)
+- Max distance constraints
+- Combined capo + band mode
 
-    // Open strings should be 2 semitones higher
-    assert_eq!(
-        capo_guitar.tuning()[0].pitch,
-        guitar.tuning()[0].pitch.add_semitones(2)
-    );
-
-    // Max fret should be reduced
-    assert_eq!(capo_guitar.max_fret, guitar.max_fret - 2);
-}
-
-#[test]
-fn test_find_with_capo_easier_shapes() {
-    let guitar = Guitar::default();
-
-    // F without capo - lots of barres
-    let f_no_capo = generate_fingerings(
-        &Chord::parse("F").unwrap(),
-        &guitar,
-        &GeneratorOptions::default()
-    );
-
-    // F with capo 3 (actually D shapes)
-    let capo_guitar = guitar.with_capo(3);
-    let chord = Chord::parse("F").unwrap().transpose(-3);  // Search for D
-    let f_with_capo = generate_fingerings(
-        &chord,
-        &capo_guitar,
-        &GeneratorOptions::default()
-    );
-
-    // Capo version should have easier shapes (lower avg playability score)
-    let avg_no_capo = f_no_capo.iter().take(5)
-        .map(|f| f.score).sum::<u8>() / 5;
-    let avg_capo = f_with_capo.iter().take(5)
-        .map(|f| f.score).sum::<u8>() / 5;
-
-    assert!(avg_capo > avg_no_capo);
-}
-
-#[test]
-fn test_band_mode_avoids_bass_strings() {
-    let guitar = Guitar::default();
-    let chord = Chord::parse("Cmaj7").unwrap();
-
-    let solo_opts = GeneratorOptions {
-        playing_context: PlayingContext::Solo,
-        ..Default::default()
-    };
-    let band_opts = GeneratorOptions {
-        playing_context: PlayingContext::Band,
-        ..Default::default()
-    };
-
-    let solo_fingerings = generate_fingerings(&chord, &guitar, &solo_opts);
-    let band_fingerings = generate_fingerings(&chord, &guitar, &band_opts);
-
-    // Band mode should prefer fingerings without low E/A
-    let band_low_strings = band_fingerings.iter().take(5)
-        .filter(|f| {
-            f.fingering.strings()[0].is_played() ||
-            f.fingering.strings()[1].is_played()
-        })
-        .count();
-
-    let solo_low_strings = solo_fingerings.iter().take(5)
-        .filter(|f| {
-            f.fingering.strings()[0].is_played() ||
-            f.fingering.strings()[1].is_played()
-        })
-        .count();
-
-    // Band mode should use low strings less frequently
-    assert!(band_low_strings < solo_low_strings);
-}
-
-#[test]
-fn test_transition_score_minimal_movement() {
-    // Test that fingerings with minimal movement score higher
-    let from = Fingering::parse("x32010").unwrap();  // C
-    let to = Fingering::parse("x32013").unwrap();    // C with pinky change
-    // Should score high (only 1 finger moves)
-}
-
-#[test]
-fn test_common_progressions() {
-    // Test classic progressions
-    let guitar = Guitar::default();
-
-    // I-IV-V in C: C-F-G
-    let progression = generate_progression(
-        &["C", "F", "G"],
-        &guitar,
-        &ProgressionOptions::default(),
-    );
-
-    assert!(!progression.is_empty());
-    assert!(progression[0].avg_transition_score > 50.0);
-}
-
-#[test]
-fn test_max_distance_constraint() {
-    let guitar = Guitar::default();
-    let options = ProgressionOptions {
-        max_fret_distance: 3,
-        ..Default::default()
-    };
-
-    let progression = generate_progression(
-        &["C", "G", "Am", "F"],
-        &guitar,
-        &options,
-    );
-
-    // Verify all transitions respect max distance
-    for trans in &progression[0].transitions {
-        assert!(trans.position_distance <= 3);
-    }
-}
-
-#[test]
-fn test_capo_with_band_mode() {
-    let guitar = Guitar::default();
-    let capo_guitar = guitar.with_capo(3);
-
-    let options = ProgressionOptions {
-        playing_context: PlayingContext::Band,
-        ..Default::default()
-    };
-
-    // Should work seamlessly together
-    let progression = generate_progression(
-        &["D", "G", "Em", "A"],  // Easy shapes with capo
-        &capo_guitar,
-        &options,
-    );
-
-    assert!(!progression.is_empty());
-}
-```
+All tests are inlined in Rust modules. Run with: `cargo test --workspace`
 
 **Future Enhancements** (Phase 6+):
 
@@ -790,9 +657,10 @@ fn test_capo_with_band_mode() {
   - Name Chord: Input tab notation, identify chord
   - Progression: Input chord sequence, get optimal transitions
 - ✅ WASM integration with full API exposure
-  - All options available (limit, capo, voicing, position, playing context)
+  - Three exported functions: `findFingerings()`, `analyzeChord()`, `generateProgression()`
+  - All options available (limit, capo, voicing, position, playing context, max fret distance)
   - Fast generation (<15ms per chord)
-  - 232 KB bundle size
+  - ~213 KB bundle size (wasm file)
 - ✅ Results display with chord diagrams
   - Tab notation, score, voicing type, position
   - Notes, root in bass indicator
@@ -819,7 +687,7 @@ fn test_capo_with_band_mode() {
   - Fret number labels for high positions
   - Three size variants (small/medium/large)
   - Multi-digit fret support (e.g., "(10)(12)")
-  - Comprehensive test suite (22 tests)
+  - Comprehensive test coverage
 - ✅ **Enhanced UX - Quick Examples** (COMPLETE)
   - Example chord buttons (C, Cmaj7, Fm7, Abm7, F#7b9, Dsus4)
   - Example tab buttons with labels (x32010 (C), 022100 (E), etc.)
@@ -842,10 +710,12 @@ fn test_capo_with_band_mode() {
   - Share fingerings via URL
   - Copy tab notation to clipboard
 
-- ⏳ **Mobile Optimization** (LOW PRIORITY)
-  - Touch-friendly chord diagrams
-  - Responsive fretboard input
-  - Optimized layout for small screens
+- ⏳ **Mobile Optimization & PWA** (FUTURE)
+  - ✅ Basic responsive layout (Tailwind CSS handles this)
+  - ⏳ Progressive Web App (PWA) support
+  - ⏳ Touch-optimized chord diagrams
+  - ⏳ Touch-friendly interactive fretboard
+  - ⏳ Mobile-specific UI optimizations
 
 **Tech Stack**:
 - Rust core compiled to WASM (wasm-pack)
@@ -860,7 +730,8 @@ fn test_capo_with_band_mode() {
 
 - Supports all instruments/tunings without manual curation
 - Handles unusual/complex chords automatically
-- More flexible for future features (voice leading, progressions)
+- Enabled progressive features: chord progressions with transition optimization
+- More flexible for future enhancements (advanced voice leading, strumming patterns)
 - Consistent behavior across all chord types
 
 ### Instrument Abstraction
@@ -884,11 +755,11 @@ Instead of binary "valid/invalid", classify voicings by use case:
 
 ### Future Extensibility
 
-- ✅ **Chord progressions**: Optimize fingering transitions between chords (Phase 5 - Planned)
+- ✅ **Chord progressions**: Optimize fingering transitions between chords (Phase 5 - COMPLETE)
 - **Scales/modes**: Use same interval system
 - **Rhythm patterns**: Strumming/picking patterns for practice
 - **Sound synthesis**: Generate audio previews (web audio API)
-- **Advanced voice leading**: Global optimization across entire progression (dynamic programming)
+- **Advanced voice leading**: Global optimization across entire progression using dynamic programming (enhancement to existing progression feature)
 
 ## Code Quality & Architecture Notes
 
@@ -953,10 +824,14 @@ This separation allows:
 
 ### Testing Strategy
 
-- Unit tests for core music theory (intervals, chord formulas)
-- Property-based tests for fingering generation (all generated fingerings must be valid)
-- Integration tests for CLI commands
-- Manual testing for playability scoring (needs musician feedback)
+- **Rust tests**: Inlined in module files (use `cargo test --workspace`)
+  - Unit tests for core music theory (intervals, chord formulas)
+  - Property-based tests for fingering generation
+  - Integration tests for progression transitions
+- **Web tests**: Located in `web/src/tests/` (Vitest)
+  - Route component tests
+  - Store logic tests
+- **Manual validation**: Playability scoring (musician feedback)
 
 ### Performance Considerations
 
@@ -970,17 +845,18 @@ This separation allows:
 - **StringState** derives Hash for efficient deduplication
 - Keep Vec::contains for small note sets (4-5 notes) - faster than HashSet overhead
 
-**Performance Targets** (achieved):
+**Performance Results** (release build, achieved):
 
-- Simple chords (3 notes): <10ms
-- Complex chords (4+ notes): <10ms
-- CLI should feel instant for all operations
+- Simple chords: 1-2ms (well under 10ms target)
+- 7th chords: 3-4ms
+- Complex extended chords: 9-10ms (meets 10ms target)
+- Chord analysis: <0.01ms (microsecond range)
+- CLI feels instant for all operations ✓
 
 **Future Considerations**:
 
 - Consider caching common chord fingerings if needed
-- WASM bundle size matters for web app
-- May add chord progression optimization (voice leading between chords)
+- WASM bundle size matters for web app (currently ~213 KB)
 
 ### Code Style
 
@@ -1017,7 +893,7 @@ This separation allows:
 
 ---
 
-**Last updated**: Phase 6 largely complete - Full-featured Svelte web app with advanced controls and UX enhancements
+**Last updated**: 2025-11-28 - Documentation audit completed, all implementation statuses verified
 **Current status**:
 - ✅ Phases 1-5 complete (Core, Generator, Analyzer, CLI, Progressions)
 - ✅ Phase 6a complete (Basic Svelte web app with WASM integration)
