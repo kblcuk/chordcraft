@@ -724,6 +724,57 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
 - Vite for build tooling (integrated via SvelteKit)
 - SVG for chord diagrams
 
+### Svelte 5 Coding Standards
+
+**IMPORTANT**: The web app uses Svelte 5 with runes mode. Always use Svelte 5 syntax:
+
+**✅ DO (Svelte 5 Runes):**
+```svelte
+<script lang="ts">
+  // Props
+  let { value, size = 'medium' }: { value: string; size?: string } = $props();
+
+  // State
+  let count = $state(0);
+  let doubled = $derived(count * 2);
+
+  // Effects
+  $effect(() => {
+    console.log('Count changed:', count);
+  });
+
+  // Bindable props (two-way binding)
+  let { value = $bindable('') }: { value?: string } = $props();
+</script>
+```
+
+**❌ DON'T (Svelte 4 Legacy):**
+```svelte
+<script lang="ts">
+  // ❌ Don't use export let
+  export let value: string;
+  export let size: string = 'medium';
+
+  // ❌ Don't use $: for reactivity
+  $: doubled = count * 2;
+
+  // ❌ Don't use $: for effects
+  $: if (count > 0) {
+    console.log('Count changed');
+  }
+</script>
+```
+
+**Key Svelte 5 Patterns:**
+- `$props()` for component props (replaces `export let`)
+- `$state()` for reactive state (replaces `let` with `$:`)
+- `$derived()` for computed values (replaces `$: value = ...`)
+- `$effect()` for side effects (replaces `$: { ... }`)
+- `$bindable()` for two-way binding props
+- Use TypeScript with explicit types for `$props()`
+- Prefer functional/declarative patterns (map/reduce over loops)
+- Use regex for parsing when appropriate
+
 ## Key Design Decisions
 
 ### Why Algorithmic Over Database?
