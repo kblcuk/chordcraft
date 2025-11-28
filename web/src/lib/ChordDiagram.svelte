@@ -4,14 +4,30 @@
 	 * Displays guitar fingerings visually on a fretboard
 	 */
 
+	import {
+		STRING_COUNT,
+		VISIBLE_FRETS,
+		DIMENSIONS,
+		MARGIN_BOTTOM,
+		MARGIN_SIDE,
+		COLORS,
+	} from '$lib/utils/fretboard-constants';
+
 	// ============================================================================
 	// Props
 	// ============================================================================
 
-	export let tab: string; // e.g., "x32010"
-	export let notes: string[] = []; // e.g., ["C", "E", "G", "C", "E"]
-	export let rootNote: string = ''; // e.g., "C"
-	export let size: 'small' | 'medium' | 'large' = 'medium';
+	let {
+		tab,
+		notes = [],
+		rootNote = '',
+		size = 'medium',
+	}: {
+		tab: string;
+		notes?: string[];
+		rootNote?: string;
+		size?: 'small' | 'medium' | 'large';
+	} = $props();
 
 	// ============================================================================
 	// Types
@@ -35,45 +51,14 @@
 	}
 
 	// ============================================================================
-	// Constants
-	// ============================================================================
-
-	const STRING_COUNT = 6;
-	const VISIBLE_FRETS = 5;
-
-	// Size-based dimensions using Tailwind scale
-	const DIMENSIONS = {
-		small: { width: 120, height: 160, dotRadius: 6, marginTop: 30 },
-		medium: { width: 160, height: 200, dotRadius: 8, marginTop: 35 },
-		large: { width: 200, height: 250, dotRadius: 10, marginTop: 40 },
-	} as const;
-
-	const MARGIN_BOTTOM = 20;
-	const MARGIN_SIDE = 25; // Increased from 20 to prevent overflow
-
-	// Tailwind color mappings for SVG
-	const COLORS = {
-		string: '#1f2937', // gray-800
-		fret: '#1f2937', // gray-800
-		nut: '#111827', // gray-900
-		fingerDot: '#1f2937', // gray-800
-		rootDot: '#2563eb', // blue-600
-		openString: '#1f2937', // gray-800
-		rootOpenString: '#2563eb', // blue-600
-		barre: '#4b5563', // gray-600
-		mutedString: '#9ca3af', // gray-400
-		fretNumber: '#6b7280', // gray-500
-	} as const;
-
-	// ============================================================================
 	// Computed Layout
 	// ============================================================================
 
-	$: ({ width, height, dotRadius, marginTop } = DIMENSIONS[size]);
-	$: fretboardWidth = width - MARGIN_SIDE * 2;
-	$: fretboardHeight = height - marginTop - MARGIN_BOTTOM;
-	$: stringSpacing = fretboardWidth / (STRING_COUNT - 1);
-	$: fretSpacing = fretboardHeight / VISIBLE_FRETS;
+	let { width, height, dotRadius, marginTop } = $derived(DIMENSIONS[size]);
+	let fretboardWidth = $derived(width - MARGIN_SIDE * 2);
+	let fretboardHeight = $derived(height - marginTop - MARGIN_BOTTOM);
+	let stringSpacing = $derived(fretboardWidth / (STRING_COUNT - 1));
+	let fretSpacing = $derived(fretboardHeight / VISIBLE_FRETS);
 
 	// ============================================================================
 	// Pure Functions
@@ -271,14 +256,14 @@
 	// Reactive Computations
 	// ============================================================================
 
-	$: positions = parseTab(tab);
-	$: [minFret] = calculateFretRange(positions);
-	$: isHighPosition = minFret > 0;
-	$: barres = detectBarres(positions);
-	$: fingerNumbers = assignFingerNumbers(positions);
-	$: fingerPositions = buildFingerPositions(positions, notes, rootNote, fingerNumbers);
-	$: getPosition = getCoordinates(minFret, marginTop);
-	$: getFretYPos = getFretY(minFret, marginTop);
+	let positions = $derived(parseTab(tab));
+	let [minFret] = $derived(calculateFretRange(positions));
+	let isHighPosition = $derived(minFret > 0);
+	let barres = $derived(detectBarres(positions));
+	let fingerNumbers = $derived(assignFingerNumbers(positions));
+	let fingerPositions = $derived(buildFingerPositions(positions, notes, rootNote, fingerNumbers));
+	let getPosition = $derived(getCoordinates(minFret, marginTop));
+	let getFretYPos = $derived(getFretY(minFret, marginTop));
 
 	// ============================================================================
 	// Helper Functions for Rendering

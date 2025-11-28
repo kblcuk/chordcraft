@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { findStore, activeFindFilters } from '$lib/stores/find';
 	import Input from '$lib/components/features/find/Input.svelte';
 	import AdvancedOptions from '$lib/components/features/find/AdvancedOptions.svelte';
@@ -14,7 +14,7 @@
 
 	// Initialize from URL on mount
 	onMount(() => {
-		findStore.initFromUrl($page.url.searchParams);
+		findStore.initFromUrl(page.url.searchParams);
 
 		// If there's a chord in the URL, search immediately
 		if (state.chordInput) {

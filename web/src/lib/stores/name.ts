@@ -10,6 +10,8 @@ import { updateUrlParams, getParamValue, debounce } from '$lib/utils/url-state';
 export interface NameState {
 	// Input
 	tabInput: string;
+	capo: number;
+	startFret: number;
 
 	// Results
 	results: ChordMatch[];
@@ -20,6 +22,8 @@ export interface NameState {
 // Default state
 const defaultState: NameState = {
 	tabInput: '',
+	capo: 0,
+	startFret: 0,
 	results: [],
 	loading: false,
 	error: '',
@@ -58,6 +62,20 @@ function createNameStore() {
 		setTabInput(value: string) {
 			store.update((state) => ({ ...state, tabInput: value }));
 			debouncedUrlUpdate();
+		},
+
+		/**
+		 * Set capo position
+		 */
+		setCapo(capo: number) {
+			store.update((state) => ({ ...state, capo }));
+		},
+
+		/**
+		 * Set start fret position
+		 */
+		setStartFret(startFret: number) {
+			store.update((state) => ({ ...state, startFret }));
 		},
 
 		/**

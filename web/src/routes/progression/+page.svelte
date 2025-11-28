@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { progressionStore, activeProgressionFilters } from '$lib/stores/progression';
 	import Input from '$lib/components/features/progression/Input.svelte';
 	import AdvancedOptions from '$lib/components/features/progression/AdvancedOptions.svelte';
@@ -14,7 +14,7 @@
 
 	// Initialize from URL on mount
 	onMount(() => {
-		progressionStore.initFromUrl($page.url.searchParams);
+		progressionStore.initFromUrl(page.url.searchParams);
 
 		// If there's a progression in the URL, generate immediately
 		if (state.progressionInput) {

@@ -43,9 +43,8 @@
 				bind:value
 				onkeydown={handleKeydown}
 				onblur={onSearch}
-				{loading}
+				disabled={loading || disabled}
 				placeholder="e.g., Cmaj7, Abm7, G7"
-				{disabled}
 				class="flex-1"
 			/>
 			{#if value}
