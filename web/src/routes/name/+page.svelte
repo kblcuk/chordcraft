@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { nameStore } from '$lib/stores/name';
-	import Input from '$lib/components/features/name/Input.svelte';
+	import Form from '$lib/components/features/name/Form.svelte';
 	import Results from '$lib/components/features/name/Results.svelte';
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
 	import InteractiveChordDiagram from '$lib/components/features/name/InteractiveChordDiagram.svelte';
@@ -98,13 +98,7 @@
 		<!-- Text Input Section -->
 		<div class="space-y-2">
 			<h3 class="text-sm font-medium text-foreground">Text Input</h3>
-			<Input
-				bind:value={state.tabInput}
-				onAnalyze={() => nameStore.analyze()}
-				onClear={() => nameStore.clear()}
-				disabled={false}
-				loading={state.loading}
-			/>
+			<Form bind:value={tabInput} disabled={false} loading={storeState.loading} />
 		</div>
 	</div>
 

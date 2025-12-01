@@ -25,6 +25,9 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
+      zod:
+        specifier: ^4.1.13
+        version: 4.1.13
     devDependencies:
       '@eslint/compat':
         specifier: ^2.0.0
@@ -4145,5 +4148,4 @@ snapshots:
 
   zimmerframe@1.1.4: {}
 
-  zod@4.1.13:
-    optional: true
+  zod@4.1.13: {}
