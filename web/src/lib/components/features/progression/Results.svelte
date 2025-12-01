@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ChordDiagram from '$lib/ChordDiagram.svelte';
 	import type { ProgressionSequence } from '$lib/wasm';
+	import { ArrowRightIcon } from '@lucide/svelte';
 
 	let { sequences }: { sequences: ProgressionSequence[] } = $props();
 </script>
@@ -22,7 +23,7 @@
 				</div>
 
 				<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-					{#each sequence.fingerings as fingering, j (fingering.tab)}
+					{#each sequence.fingerings as fingering, j (fingering.tab + j)}
 						<div class="relative">
 							<div class="rounded-lg border-2 border-border bg-background p-4">
 								<!-- Chord Name -->
@@ -65,24 +66,14 @@
 							<!-- Transition Arrow (Desktop) -->
 							{#if j < sequence.transitions.length}
 								<div
-									class="absolute top-1/2 -right-3 z-10 hidden -translate-y-1/2 lg:block"
+									class="absolute top-1/2 -right-11 z-10 hidden -translate-y-1/2 lg:block"
 								>
 									<div
-										class="rounded-full border-2 border-green-500 bg-card p-2 shadow-md dark:border-green-600"
+										class="flex justify-center rounded-full border-2 border-green-500 bg-card p-2 shadow-md dark:border-green-600"
 									>
-										<svg
-											class="h-5 w-5 text-green-600 dark:text-green-500"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M13 7l5 5m0 0l-5 5m5-5H6"
-											/>
-										</svg>
+										<ArrowRightIcon
+											class="h-6 w-6 text-green-500 dark:text-green-600"
+										/>
 									</div>
 									<div class="mt-1 text-center">
 										<div
