@@ -8,56 +8,36 @@
 const STRING_COUNT = 6;
 
 /**
- * Parse tab notation string into fingering array
- * Handles formats: "x32010", "5(10)7xx", etc.
- * @param tab Tab notation string
- * @returns Fingering array where -1=muted, 0=open, 1-24=fretted
+ * Parse tab notation to fret positions
+ * Supports: x (muted), 0-9 (single digit), (10) (multi-digit in parens)
+ * Example: "x32010" → [-1, 3, 2, 0, 1, 0]
+ * Example: "x(10)(12)9(11)x" → [-1, 10, 12, 9, 11, -1]
  */
-export function parseTabNotation(tab: string): number[] {
-	if (!tab || tab.trim() === '') {
-		return Array(STRING_COUNT).fill(-1); // Empty = all muted
-	}
+export function parseTabNotation(tab: string, stringCount = STRING_COUNT): number[] {
+	// Match: x/X (muted), (digits) (multi-digit), or single digit
+	// Separators and invalid chars are automatically ignored
+	const matches = tab.matchAll(/x|X|\((\d+)\)|\d/gi);
 
-	const result: number[] = [];
-	let i = 0;
+	return (
+		Array.from(matches) // Ensure at least stringCount matches
+			// Map each match to a fret number
+			.map((match) => {
+				const value = match[0].toLowerCase();
 
-	while (i < tab.length && result.length < STRING_COUNT) {
-		// Check for multi-digit fret in parentheses: (10), (12), etc.
-		if (tab[i] === '(') {
-			const closeIdx = tab.indexOf(')', i);
-			if (closeIdx > i) {
-				const fretStr = tab.substring(i + 1, closeIdx);
-				const fret = parseInt(fretStr, 10);
-				if (!isNaN(fret) && fret >= 0 && fret <= 24) {
-					result.push(fret);
-				} else {
-					result.push(-1); // Invalid -> muted
-				}
-				i = closeIdx + 1;
-				continue;
-			}
-		}
+				// Muted string
+				if (value === 'x') return -1;
 
-		// Check for single character
-		const char = tab[i];
-		if (char === 'x' || char === 'X') {
-			result.push(-1); // Muted
-		} else if (char === '0') {
-			result.push(0); // Open
-		} else if (char >= '1' && char <= '9') {
-			result.push(parseInt(char, 10));
-		}
-		// Skip any other characters (spaces, etc.)
+				// Multi-digit in parentheses (capture group 1)
+				if (match[1]) return parseInt(match[1], 10);
 
-		i++;
-	}
-
-	// Pad with muted strings if we have fewer than STRING_COUNT
-	while (result.length < STRING_COUNT) {
-		result.push(-1);
-	}
-
-	return result.slice(0, STRING_COUNT);
+				// Single digit
+				return parseInt(value, 10);
+			})
+			// Filter out any NaN (shouldn't happen, but defensive)
+			.filter((fret) => !isNaN(fret))
+			// Limit to X strings
+			.slice(0, stringCount)
+	);
 }
 
 /**
@@ -90,7 +70,7 @@ export function generateTabNotation(fingering: number[], capo: number): string {
 export function transposeFingeringToNewPosition(
 	fingering: number[],
 	oldPos: number,
-	newPos: number,
+	newPos: number
 ): number[] {
 	const delta = newPos - oldPos;
 	if (delta === 0) return fingering;
@@ -105,12 +85,4 @@ export function transposeFingeringToNewPosition(
 		// Clamp to valid range [0, 24]
 		return Math.max(0, Math.min(24, transposed));
 	});
-}
-
-/**
- * Helper: Check if two arrays are equal
- */
-export function arraysEqual(a: number[], b: number[]): boolean {
-	if (a.length !== b.length) return false;
-	return a.every((val, i) => val === b[i]);
 }

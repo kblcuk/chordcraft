@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { parseTabNotation } from '$lib/utils/tab-notation';
+
 	/**
 	 * Displays required finger count for a chord with creative labels
 	 */
@@ -64,58 +66,22 @@
 	// ============================================================================
 
 	/**
-	 * Parse tab notation to fret positions
-	 * Supports: x (muted), 0-9 (single digit), (10) (multi-digit in parens)
-	 * Example: "x32010" → [-1, 3, 2, 0, 1, 0]
-	 * Example: "x(10)(12)9(11)x" → [-1, 10, 12, 9, 11, -1]
-	 */
-	function parseTab(tab: string): number[] {
-		// Match: x/X (muted), (digits) (multi-digit), or single digit
-		// Separators and invalid chars are automatically ignored
-		const matches = tab.matchAll(/x|X|\((\d+)\)|\d/gi);
-
-		return (
-			Array.from(matches)
-				// Map each match to a fret number
-				.map((match) => {
-					const value = match[0].toLowerCase();
-
-					// Muted string
-					if (value === 'x') return -1;
-
-					// Multi-digit in parentheses (capture group 1)
-					if (match[1]) return parseInt(match[1], 10);
-
-					// Single digit
-					return parseInt(value, 10);
-				})
-				// Filter out any NaN (shouldn't happen, but defensive)
-				.filter((fret) => !isNaN(fret))
-				// Limit to 6 strings for guitar
-				.slice(0, 6)
-		);
-	}
-
-	/**
 	 * Find consecutive runs in sorted string indices
 	 * Example: [0, 1, 2, 5, 6] → [[0, 1, 2], [5, 6]]
 	 */
 	function findConsecutiveRuns(strings: number[]): number[][] {
 		if (strings.length === 0) return [];
 
-		return strings.reduce(
-			(runs, str, i) => {
-				if (i === 0 || str !== strings[i - 1] + 1) {
-					// Start new run
-					runs.push([str]);
-				} else {
-					// Continue current run
-					runs[runs.length - 1].push(str);
-				}
-				return runs;
-			},
-			[] as number[][]
-		);
+		return strings.reduce<number[][]>((runs, str, i) => {
+			if (i === 0 || str !== strings[i - 1] + 1) {
+				// Start new run
+				runs.push([str]);
+			} else {
+				// Continue current run
+				runs[runs.length - 1].push(str);
+			}
+			return runs;
+		}, []);
 	}
 
 	/**
@@ -143,7 +109,7 @@
 	 * Functional approach with map-reduce pattern
 	 */
 	function countFingers(tab: string): number {
-		const positions = parseTab(tab);
+		const positions = parseTabNotation(tab);
 		if (positions.length === 0) return 0;
 
 		// Group strings by fret using reduce
@@ -202,21 +168,20 @@
 	// Check if there are any playable strings (not all muted)
 	let hasPlayableStrings = $derived.by(() => {
 		if (!tab.trim()) return false;
-		const positions = parseTab(tab);
+		const positions = parseTabNotation(tab);
 		return positions.some((pos) => pos >= 0);
 	});
 </script>
 
 {#if hasPlayableStrings}
-	<div
-		class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 {fingerInfo.color}"
-	>
+	<div class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 {fingerInfo.color}">
 		<span class="text-2xl" role="img" aria-label={fingerInfo.label}>
 			{fingerInfo.emoji}
 		</span>
 		<div class="flex flex-col">
-			<span class="text-xs font-medium uppercase tracking-wide opacity-75">
-				{fingerInfo.count} {fingerInfo.count === 1 ? 'Finger' : 'Fingers'}
+			<span class="text-xs font-medium tracking-wide uppercase opacity-75">
+				{fingerInfo.count}
+				{fingerInfo.count === 1 ? 'Finger' : 'Fingers'}
 			</span>
 			<span class="font-semibold">{fingerInfo.label}</span>
 		</div>
