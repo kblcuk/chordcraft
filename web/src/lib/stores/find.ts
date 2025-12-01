@@ -43,8 +43,47 @@ const defaultState: FindState = {
 function createFindStore() {
 	const store = writable<FindState>({ ...defaultState });
 
+	/**
+	 * Execute search
+	 */
+	async function search() {
+		const state = get(store);
+		if (!state.chordInput.trim() || state.loading) return;
+
+		store.update((s) => ({ ...s, loading: true, error: '', results: [] }));
+
+		try {
+			const voicingType = state.voicing === 'all' ? undefined : state.voicing;
+			const results = await findFingerings(state.chordInput.trim(), {
+				limit: state.limit,
+				capo: state.capo,
+				voicingType,
+				preferredPosition: state.position ?? undefined,
+				playingContext: state.context,
+			});
+
+			store.update((s) => ({
+				...s,
+				results,
+				loading: false,
+				hasSearched: true,
+			}));
+		} catch (error) {
+			store.update((s) => ({
+				...s,
+				error: error instanceof Error ? error.message : 'Unknown error',
+				loading: false,
+			}));
+		}
+	}
+
+	// Circular update prevention flag
+	let isUpdatingFromUrl = false;
+
 	// Debounced URL update
 	const debouncedUrlUpdate = debounce(() => {
+		if (isUpdatingFromUrl) return;
+
 		const state = get(store);
 		updateUrlParams({
 			chord: state.chordInput || undefined,
@@ -54,17 +93,25 @@ function createFindStore() {
 			position: state.position,
 			context: state.context !== 'solo' ? state.context : undefined,
 		});
-	}, 300);
+
+		const shouldAutoExecute = state.chordInput.trim();
+		// Auto-execute search if we've already searched once
+		if (shouldAutoExecute) {
+			// Use setTimeout to avoid calling search during store update
+			setTimeout(() => search(), 0);
+		}
+	}, 200);
 
 	return {
 		subscribe: store.subscribe,
 		set: store.set,
 		update: store.update,
-
+		search,
 		/**
 		 * Initialize from URL params
 		 */
 		initFromUrl(searchParams: URLSearchParams) {
+			isUpdatingFromUrl = true;
 			store.update((state) => ({
 				...state,
 				chordInput: getParamValue(searchParams, 'chord', ''),
@@ -76,6 +123,7 @@ function createFindStore() {
 				),
 				context: getParamValue(searchParams, 'context', 'solo') as FindState['context'],
 			}));
+			isUpdatingFromUrl = false;
 		},
 
 		/**
@@ -92,17 +140,8 @@ function createFindStore() {
 		setOptions(
 			options: Partial<Pick<FindState, 'limit' | 'capo' | 'voicing' | 'position' | 'context'>>
 		) {
-			const state = get(store);
-			const shouldAutoExecute = state.hasSearched && state.chordInput.trim();
-
 			store.update((s) => ({ ...s, ...options }));
 			debouncedUrlUpdate();
-
-			// Auto-execute search if we've already searched once
-			if (shouldAutoExecute) {
-				// Use setTimeout to avoid calling search during store update
-				setTimeout(() => this.search(), 0);
-			}
 		},
 
 		/**
@@ -118,40 +157,6 @@ function createFindStore() {
 				context: defaultState.context,
 			}));
 			debouncedUrlUpdate();
-		},
-
-		/**
-		 * Execute search
-		 */
-		async search() {
-			const state = get(store);
-			if (!state.chordInput.trim() || state.loading) return;
-
-			store.update((s) => ({ ...s, loading: true, error: '', results: [] }));
-
-			try {
-				const voicingType = state.voicing === 'all' ? undefined : state.voicing;
-				const results = await findFingerings(state.chordInput.trim(), {
-					limit: state.limit,
-					capo: state.capo,
-					voicingType,
-					preferredPosition: state.position ?? undefined,
-					playingContext: state.context,
-				});
-
-				store.update((s) => ({
-					...s,
-					results,
-					loading: false,
-					hasSearched: true,
-				}));
-			} catch (error) {
-				store.update((s) => ({
-					...s,
-					error: error instanceof Error ? error.message : 'Unknown error',
-					loading: false,
-				}));
-			}
 		},
 
 		/**

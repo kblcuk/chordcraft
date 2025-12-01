@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent } from '@testing-library/svelte';
+import { render, fireEvent, getByTestId } from '@testing-library/svelte';
 import { get } from 'svelte/store';
 import NamePage from '../../../routes/name/+page.svelte';
 import { nameStore } from '$lib/stores/name';
@@ -27,6 +27,13 @@ vi.mock('$lib/wasm', () => ({
 	]),
 }));
 
+// Mock SvelteKit navigation
+vi.mock('$app/navigation', () => ({
+	goto: vi.fn(async () => {}),
+	beforeNavigate: vi.fn(),
+	afterNavigate: vi.fn(),
+}));
+
 describe('Name Page - Core User Flows', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -36,7 +43,7 @@ describe('Name Page - Core User Flows', () => {
 	it('should call analyzeChord when user enters tab notation and presses Enter', async () => {
 		const { container } = render(NamePage);
 
-		const input = container.querySelector('#tab-input') as HTMLInputElement;
+		const input = getByTestId(container, 'tab-input') as HTMLInputElement;
 		expect(input).toBeInTheDocument();
 
 		await fireEvent.input(input, { target: { value: 'x32010' } });
@@ -50,7 +57,7 @@ describe('Name Page - Core User Flows', () => {
 	it('should display multiple chord interpretations with confidence scores', async () => {
 		const { container } = render(NamePage);
 
-		const input = container.querySelector('#tab-input') as HTMLInputElement;
+		const input = getByTestId(container, 'tab-input') as HTMLInputElement;
 		await fireEvent.input(input, { target: { value: 'x32010' } });
 		await fireEvent.keyDown(input, { key: 'Enter' });
 

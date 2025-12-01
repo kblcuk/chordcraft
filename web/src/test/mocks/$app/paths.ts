@@ -9,7 +9,3 @@ export const assets = '';
 export function resolve(href: string): string {
 	return href;
 }
-
-export function resolveRoute(id: string, params: Record<string, string> = {}): string {
-	return id;
-}

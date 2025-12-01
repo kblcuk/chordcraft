@@ -4,6 +4,7 @@
 
 import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
+import { page } from '$app/state';
 
 export const routes = [
 	{ path: '/find', label: 'Find Fingerings' },
@@ -42,7 +43,7 @@ export function updateUrlParams(
 	});
 
 	const query = searchParams.toString();
-	const pathname = window.location.pathname;
+	const pathname = page.url.pathname;
 	const url = query ? `${pathname}?${query}` : pathname;
 
 	// We can enalbe this back when goto supports query params:
@@ -52,7 +53,8 @@ export function updateUrlParams(
 		replaceState: options.replaceState ?? true,
 		keepFocus: options.keepFocus ?? true,
 		noScroll: true,
-	}).catch(() => {
+	}).catch((e) => {
+		console.error('Navigation error', e);
 		// Ignore navigation errors (user might navigate away before this completes)
 	});
 }

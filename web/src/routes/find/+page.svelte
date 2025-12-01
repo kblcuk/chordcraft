@@ -7,18 +7,38 @@
 	import Results from '$lib/components/features/find/Results.svelte';
 	import AdvancedOptionsWrapper from '$lib/components/shared/AdvancedOptionsWrapper.svelte';
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
+	import ShareButton from '$lib/components/shared/ShareButton.svelte';
 
 	// Subscribe to store
-	let state = $derived($findStore);
+	let storeState = $derived($findStore);
 	let activeFilters = $derived($activeFindFilters);
+
+	// Local input value (controlled component pattern)
+	let chordInput: string = $state('');
+
+	// Track previous URL to detect changes
+	let previousUrl = '';
 
 	// Initialize from URL on mount
 	onMount(() => {
 		findStore.initFromUrl(page.url.searchParams);
+		chordInput = storeState.chordInput;
 
 		// If there's a chord in the URL, search immediately
-		if (state.chordInput) {
+		if (storeState.chordInput) {
 			findStore.search();
+		}
+	});
+
+	// React to URL changes (browser navigation, manual edits)
+	$effect(() => {
+		const currentUrl = page.url.href;
+
+		// Only sync if URL actually changed (prevents state → URL → state loop)
+		if (currentUrl !== previousUrl) {
+			previousUrl = currentUrl;
+			findStore.initFromUrl(page.url.searchParams);
+			chordInput = storeState.chordInput; // Sync local state
 		}
 	});
 </script>
@@ -29,12 +49,27 @@
 
 	<!-- Input -->
 	<Input
-		bind:value={state.chordInput}
-		onSearch={() => findStore.search()}
-		onClear={() => findStore.clear()}
+		bind:value={chordInput}
+		onSearch={() => {
+			if (chordInput !== storeState.chordInput) {
+				findStore.setChordInput(chordInput);
+			}
+			findStore.search();
+		}}
+		onClear={() => {
+			chordInput = '';
+			findStore.clear();
+		}}
 		disabled={false}
-		loading={state.loading}
+		loading={storeState.loading}
 	/>
+
+	<!-- Share Button -->
+	{#if chordInput}
+		<div class="flex justify-end">
+			<ShareButton url={page.url.href} title="Share Url" />
+		</div>
+	{/if}
 
 	<!-- Advanced Options -->
 	<AdvancedOptionsWrapper
@@ -43,21 +78,21 @@
 	>
 		{#snippet content()}
 			<AdvancedOptions
-				limit={state.limit}
-				capo={state.capo}
-				voicing={state.voicing}
-				position={state.position}
-				context={state.context}
+				limit={storeState.limit}
+				capo={storeState.capo}
+				voicing={storeState.voicing}
+				position={storeState.position}
+				context={storeState.context}
 				onChange={(opts) => findStore.setOptions(opts)}
 			/>
 		{/snippet}
 	</AdvancedOptionsWrapper>
 
 	<!-- Error -->
-	{#if state.error}
-		<ErrorAlert message={state.error} />
+	{#if storeState.error}
+		<ErrorAlert message={storeState.error} />
 	{/if}
 
 	<!-- Results -->
-	<Results fingerings={state.results} />
+	<Results fingerings={storeState.results} />
 </div>

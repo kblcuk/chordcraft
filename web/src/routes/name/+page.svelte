@@ -8,33 +8,54 @@
 	import InteractiveChordDiagram from '$lib/components/features/name/InteractiveChordDiagram.svelte';
 	import FingerCountBadge from '$lib/components/features/name/FingerCountBadge.svelte';
 	import { Label } from '$lib/components/ui/label';
-	import { debounce } from '$lib/utils/url-state';
+	import ShareButton from '$lib/components/shared/ShareButton.svelte';
 
 	// Subscribe to store
-	let state = $derived($nameStore);
+	let storeState = $derived($nameStore);
+
+	// Local input values (controlled component pattern)
+	let tabInput: string = $state('000000');
+	let startFret: number = $state(0);
+
+	// Track previous URL to detect changes
+	let previousUrl = '';
 
 	// Initialize from URL on mount
 	onMount(() => {
 		nameStore.initFromUrl(page.url.searchParams);
+		tabInput = storeState.tabInput;
+		startFret = storeState.startFret;
 
 		// If there's a tab in the URL, analyze immediately
-		if (state.tabInput) {
+		if (storeState.tabInput) {
 			nameStore.analyze();
 		}
 	});
 
-	// Debounced auto-analyze (200ms for snappy feel)
-	const debouncedAnalyze = debounce(() => {
-		if (state.tabInput.trim()) {
-			nameStore.analyze();
-		}
-	}, 200);
+	// React to URL changes (browser navigation, manual edits)
+	$effect(() => {
+		const currentUrl = page.url.href;
+		// Only sync if URL actually changed (prevents state → URL → state loop)
+		if (currentUrl === previousUrl) return;
+
+		previousUrl = currentUrl;
+		nameStore.initFromUrl(page.url.searchParams);
+		tabInput = storeState.tabInput; // Sync local state
+		startFret = storeState.startFret;
+	});
+
+	// Watch for startFret changes and update store + URL
+	$effect(() => {
+		if (startFret === storeState.startFret) return;
+		nameStore.setStartFret(startFret);
+	});
 
 	// Watch for tab changes and auto-analyze
 	$effect(() => {
-		if (state.tabInput) {
-			debouncedAnalyze();
-		}
+		if (tabInput === storeState.tabInput) return;
+
+		nameStore.setTabInput(tabInput);
+		nameStore.analyze();
 	});
 </script>
 
@@ -55,20 +76,18 @@
 					<Label for="capo-select" class="text-sm font-medium">Capo:</Label>
 					<select
 						id="capo-select"
-						bind:value={state.capo}
+						value={storeState.capo}
 						onchange={(e) => nameStore.setCapo(Number(e.currentTarget.value))}
 						class="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
 					>
 						<option value="0">None</option>
-						{#each Array(12)
-							.fill(0)
-							.map((v, i) => i + 1) as fretNum (fretNum)}
+						{#each Array.from({ length: 12 }, (v, i) => i + 1) as fretNum (fretNum)}
 							<option value={fretNum}>Fret {fretNum}</option>
 						{/each}
 					</select>
-					{#if state.capo > 0}
+					{#if storeState.capo > 0}
 						<span class="text-xs text-muted-foreground">
-							(+{state.capo} semitones)
+							(+{storeState.capo} semitones)
 						</span>
 					{/if}
 				</div>
@@ -77,9 +96,9 @@
 			<!-- Interactive Fretboard -->
 			<div class="flex justify-center">
 				<InteractiveChordDiagram
-					bind:value={state.tabInput}
-					bind:startFret={state.startFret}
-					capo={state.capo}
+					bind:value={tabInput}
+					bind:startFret
+					capo={storeState.capo}
 					size="large"
 				/>
 			</div>
@@ -100,24 +119,31 @@
 			<h3 class="text-sm font-medium text-foreground">Text Input</h3>
 			<Form bind:value={tabInput} disabled={false} loading={storeState.loading} />
 		</div>
+
+		<!-- Share Button -->
+		{#if tabInput}
+			<div class="flex justify-end">
+				<ShareButton url={page.url.href} title="Share Url" />
+			</div>
+		{/if}
 	</div>
 
 	<!-- Error -->
-	{#if state.error}
+	{#if storeState.error}
 		<div class="mt-4">
-			<ErrorAlert message={state.error} />
+			<ErrorAlert message={storeState.error} />
 		</div>
 	{/if}
 
 	<!-- Results -->
-	{#if state.results.length > 0}
+	{#if storeState.results.length > 0}
 		<div class="mt-6 space-y-4">
 			<!-- Finger Count Badge -->
 			<div class="flex justify-center">
-				<FingerCountBadge tab={state.tabInput} />
+				<FingerCountBadge tab={storeState.tabInput} />
 			</div>
 
-			<Results matches={state.results} />
+			<Results matches={storeState.results} />
 		</div>
 	{/if}
 </div>

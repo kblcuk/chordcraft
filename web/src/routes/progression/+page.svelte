@@ -9,18 +9,57 @@
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
 
 	// Subscribe to store
-	let state = $derived($progressionStore);
+	let storeState = $derived($progressionStore);
 	let activeFilters = $derived($activeProgressionFilters);
+
+	// Local input value (controlled component pattern)
+	let progressionInput: string = $state('');
+
+	// Track previous URL to detect changes
+	let previousUrl = '';
 
 	// Initialize from URL on mount
 	onMount(() => {
 		progressionStore.initFromUrl(page.url.searchParams);
+		progressionInput = storeState.progressionInput;
 
 		// If there's a progression in the URL, generate immediately
-		if (state.progressionInput) {
+		if (storeState.progressionInput) {
 			progressionStore.generate();
 		}
 	});
+
+	// React to URL changes (browser navigation, manual edits)
+	$effect(() => {
+		const currentUrl = page.url.href;
+
+		// Only sync if URL actually changed (prevents state → URL → state loop)
+		if (currentUrl !== previousUrl) {
+			previousUrl = currentUrl;
+			progressionStore.initFromUrl(page.url.searchParams);
+			progressionInput = storeState.progressionInput; // Sync local state
+		}
+	});
+
+	// Watch for local input changes and update store + URL
+	$effect(() => {
+		if (progressionInput !== storeState.progressionInput) {
+			progressionStore.setProgressionInput(progressionInput);
+		}
+	});
+
+	// Share current URL
+	function handleShare() {
+		navigator.clipboard
+			.writeText(window.location.href)
+			.then(() => {
+				alert('Share link copied to clipboard!');
+			})
+			.catch((err) => {
+				console.error('Failed to copy:', err);
+				alert('Failed to copy link. Please copy from address bar.');
+			});
+	}
 </script>
 
 <div class="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -31,12 +70,27 @@
 
 	<!-- Input -->
 	<Input
-		bind:value={state.progressionInput}
+		bind:value={progressionInput}
 		onGenerate={() => progressionStore.generate()}
-		onClear={() => progressionStore.clear()}
+		onClear={() => {
+			progressionInput = '';
+			progressionStore.clear();
+		}}
 		disabled={false}
-		loading={state.loading}
+		loading={storeState.loading}
 	/>
+
+	<!-- Share Button -->
+	{#if progressionInput}
+		<div class="flex justify-end">
+			<button
+				class="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent"
+				onclick={handleShare}
+			>
+				📋 Share
+			</button>
+		</div>
+	{/if}
 
 	<!-- Advanced Options -->
 	<AdvancedOptionsWrapper
@@ -45,20 +99,20 @@
 	>
 		{#snippet content()}
 			<AdvancedOptions
-				limit={state.limit}
-				maxDistance={state.maxDistance}
-				capo={state.capo}
-				context={state.context}
+				limit={storeState.limit}
+				maxDistance={storeState.maxDistance}
+				capo={storeState.capo}
+				context={storeState.context}
 				onChange={(opts) => progressionStore.setOptions(opts)}
 			/>
 		{/snippet}
 	</AdvancedOptionsWrapper>
 
 	<!-- Error -->
-	{#if state.error}
-		<ErrorAlert message={state.error} />
+	{#if storeState.error}
+		<ErrorAlert message={storeState.error} />
 	{/if}
 
 	<!-- Results -->
-	<Results sequences={state.results} />
+	<Results sequences={storeState.results} />
 </div>

@@ -41,8 +41,13 @@ const defaultState: ProgressionState = {
 function createProgressionStore() {
 	const store = writable<ProgressionState>({ ...defaultState });
 
+	// Circular update prevention flag
+	let isUpdatingFromUrl = false;
+
 	// Debounced URL update
 	const debouncedUrlUpdate = debounce(() => {
+		if (isUpdatingFromUrl) return;
+
 		const state = get(store);
 		updateUrlParams({
 			chords: state.progressionInput || undefined,
@@ -62,6 +67,7 @@ function createProgressionStore() {
 		 * Initialize from URL params
 		 */
 		initFromUrl(searchParams: URLSearchParams) {
+			isUpdatingFromUrl = true;
 			store.update((state) => ({
 				...state,
 				progressionInput: getParamValue(searchParams, 'chords', ''),
@@ -74,6 +80,7 @@ function createProgressionStore() {
 					'solo'
 				) as ProgressionState['context'],
 			}));
+			isUpdatingFromUrl = false;
 		},
 
 		/**
