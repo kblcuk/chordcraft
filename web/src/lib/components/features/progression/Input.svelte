@@ -1,6 +1,5 @@
 <script lang="ts">
-	import ClearButton from '$lib/components/shared/ClearButton.svelte';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import { commonProgressions } from '$lib/utils/examples';
@@ -52,19 +51,25 @@
 	<div>
 		<Label for="progression-input" class="mb-2">Chord Progression (space-separated)</Label>
 		<div class="flex gap-2">
-			<Input
-				id="progression-input"
-				type="text"
-				bind:value
-				onkeydown={handleKeydown}
-				onblur={onGenerate}
-				placeholder="e.g., Cmaj7 Am7 Dm7 G7"
-				{disabled}
-				class="flex-1"
-			/>
-			{#if value}
-				<ClearButton onclick={onClear} />
-			{/if}
+			<InputGroup.Root>
+				<InputGroup.Input
+					id="progression-input"
+					type="text"
+					bind:value
+					onkeydown={handleKeydown}
+					onblur={onGenerate}
+					placeholder="e.g., Cmaj7 Am7 Dm7 G7"
+					{disabled}
+					class="flex-1"
+				/>
+				{#if value}
+					<InputGroup.Addon align="inline-end">
+						<InputGroup.Button onclick={onClear} variant="secondary"
+							>X</InputGroup.Button
+						>
+					</InputGroup.Addon>
+				{/if}
+			</InputGroup.Root>
 		</div>
 		<p class="mt-1 text-xs text-muted-foreground">Press Enter or click away to generate</p>
 	</div>

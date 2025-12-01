@@ -1,7 +1,6 @@
 <script lang="ts">
 	import ExampleButtons from '$lib/components/shared/ExampleButtons.svelte';
-	import ClearButton from '$lib/components/shared/ClearButton.svelte';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Label } from '$lib/components/ui/label';
 	import { exampleChords } from '$lib/utils/examples';
 
@@ -37,19 +36,25 @@
 	<div>
 		<Label for="chord-input" class="mb-2">Chord Name</Label>
 		<div class="flex gap-2">
-			<Input
-				id="chord-input"
-				type="text"
-				bind:value
-				onkeydown={handleKeydown}
-				onblur={onSearch}
-				disabled={loading || disabled}
-				placeholder="e.g., Cmaj7, Abm7, G7"
-				class="flex-1"
-			/>
-			{#if value}
-				<ClearButton onclick={onClear} />
-			{/if}
+			<InputGroup.Root>
+				<InputGroup.Input
+					id="chord-input"
+					type="text"
+					bind:value
+					onkeydown={handleKeydown}
+					onblur={onSearch}
+					disabled={loading || disabled}
+					placeholder="e.g., Cmaj7, Abm7, G7"
+					class="flex-1"
+				/>
+				{#if value}
+					<InputGroup.Addon align="inline-end">
+						<InputGroup.Button onclick={onClear} variant="secondary"
+							>X</InputGroup.Button
+						>
+					</InputGroup.Addon>
+				{/if}
+			</InputGroup.Root>
 		</div>
 		<p class="mt-1 text-xs text-muted-foreground">Press Enter or click away to search</p>
 	</div>
