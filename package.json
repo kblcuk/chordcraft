@@ -1,0 +1,14 @@
+{
+  "name": "chordcraft-workspace",
+  "private": true,
+  "workspaces": [
+    "web",
+    "crates/wasm/pkg"
+  ],
+  "scripts": {
+    "dev": "bun run --cwd web dev",
+    "build": "bun run --cwd web build",
+    "preview": "bun run --cwd web preview",
+    "test": "bun run --cwd web test"
+  }
+}

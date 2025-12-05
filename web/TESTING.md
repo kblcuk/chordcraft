@@ -35,16 +35,16 @@ web/
 
 ```bash
 # Watch mode (runs on file changes)
-pnpm test
+bun test
 
 # Run once (CI/CD)
-pnpm test:run
+bun run test:run
 
 # With UI (visual test runner)
-pnpm test:ui
+bun run test:ui
 
 # With coverage report
-pnpm test:coverage
+bun run test:coverage
 ```
 
 ## Test Categories
@@ -210,13 +210,13 @@ it('should call parseTab with correct arguments', () => {
 
 ```bash
 # Run single test file
-pnpm test ChordDiagram
+bun test ChordDiagram
 
 # Run tests matching pattern
-pnpm test "Tab Format"
+bun test "Tab Format"
 
 # Run with UI (best for debugging)
-pnpm test:ui
+bun run test:ui
 ```
 
 ## Future Improvements

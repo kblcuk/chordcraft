@@ -276,7 +276,7 @@ describe('nameStore URL sync', () => {
 **Run tests:**
 ```bash
 cd web
-pnpm test
+bun test
 ```
 
 ---
@@ -408,8 +408,8 @@ Only include non-default values in URL for cleaner links:
 ```bash
 cd web
 # Make the code changes above
-pnpm test          # Run tests
-pnpm run dev       # Test manually
+bun test           # Run tests
+bun run dev        # Test manually
 ```
 
 ---

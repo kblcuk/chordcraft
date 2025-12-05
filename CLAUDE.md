@@ -928,11 +928,12 @@ This separation allows:
 
 ## Getting Started
 
-1. **Prerequisites**: Rust toolchain (rustup), Node.js (for web later)
+1. **Prerequisites**: Rust toolchain (rustup), Bun (for web app)
 2. **Build**: `cargo build --workspace`
 3. **Test**: `cargo test --workspace`
 4. **Run CLI**: `cargo run -p chordcraft-cli -- find "Cmaj7"`
 5. **Watch mode**: `cargo watch -x test -x run`
+6. **Web app**: `cd web && bun install && bun run dev`
 
 ## References & Resources
 

@@ -38,15 +38,14 @@ These semantic colors are defined in `src/app.css` with CSS custom properties th
 
 ### Prerequisites
 
-- Node.js 18+ (for pnpm/npm)
-- pnpm (recommended) or npm
+- Bun 1.0+
 - Rust toolchain with `wasm-pack` (to build WASM module)
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Build WASM module (from workspace root)
 cd ../crates/wasm
@@ -56,7 +55,7 @@ wasm-pack build --target web
 cd ../../web
 
 # Start dev server
-pnpm dev
+bun run dev
 ```
 
 The app will be available at `http://localhost:5173`
@@ -65,22 +64,22 @@ The app will be available at `http://localhost:5173`
 
 ```bash
 # Development
-pnpm dev              # Start dev server with HMR
-pnpm build            # Build for production
-pnpm preview          # Preview production build
+bun run dev              # Start dev server with HMR
+bun run build            # Build for production
+bun run preview          # Preview production build
 
 # Testing
-pnpm test             # Run tests in watch mode
-pnpm test:run         # Run tests once (CI)
-pnpm test:ui          # Open Vitest UI
-pnpm test:coverage    # Generate coverage report
+bun test                 # Run tests in watch mode
+bun run test:run         # Run tests once (CI)
+bun run test:ui          # Open Vitest UI
+bun run test:coverage    # Generate coverage report
 
 # Code Quality
-pnpm check            # Run svelte-check and TypeScript
-pnpm lint             # Run ESLint
-pnpm lint:fix         # Fix ESLint errors
-pnpm format           # Format with Prettier
-pnpm format:check     # Check formatting
+bun run check            # Run svelte-check and TypeScript
+bun run lint             # Run ESLint
+bun run lint:fix         # Fix ESLint errors
+bun run format           # Format with Prettier
+bun run format:check     # Check formatting
 ```
 
 ## Project Structure
@@ -177,7 +176,7 @@ The app is configured for static site generation (SSG) using `@sveltejs/adapter-
 
 ```bash
 # Build for production
-pnpm build
+bun run build
 
 # Output will be in build/ directory
 # Deploy build/ to any static host (Vercel, Netlify, GitHub Pages, etc.)
