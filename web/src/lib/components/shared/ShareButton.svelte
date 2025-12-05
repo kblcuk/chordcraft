@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { CheckIcon, Copy } from '@lucide/svelte';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import Copy from '@lucide/svelte/icons/copy';
 	import { onDestroy } from 'svelte';
 
 	let {

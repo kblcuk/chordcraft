@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ChordDiagram from '$lib/ChordDiagram.svelte';
 	import type { ProgressionSequence } from '$lib/wasm';
-	import { ArrowRightIcon } from '@lucide/svelte';
+	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 
 	let { sequences }: { sequences: ProgressionSequence[] } = $props();
 </script>
