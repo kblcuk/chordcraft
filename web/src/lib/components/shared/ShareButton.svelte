@@ -6,7 +6,7 @@
 
 	let {
 		url,
-		title = url.split('/').at(-1),
+		title,
 	}: {
 		/** URL to share. */
 		url: string;
@@ -20,7 +20,7 @@
 	let timeout: number | NodeJS.Timeout;
 
 	async function share() {
-		const shareData: ShareData = { url, title };
+		const shareData: ShareData = { url, title: title ?? url.split('/').at(-1) };
 
 		if (navigator.canShare && navigator.canShare(shareData)) {
 			await navigator.share(shareData);
