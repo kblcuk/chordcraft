@@ -21,8 +21,7 @@
 
 				<div>
 					<h1
-						class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
-						style="font-family: var(--font-display);"
+						class="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
 					>
 						ChordCraft
 					</h1>

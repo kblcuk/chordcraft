@@ -328,6 +328,11 @@
 			transparent
 		);
 	}
+
+	/* Chord diagram background */
+	.bg-diagram {
+		background: linear-gradient(180deg, var(--diagram-bg) 0%, var(--diagram-bg-gradient) 100%);
+	}
 }
 
 /* ============================================================================

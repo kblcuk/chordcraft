@@ -60,7 +60,7 @@
 
 <!-- Main app content -->
 <div
-	class="flex min-h-screen flex-col bg-background bg-textured transition-opacity duration-300"
+	class="bg-textured flex min-h-screen flex-col bg-background transition-opacity duration-300"
 	class:opacity-0={!appReady}
 	class:opacity-100={appReady}
 >

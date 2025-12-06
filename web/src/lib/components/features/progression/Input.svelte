@@ -2,7 +2,6 @@
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
-	import { commonProgressions } from '$lib/utils/examples';
 
 	let {
 		value = $bindable(''),

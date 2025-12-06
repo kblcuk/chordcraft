@@ -46,10 +46,7 @@
 <div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
 	<!-- Header -->
 	<div class="mb-6">
-		<h2
-			class="text-2xl font-bold tracking-tight text-foreground"
-			style="font-family: var(--font-display);"
-		>
+		<h2 class="font-display text-2xl font-bold tracking-tight text-foreground">
 			Find Fingerings
 		</h2>
 		<p class="mt-1 text-muted-foreground">

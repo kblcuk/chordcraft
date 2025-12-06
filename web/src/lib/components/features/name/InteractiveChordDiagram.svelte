@@ -239,8 +239,7 @@
 		{width}
 		{height}
 		viewBox="0 0 {width} {height}"
-		class="rounded-lg"
-		style="background: linear-gradient(180deg, {COLORS.background} 0%, {COLORS.backgroundGradient} 100%);"
+		class="bg-diagram rounded-lg"
 		xmlns="http://www.w3.org/2000/svg"
 	>
 		<!-- Fret number indicator (for high positions) -->

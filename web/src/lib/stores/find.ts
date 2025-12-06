@@ -113,11 +113,11 @@ function createFindStore() {
 				chordInput: getParamValue(searchParams, 'chord', ''),
 				limit: getParamValue(searchParams, 'limit', 10),
 				capo: getParamValue(searchParams, 'capo', 0),
-				voicing: getParamValue(searchParams, 'voicing', 'all') as FindState['voicing'],
+				voicing: getParamValue(searchParams, 'voicing', 'all'),
 				position: getParamValue(searchParams, 'position', null, (v) =>
 					v === 'null' ? null : Number(v)
 				),
-				context: getParamValue(searchParams, 'context', 'solo') as FindState['context'],
+				context: getParamValue(searchParams, 'context', 'solo'),
 			}));
 			isUpdatingFromUrl = false;
 		},
