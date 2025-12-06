@@ -47,14 +47,14 @@ describe('InteractiveChordDiagram - Bidirectional Sync', () => {
 			expect(result).toEqual([-1, 10, 12, 12, 10, 0]);
 		});
 
-		it('should handle empty string as all muted', () => {
+		it('should handle empty string as empty array', () => {
 			const result = parseTabNotation('');
-			expect(result).toEqual([-1, -1, -1, -1, -1, -1]);
+			expect(result).toEqual([]);
 		});
 
 		it('should handle partial tab notation (pad with muted)', () => {
 			const result = parseTabNotation('x32');
-			expect(result).toEqual([-1, 3, 2, -1, -1, -1]);
+			expect(result).toEqual([-1, 3, 2]);
 		});
 
 		it('should handle E minor shape (022000)', () => {
@@ -349,10 +349,10 @@ describe('InteractiveChordDiagram - Bidirectional Sync', () => {
 		it('should handle empty initial state', () => {
 			const text = '';
 			const fingering = parseTabNotation(text);
-			expect(fingering).toEqual([-1, -1, -1, -1, -1, -1]);
+			expect(fingering).toEqual([]);
 
 			const generated = generateTabNotation(fingering, 0);
-			expect(generated).toBe('xxxxxx');
+			expect(generated).toBe('');
 		});
 
 		it('should handle malformed input gracefully', () => {

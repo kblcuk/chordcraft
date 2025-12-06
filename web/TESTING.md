@@ -206,6 +206,234 @@ it('should call parseTab with correct arguments', () => {
 
 **Why**: Testing implementation detail (that `parseTab` is called). If we refactor to use a different parsing approach, this breaks unnecessarily.
 
+## Testing Code Standards
+
+Follow these principles to write robust, maintainable tests:
+
+### 1. No Random Timeouts ⛔
+
+**❌ DON'T use arbitrary timeouts:**
+
+```typescript
+it('should update value', async () => {
+	await fireEvent.input(input, { target: { value: 'x32010' } });
+
+	// Bad: arbitrary delay, may be too short or too long
+	await new Promise((resolve) => setTimeout(resolve, 100));
+
+	expect(boundValue).toBe('x32010');
+});
+```
+
+**✅ DO use `vi.waitFor()` to wait for actual conditions:**
+
+```typescript
+it('should update value', async () => {
+	await fireEvent.input(input, { target: { value: 'x32010' } });
+
+	// Good: waits for actual state change, no arbitrary delay
+	await vi.waitFor(() => {
+		expect(boundValue).toBe('x32010');
+	});
+});
+```
+
+**Why:**
+
+- Timeouts are flaky - too short = random failures, too long = slow tests
+- `vi.waitFor()` polls until condition is met (with timeout as safety)
+- Makes tests faster and more reliable
+- Clear intent: "wait for this specific condition"
+
+### 2. No TypeScript Casting ⛔
+
+**❌ DON'T use `as` casts:**
+
+```typescript
+it('should render input', () => {
+	const { container } = render(Form);
+
+	// Bad: casting bypasses type safety
+	const input = container.querySelector('input') as HTMLInputElement;
+	expect(input.value).toBe('000000');
+});
+```
+
+**✅ DO use proper typing with null checks:**
+
+```typescript
+it('should render input', () => {
+	const { container } = render(Form);
+
+	// Good: explicit typing with proper null handling
+	const input: HTMLInputElement | null = container.querySelector('input');
+	expect(input).toBeInTheDocument(); // Verify element exists
+	expect(input!.value).toBe('000000'); // Use ! only after verification
+});
+```
+
+**Why:**
+
+- Type casts hide potential bugs (element might not exist)
+- Explicit null checks make tests more robust
+- Better error messages when element is missing
+- Follows TypeScript best practices
+
+### 3. Use Proper Query Selectors
+
+**❌ DON'T rely on fragile selectors:**
+
+```typescript
+// Bad: breaks if CSS classes change
+const button = container.querySelector('.btn-primary');
+
+// Bad: brittle position-based selector
+const button = container.querySelectorAll('button')[3];
+```
+
+**✅ DO use semantic selectors:**
+
+```typescript
+// Good: data-testid attribute (most reliable)
+const input: HTMLInputElement | null = container.querySelector('[data-testid="tab-input"]');
+
+// Good: semantic HTML attributes
+const submitBtn: HTMLButtonElement | null = container.querySelector('button[type="submit"]');
+
+// Good: ARIA attributes
+const dialog: HTMLElement | null = container.querySelector('[role="dialog"]');
+
+// Good: content matching for unique text
+const buttons = container.querySelectorAll('button');
+const clearBtn: HTMLButtonElement | undefined = Array.from(buttons).find(
+	(btn) => btn.textContent === 'Clear'
+);
+```
+
+### 4. Test Async State Changes Properly
+
+**❌ DON'T assume immediate state updates:**
+
+```typescript
+it('should propagate value', async () => {
+	await fireEvent.input(input, { target: { value: 'x32010' } });
+	expect(boundValue).toBe('x32010'); // May fail - effects haven't run yet
+});
+```
+
+**✅ DO wait for effects to complete:**
+
+```typescript
+it('should propagate value', async () => {
+	await fireEvent.input(input, { target: { value: 'x32010' } });
+
+	await vi.waitFor(() => {
+		expect(boundValue).toBe('x32010');
+	});
+});
+```
+
+### 5. Test Wrappers for Complex Bindings
+
+When testing components with `$bindable()` props, create a wrapper component:
+
+**Test Wrapper Pattern:**
+
+```svelte
+<!-- FormTestWrapper.svelte -->
+<script lang="ts">
+	import Form from '$lib/components/Form.svelte';
+
+	let { initialValue = '000000' }: { initialValue?: string } = $props();
+	let value = $state(initialValue);
+
+	// Expose state via data attribute for testing
+	$effect(() => {
+		if (typeof document !== 'undefined') {
+			const wrapper = document.querySelector('[data-test-wrapper]');
+			if (wrapper) {
+				wrapper.setAttribute('data-bound-value', value);
+			}
+		}
+	});
+</script>
+
+<div data-test-wrapper data-bound-value={value}>
+	<Form bind:value />
+</div>
+```
+
+**Usage in tests:**
+
+```typescript
+it('should update bound value', async () => {
+	const { container } = render(FormTestWrapper, {
+		props: { initialValue: '000000' },
+	});
+
+	const wrapper: HTMLElement | null = container.querySelector('[data-test-wrapper]');
+	const input: HTMLInputElement | null = container.querySelector('input');
+
+	await fireEvent.input(input!, { target: { value: 'x32010' } });
+
+	await vi.waitFor(() => {
+		expect(wrapper!.getAttribute('data-bound-value')).toBe('x32010');
+	});
+});
+```
+
+**Why:**
+
+- Can't use `$state()` rune in `.ts` test files
+- Wrapper component provides clean way to test two-way binding
+- Exposes state via DOM attributes (testable)
+- Keeps test code clean and maintainable
+
+### 6. Clear Test Descriptions
+
+**❌ DON'T write vague test names:**
+
+```typescript
+it('works correctly', () => {
+	/* ... */
+});
+it('handles input', () => {
+	/* ... */
+});
+```
+
+**✅ DO write descriptive test names:**
+
+```typescript
+it('should allow typing partial input like "(" without propagating', () => {
+	/* ... */
+});
+it('should propagate complete valid input like "(10)"', () => {
+	/* ... */
+});
+it('should show error after blur with invalid input', () => {
+	/* ... */
+});
+```
+
+**Why:**
+
+- Test name is documentation
+- Easy to understand what broke when test fails
+- Helps with debugging and maintenance
+
+### Summary: Quick Checklist
+
+Before committing tests, verify:
+
+- [ ] ✅ No `setTimeout()` or arbitrary delays
+- [ ] ✅ Use `vi.waitFor()` for async assertions
+- [ ] ✅ No `as` type casts
+- [ ] ✅ Proper TypeScript typing with null checks
+- [ ] ✅ Semantic selectors (`data-testid`, ARIA roles)
+- [ ] ✅ Clear, descriptive test names
+- [ ] ✅ Test wrappers for complex component bindings
+
 ## Debugging Tests
 
 ```bash

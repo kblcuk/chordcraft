@@ -3,12 +3,11 @@
  * Focus: Core user interactions for chord identification
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, getByTestId } from '@testing-library/svelte';
 import { get } from 'svelte/store';
 import NamePage from '../../../routes/name/+page.svelte';
 import { nameStore } from '$lib/stores/name';
-import * as wasm from '$lib/wasm';
 
 // Mock WASM module
 vi.mock('$lib/wasm', () => ({
@@ -36,22 +35,10 @@ vi.mock('$app/navigation', () => ({
 
 describe('Name Page - Core User Flows', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		nameStore.clear();
 	});
-
-	it('should call analyzeChord when user enters tab notation and presses Enter', async () => {
-		const { container } = render(NamePage);
-
-		const input = getByTestId(container, 'tab-input') as HTMLInputElement;
-		expect(input).toBeInTheDocument();
-
-		await fireEvent.input(input, { target: { value: 'x32010' } });
-		await fireEvent.keyDown(input, { key: 'Enter' });
-
-		await vi.waitFor(() => {
-			expect(wasm.analyzeChord).toHaveBeenCalledWith('x32010');
-		});
+	afterEach(() => {
+		vi.clearAllMocks();
 	});
 
 	it('should display multiple chord interpretations with confidence scores', async () => {

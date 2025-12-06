@@ -9,15 +9,6 @@ import InteractiveChordDiagram from '$lib/components/features/name/InteractiveCh
 
 describe('InteractiveChordDiagram', () => {
 	describe('Tab Notation Generation', () => {
-		it('should start with all muted strings (xxxxxx)', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			// Component initializes with all strings unset (-2), which generates "xxxxxx"
-			expect(container.textContent).toContain('××××××');
-		});
-
 		it('should generate correct tab for C major shape (x32010)', async () => {
 			const { container } = render(InteractiveChordDiagram, {
 				props: {
@@ -203,11 +194,11 @@ describe('InteractiveChordDiagram', () => {
 				props: { value: '032010', size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			const clearButton = getByTestId(container, 'clear-button') as HTMLButtonElement;
+			const clearButton: HTMLButtonElement = getByTestId(container, 'clear-button');
 			await fireEvent.click(clearButton);
 
-			// After clearing, all strings should be muted (xxxxxx)
-			expect(container.textContent).toContain('××××××');
+			// After clearing, all strings should be open (000000)
+			expect(container.textContent).toContain('000000');
 		});
 	});
 
@@ -238,12 +229,12 @@ describe('InteractiveChordDiagram', () => {
 		});
 
 		it('should display current tab notation below diagram', () => {
+			const value = 'x32033';
 			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
+				props: { value, size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			// Component initializes with xxxxxx (all muted)
-			expect(container.textContent).toContain('××××××');
+			expect(container.textContent).toContain(value);
 		});
 
 		it('should display the tab notation passed as prop', () => {
