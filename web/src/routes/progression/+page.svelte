@@ -7,6 +7,7 @@
 	import Results from '$lib/components/features/progression/Results.svelte';
 	import AdvancedOptionsWrapper from '$lib/components/shared/AdvancedOptionsWrapper.svelte';
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
+	import ShareButton from '$lib/components/shared/ShareButton.svelte';
 
 	// Subscribe to store
 	let storeState = $derived($progressionStore);
@@ -47,19 +48,6 @@
 			progressionStore.setProgressionInput(progressionInput);
 		}
 	});
-
-	// Share current URL
-	function handleShare() {
-		navigator.clipboard
-			.writeText(window.location.href)
-			.then(() => {
-				alert('Share link copied to clipboard!');
-			})
-			.catch((err) => {
-				console.error('Failed to copy:', err);
-				alert('Failed to copy link. Please copy from address bar.');
-			});
-	}
 </script>
 
 <div class="rounded-lg border border-border bg-card p-6 shadow-sm">
@@ -80,15 +68,9 @@
 		loading={storeState.loading}
 	/>
 
-	<!-- Share Button -->
 	{#if progressionInput}
 		<div class="flex justify-end">
-			<button
-				class="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent"
-				onclick={handleShare}
-			>
-				📋 Share
-			</button>
+			<ShareButton url={page.url.href} title="Share Url" />
 		</div>
 	{/if}
 
