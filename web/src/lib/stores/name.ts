@@ -105,7 +105,7 @@ function createNameStore() {
 
 				store.update((s) => ({
 					...s,
-					results,
+					results: results.slice(0, 5), // we care only about top 5 results
 					loading: false,
 				}));
 			} catch (error) {
