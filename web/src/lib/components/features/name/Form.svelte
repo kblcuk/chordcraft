@@ -1,113 +1,123 @@
 <script lang="ts">
-	// Essentially this is a one-field form, but it
-	// makes values validation much easier even with a bit of a
-	// manual sync between incoming properties and local input
-
-	import { z } from 'zod';
-	import { zod4 } from 'sveltekit-superforms/adapters';
-	import { defaults, superForm } from 'sveltekit-superforms';
-	import * as Form from '$lib/components/ui/form';
 	import ExampleButtons from '$lib/components/shared/ExampleButtons.svelte';
 	import * as InputGroup from '$lib/components/ui/input-group';
+	import { Label } from '$lib/components/ui/label';
 	import { exampleTabs } from '$lib/utils/examples';
 
-	let schema = z.object({
-		value: z
-			.string()
-			.regex(
-				/^[0-9x()]{0,24}$/,
-				'Valid tab notaion can contain x (for muted strings), or fret numbers. Group double-digit frets with brackets, like (11).'
-			),
-	});
-	const form = superForm(defaults(zod4(schema)), {
-		validators: zod4(schema),
-		SPA: true,
-		resetForm: false,
-		onChange(args) {
-			console.info('jojojo', args, args.get(args.paths[0]));
-		},
-		onUpdate: ({ form }) => {
-			console.info('ASDFASDF', form.valid, form.data.value, value);
-			if (!form.valid) return;
-			value = form.data.value;
-		},
-	});
+	// Validation pattern and error message
+	const PATTERN = /^[0-9x()]{0,24}$/;
+	const ERROR_MESSAGE =
+		'Valid tab notation can contain x (for muted strings), or fret numbers. Group double-digit frets with brackets, like (11).';
 
-	const { form: formData, enhance, constraints } = form;
-	console.info('DAFUK', $constraints.value?.pattern);
+	// Check if tab notation is complete and valid
+	function isValidTabNotation(str: string): boolean {
+		// First check basic pattern
+		if (!PATTERN.test(str)) return false;
+
+		// Empty string is valid
+		if (str === '') return true;
+
+		// Check for balanced brackets
+		let openCount = 0;
+		for (let char of str) {
+			if (char === '(') openCount++;
+			if (char === ')') {
+				openCount--;
+				if (openCount < 0) return false; // Closing before opening
+			}
+		}
+
+		// All brackets must be closed
+		return openCount === 0;
+	}
 
 	let {
-		// value = $bindable($formData.value),
 		value = $bindable('000000'),
 		disabled = false,
-		loading = false,
 	}: {
 		value: string;
 		disabled?: boolean;
-		loading?: boolean;
 	} = $props();
 
-	function clear() {
-		// Since we need form to be valid, we set everything to "muted"
-		value = '000000';
+	// Local state - what user actually types (can be invalid during typing)
+	let localInput = $state(value);
+
+	// Validation state - only show errors after blur
+	let showError = $state(false);
+	let isValid = $state(true);
+
+	// Track previous value to detect external changes
+	let previousValue = $state(value);
+
+	// Sync DOWN: when parent changes value (e.g., diagram click), update local input
+	$effect(() => {
+		// Only sync if value changed externally (not from our own update)
+		if (value !== previousValue) {
+			localInput = value;
+			previousValue = value;
+			showError = false;
+		}
+	});
+
+	// Sync UP: when local input is valid AND complete, propagate to parent
+	$effect(() => {
+		isValid = isValidTabNotation(localInput);
+		if (isValid && localInput !== value) {
+			value = localInput;
+			previousValue = value; // Update tracker so DOWN effect doesn't trigger
+		}
+	});
+
+	function handleBlur() {
+		// Show validation errors only after user finishes typing
+		showError = true;
 	}
 
-	// Sync form data with value if it's updated externally
-	// $effect(() => {
-	// 	if (value === $formData.value) return;
-
-	// 	$formData.value = value;
-	// });
+	function clear() {
+		localInput = '000000';
+		value = '000000';
+		previousValue = '000000';
+		showError = false;
+	}
 
 	function handleExample(tab: string) {
+		localInput = tab;
 		value = tab;
-		form.submit();
+		previousValue = tab;
+		showError = false;
 	}
 </script>
 
 <div class="space-y-4">
 	<ExampleButtons examples={exampleTabs} onSelect={handleExample} {disabled} />
 
-	<p class="mt-1 text-xs text-muted-foreground">Press Enter or click away to identify</p>
-	<form method="POST" use:enhance>
-		<Form.Field {form} name="value">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label
-						>Tab Notation
-						<!-- bind:value={$formData.value} -->
-					</Form.Label>
-					<InputGroup.Root>
-						<InputGroup.Input
-							{...props}
-							data-testid="tab-input"
-							type="text"
-							bind:value={$formData.value}
-							{...$constraints.value}
-							placeholder="e.g., x32010"
-							onblur={form.submit}
-							{disabled}
-							class="flex-1 font-mono"
-						/>
-						{#if value}
-							<InputGroup.Addon align="inline-end">
-								<InputGroup.Button onclick={clear} variant="secondary"
-									>X</InputGroup.Button
-								>
-							</InputGroup.Addon>
-						{/if}
-					</InputGroup.Root>
-				{/snippet}
-			</Form.Control>
-			<Form.Description />
-			<Form.FieldErrors />
-			<Form.Button
-				disabled={disabled || loading || !value.trim()}
-				variant="outline"
-				size="sm"
-			>
-				{loading ? 'Analyzing...' : 'Identify'}
-			</Form.Button>
-		</Form.Field>
-	</form>
+	<div class="space-y-2">
+		<Label for="tab-input">Tab Notation</Label>
+		<InputGroup.Root>
+			<InputGroup.Input
+				id="tab-input"
+				data-testid="tab-input"
+				type="text"
+				bind:value={localInput}
+				onblur={handleBlur}
+				placeholder="e.g., x32010"
+				{disabled}
+				class="flex-1 font-mono"
+				aria-invalid={showError && !isValid}
+			/>
+			{#if localInput}
+				<InputGroup.Addon align="inline-end">
+					<InputGroup.Button onclick={clear} variant="secondary">X</InputGroup.Button>
+				</InputGroup.Addon>
+			{/if}
+		</InputGroup.Root>
+
+		<!-- Error message - only show after blur -->
+		{#if showError && !isValid}
+			<p class="text-sm text-destructive">{ERROR_MESSAGE}</p>
+		{/if}
+
+		<!-- Helper text -->
+		<p class="text-xs text-muted-foreground">Type to identify the chord automatically</p>
+	</div>
 </div>

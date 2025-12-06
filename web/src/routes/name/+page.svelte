@@ -117,7 +117,7 @@
 		<!-- Text Input Section -->
 		<div class="space-y-2">
 			<h3 class="text-sm font-medium text-foreground">Text Input</h3>
-			<Form bind:value={tabInput} disabled={false} loading={storeState.loading} />
+			<Form bind:value={tabInput} disabled={false} />
 		</div>
 
 		<!-- Share Button -->
