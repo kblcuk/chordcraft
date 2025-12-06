@@ -50,7 +50,9 @@ function createFindStore() {
 		const state = get(store);
 		if (!state.chordInput.trim() || state.loading) return;
 
-		store.update((s) => ({ ...s, loading: true, error: '', results: [] }));
+		// Don't clear results yet - keep showing old results while loading
+		// This prevents the flash/unmount of cards during search
+		store.update((s) => ({ ...s, loading: true, error: '' }));
 
 		try {
 			const voicingType = state.voicing === 'all' ? undefined : state.voicing;
@@ -80,7 +82,8 @@ function createFindStore() {
 	// Circular update prevention flag
 	let isUpdatingFromUrl = false;
 
-	// Debounced URL update
+	// Debounced URL update (sync state to URL only, no auto-search)
+	// Search is triggered explicitly by the UI, not by URL updates
 	const debouncedUrlUpdate = debounce(() => {
 		if (isUpdatingFromUrl) return;
 
@@ -93,13 +96,6 @@ function createFindStore() {
 			position: state.position,
 			context: state.context !== 'solo' ? state.context : undefined,
 		});
-
-		const shouldAutoExecute = state.chordInput.trim();
-		// Auto-execute search if we've already searched once
-		if (shouldAutoExecute) {
-			// Use setTimeout to avoid calling search during store update
-			setTimeout(() => search(), 0);
-		}
 	}, 200);
 
 	return {
@@ -140,16 +136,27 @@ function createFindStore() {
 		setOptions(
 			options: Partial<Pick<FindState, 'limit' | 'capo' | 'voicing' | 'position' | 'context'>>
 		) {
+			const state = get(store);
+			const shouldAutoExecute = state.hasSearched && state.chordInput.trim();
+
 			store.update((s) => ({ ...s, ...options }));
 			debouncedUrlUpdate();
+
+			// Auto-execute search if we've already searched once
+			if (shouldAutoExecute) {
+				setTimeout(() => search(), 0);
+			}
 		},
 
 		/**
 		 * Reset options to defaults
 		 */
 		resetOptions() {
-			store.update((state) => ({
-				...state,
+			const state = get(store);
+			const shouldAutoExecute = state.hasSearched && state.chordInput.trim();
+
+			store.update((s) => ({
+				...s,
 				limit: defaultState.limit,
 				capo: defaultState.capo,
 				voicing: defaultState.voicing,
@@ -157,6 +164,11 @@ function createFindStore() {
 				context: defaultState.context,
 			}));
 			debouncedUrlUpdate();
+
+			// Auto-execute search if we've already searched once
+			if (shouldAutoExecute) {
+				setTimeout(() => search(), 0);
+			}
 		},
 
 		/**

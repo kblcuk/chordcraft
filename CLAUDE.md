@@ -187,6 +187,7 @@ chordcraft/
 5. Sort by score, deduplicate, return top matches
 
 **Features**:
+
 - ✅ Identifies 30+ chord types (triads, 7ths, extended, altered)
 - ✅ Provides confidence percentage (completeness)
 - ✅ Shows alternative interpretations
@@ -513,6 +514,7 @@ impl Ukulele {
 ```
 
 **CLI Usage:**
+
 ```bash
 # Find F chord with capo on 3rd fret (shows D shape)
 chordcraft find "F" --capo 3
@@ -522,6 +524,7 @@ chordcraft progression "F Bb Gm C" --capo 3
 ```
 
 **Display:**
+
 - Show "Capo: 3" in output header
 - Fingerings shown relative to capo (0 = capo position)
 - Indicate actual chord vs shape: "D shape (capo 3) → F"
@@ -546,18 +549,21 @@ pub struct GeneratorOptions {
 **Scoring adjustments:**
 
 **Solo mode (default):**
+
 - Strong bonus for root in bass (+30)
 - Prefer full voicings (+20)
 - Prefer lower positions (fuller sound)
 - Avoid jazzy voicings without bass notes
 
 **Band mode:**
+
 - Relaxed root in bass (+5 instead of +30)
 - Prefer core/jazzy voicings (stay out of bass player's way)
 - Prefer mid-neck positions (better mix clarity)
 - Bonus for voicings that avoid low E/A strings (+10)
 
 **CLI Usage:**
+
 ```bash
 # Solo mode (default)
 chordcraft find "Fmaj7"
@@ -620,6 +626,7 @@ chordcraft progression "F Bb Gm C" --capo 3 --context band
 **Tests**:
 
 Comprehensive test coverage including:
+
 - Capo transposition and fret range reduction
 - Solo vs band mode scoring differences
 - Transition scoring for finger movements
@@ -647,11 +654,33 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
 
 ### Phase 6: Web App (Svelte + Rust WASM) ✓ PARTIALLY COMPLETE
 
+<frontend_aesthetics>
+You tend to converge toward generic, "on distribution" outputs. In frontend design, this creates what users call the "AI slop" aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight. Focus on:
+
+Typography: Choose fonts that are beautiful, unique, and interesting. Avoid generic fonts like Arial and Inter; opt instead for distinctive choices that elevate the frontend's aesthetics.
+
+Color & Theme: Commit to a cohesive aesthetic. Use CSS variables for consistency. Dominant colors with sharp accents outperform timid, evenly-distributed palettes. Draw from IDE themes and cultural aesthetics for inspiration.
+
+Motion: Use animations for effects and micro-interactions. Prioritize CSS-only solutions for HTML. Use Motion library for React when available. Focus on high-impact moments: one well-orchestrated page load with staggered reveals (animation-delay) creates more delight than scattered micro-interactions.
+
+Backgrounds: Create atmosphere and depth rather than defaulting to solid colors. Layer CSS gradients, use geometric patterns, or add contextual effects that match the overall aesthetic.
+
+Avoid generic AI-generated aesthetics:
+
+- Overused font families (Inter, Roboto, Arial, system fonts)
+- Clichéd color schemes (particularly purple gradients on white backgrounds)
+- Predictable layouts and component patterns
+- Cookie-cutter design that lacks context-specific character
+
+Interpret creatively and make unexpected choices that feel genuinely designed for the context. Vary between light and dark themes, different fonts, different aesthetics. You still tend to converge on common choices (Space Grotesk, for example) across generations. Avoid this: it is critical that you think outside the box!
+</frontend_aesthetics>
+
 **Goal**: Interactive visual interface
 
 **Status**: Basic web app is functional with all three modes (find, name, progression)
 
 **Completed Features**:
+
 - ✅ Three modes with tab-based navigation
   - Find Fingerings: Input chord name, get fingerings
   - Name Chord: Input tab notation, identify chord
@@ -696,6 +725,7 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
   - One-click loading and auto-execution
 
 **Remaining Features** (Phase 6b):
+
 - ⏳ **Interactive Fretboard Input** (MEDIUM PRIORITY)
   - Click strings/frets to build fingering
   - Visual feedback as you click
@@ -718,6 +748,7 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
   - ⏳ Mobile-specific UI optimizations
 
 **Tech Stack**:
+
 - Rust core compiled to WASM (wasm-pack)
 - SvelteKit (with Svelte 5 and TypeScript)
 - Tailwind CSS for styling
@@ -729,6 +760,7 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
 **IMPORTANT**: The web app uses Svelte 5 with runes mode. Always use Svelte 5 syntax:
 
 **✅ DO (Svelte 5 Runes):**
+
 ```svelte
 <script lang="ts">
   // Props
@@ -749,6 +781,7 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
 ```
 
 **❌ DON'T (Svelte 4 Legacy):**
+
 ```svelte
 <script lang="ts">
   // ❌ Don't use export let
@@ -766,6 +799,7 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
 ```
 
 **Key Svelte 5 Patterns:**
+
 - `$props()` for component props (replaces `export let`)
 - `$state()` for reactive state (replaces `let` with `$:`)
 - `$derived()` for computed values (replaces `$: value = ...`)
@@ -817,12 +851,14 @@ Instead of binary "valid/invalid", classify voicings by use case:
 ### API Design Principles
 
 **Instrument-Aware API Pattern**: All fingering analysis methods require an explicit `Instrument` parameter. This design:
+
 - Forces users to be explicit about instrument constraints
 - Avoids hidden assumptions (no "default guitar" behavior)
 - Supports multi-instrument use cases cleanly
 - Makes code more maintainable (no hardcoded defaults scattered throughout)
 
 Example:
+
 ```rust
 // Good: Explicit about instrument
 fingering.is_playable_for(&guitar)
@@ -847,6 +883,7 @@ impl ChordQuality {
 ```
 
 This makes the codebase:
+
 - Self-documenting (method name explains the rule)
 - Easy to maintain (change rule in one place)
 - Extensible (add new chord types without hunting for all uses)
@@ -867,6 +904,7 @@ Fingering scoring is separated into distinct concerns:
    - Used for ranking/sorting fingerings
 
 This separation allows:
+
 - Testing scoring components independently
 - Tuning scoring weights without touching core logic
 - Different scoring strategies for different use cases
@@ -947,6 +985,7 @@ This separation allows:
 
 **Last updated**: 2025-11-28 - Documentation audit completed, all implementation statuses verified
 **Current status**:
+
 - ✅ Phases 1-5 complete (Core, Generator, Analyzer, CLI, Progressions)
 - ✅ Phase 6a complete (Basic Svelte web app with WASM integration)
 - ✅ Phase 6b major features complete:
@@ -955,4 +994,4 @@ This separation allows:
   - ✅ Quick examples and presets (one-click loading)
   - ⏳ Interactive fretboard input (remaining)
   - ⏳ Additional UX features (autocomplete, favorites, sharing, etc.)
-**Next priorities**: Interactive fretboard input OR additional UX enhancements (autocomplete, favorites, clipboard)
+    **Next priorities**: Interactive fretboard input OR additional UX enhancements (autocomplete, favorites, clipboard)

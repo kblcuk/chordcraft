@@ -59,17 +59,25 @@
 	});
 </script>
 
-<div class="rounded-lg border border-border bg-card p-6 shadow-sm">
-	<h2 class="mb-4 text-xl font-semibold text-foreground">Name Chord</h2>
-	<p class="mb-4 text-muted-foreground">
-		Identify a chord by entering tab notation or building it visually on the fretboard.
-	</p>
+<div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
+	<!-- Header -->
+	<div class="mb-6">
+		<h2
+			class="text-2xl font-bold tracking-tight text-foreground"
+			style="font-family: var(--font-display);"
+		>
+			Name Chord
+		</h2>
+		<p class="mt-1 text-muted-foreground">
+			Identify a chord by tapping the fretboard or entering tab notation.
+		</p>
+	</div>
 
 	<div class="space-y-6">
 		<!-- Visual Input Section -->
 		<div class="space-y-4">
 			<div class="flex items-center justify-between">
-				<h3 class="text-sm font-medium text-foreground">Visual Input</h3>
+				<h3 class="font-medium text-foreground">Visual Input</h3>
 
 				<!-- Capo Selector -->
 				<div class="flex items-center gap-2">
@@ -78,7 +86,7 @@
 						id="capo-select"
 						value={storeState.capo}
 						onchange={(e) => nameStore.setCapo(Number(e.currentTarget.value))}
-						class="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+						class="rounded-lg border border-border bg-card px-3 py-1.5 text-sm shadow-warm-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-ring/30 focus:outline-none"
 					>
 						<option value="0">None</option>
 						{#each Array.from({ length: 12 }, (v, i) => i + 1) as fretNum (fretNum)}
@@ -110,13 +118,13 @@
 				<div class="w-full border-t border-border"></div>
 			</div>
 			<div class="relative flex justify-center text-xs uppercase">
-				<span class="bg-card px-2 text-muted-foreground">Or</span>
+				<span class="bg-card px-3 text-muted-foreground">Or</span>
 			</div>
 		</div>
 
 		<!-- Text Input Section -->
 		<div class="space-y-2">
-			<h3 class="text-sm font-medium text-foreground">Text Input</h3>
+			<h3 class="font-medium text-foreground">Text Input</h3>
 			<Form bind:value={tabInput} disabled={false} />
 		</div>
 
@@ -130,7 +138,7 @@
 
 	<!-- Error -->
 	{#if storeState.error}
-		<div class="mt-4">
+		<div class="mt-6">
 			<ErrorAlert message={storeState.error} />
 		</div>
 	{/if}

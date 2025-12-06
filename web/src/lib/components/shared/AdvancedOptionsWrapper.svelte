@@ -23,7 +23,7 @@
 		>
 			<span>Advanced</span>
 			{#if activeFiltersCount > 0}
-				<span class="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+				<span class="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-white">
 					{activeFiltersCount}
 				</span>
 			{/if}

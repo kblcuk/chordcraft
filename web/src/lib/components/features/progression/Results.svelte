@@ -16,7 +16,7 @@
 					</h3>
 					<div class="text-sm">
 						<span class="text-muted-foreground">Avg Transition:</span>
-						<span class="ml-1 font-semibold text-blue-600">
+						<span class="ml-1 font-semibold">
 							{sequence.avgTransitionScore.toFixed(1)}
 						</span>
 					</div>

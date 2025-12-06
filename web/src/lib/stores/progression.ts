@@ -131,7 +131,9 @@ function createProgressionStore() {
 			const state = get(store);
 			if (!state.progressionInput.trim() || state.loading) return;
 
-			store.update((s) => ({ ...s, loading: true, error: '', results: [] }));
+			// Don't clear results yet - keep showing old results while loading
+			// This prevents the flash/unmount of cards during generation
+			store.update((s) => ({ ...s, loading: true, error: '' }));
 
 			try {
 				const chords = state.progressionInput.trim().split(/\s+/);

@@ -1,83 +1,182 @@
-@import 'tailwindcss';
+/* Google Fonts - must be first */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Nunito+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+@import 'tailwindcss';
 @import 'tw-animate-css';
+
+/* ============================================================================
+   Workshop Warmth Design System
+   Inspired by: luthier workshops, vintage music gear, analog recording studios
+   ============================================================================ */
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================================
+   Color Palette - Workshop Warmth
+   ============================================================================ */
+
 :root {
-	--radius: 0.625rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.129 0.042 264.695);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.129 0.042 264.695);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.129 0.042 264.695);
-	--primary: oklch(0.208 0.042 265.755);
-	--primary-foreground: oklch(0.984 0.003 247.858);
-	--secondary: oklch(0.968 0.007 247.896);
-	--secondary-foreground: oklch(0.208 0.042 265.755);
-	--muted: oklch(0.968 0.007 247.896);
-	--muted-foreground: oklch(0.554 0.046 257.417);
-	--accent: oklch(0.968 0.007 247.896);
-	--accent-foreground: oklch(0.208 0.042 265.755);
-	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.929 0.013 255.508);
-	--input: oklch(0.929 0.013 255.508);
-	--ring: oklch(0.704 0.04 256.788);
-	--chart-1: oklch(0.646 0.222 41.116);
-	--chart-2: oklch(0.6 0.118 184.704);
-	--chart-3: oklch(0.398 0.07 227.392);
-	--chart-4: oklch(0.828 0.189 84.429);
-	--chart-5: oklch(0.769 0.188 70.08);
-	--sidebar: oklch(0.984 0.003 247.858);
-	--sidebar-foreground: oklch(0.129 0.042 264.695);
-	--sidebar-primary: oklch(0.208 0.042 265.755);
-	--sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-	--sidebar-accent: oklch(0.968 0.007 247.896);
-	--sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-	--sidebar-border: oklch(0.929 0.013 255.508);
-	--sidebar-ring: oklch(0.704 0.04 256.788);
+	/* Core Radius */
+	--radius: 0.75rem;
+
+	/* Background & Surface */
+	--background: oklch(0.97 0.015 75); /* Warm cream */
+	--foreground: oklch(0.22 0.03 50); /* Espresso brown */
+
+	/* Cards - Parchment feel */
+	--card: oklch(0.955 0.02 80); /* Warm off-white */
+	--card-foreground: oklch(0.22 0.03 50);
+
+	/* Popover */
+	--popover: oklch(0.98 0.015 75);
+	--popover-foreground: oklch(0.22 0.03 50);
+
+	/* Primary - Rich Amber (guitar lacquer under lamplight) */
+	--primary: oklch(0.55 0.14 55); /* Deep amber */
+	--primary-foreground: oklch(0.98 0.01 80);
+
+	/* Secondary */
+	--secondary: oklch(0.92 0.03 70);
+	--secondary-foreground: oklch(0.35 0.04 50);
+
+	/* Muted */
+	--muted: oklch(0.93 0.02 75);
+	--muted-foreground: oklch(0.45 0.03 50);
+
+	/* Accent - Vintage Teal (oxidized brass) */
+	--accent: oklch(0.55 0.1 180);
+	--accent-foreground: oklch(0.98 0.01 180);
+
+	/* Destructive */
+	--destructive: oklch(0.55 0.2 25);
+
+	/* Borders & Inputs */
+	--border: oklch(0.85 0.04 70);
+	--input: oklch(0.9 0.03 70);
+	--ring: oklch(0.65 0.14 55); /* Amber ring */
+
+	/* Success (Root in bass indicator) */
+	--success: oklch(0.55 0.15 145);
+	--success-foreground: oklch(0.98 0.01 145);
+
+	/* Chart colors - warm palette */
+	--chart-1: oklch(0.6 0.16 55); /* Amber */
+	--chart-2: oklch(0.55 0.1 180); /* Teal */
+	--chart-3: oklch(0.5 0.12 30); /* Rust */
+	--chart-4: oklch(0.65 0.14 85); /* Gold */
+	--chart-5: oklch(0.55 0.08 250); /* Slate blue */
+
+	/* Sidebar (same as card for light mode) */
+	--sidebar: var(--card);
+	--sidebar-foreground: var(--card-foreground);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--accent-foreground);
+	--sidebar-border: var(--border);
+	--sidebar-ring: var(--ring);
+
+	/* Custom shadows - amber tinted */
+	--shadow-color: 35 30% 30%;
+	--shadow-warm-sm: 0 1px 2px hsl(var(--shadow-color) / 0.06);
+	--shadow-warm:
+		0 2px 8px hsl(var(--shadow-color) / 0.08), 0 1px 3px hsl(var(--shadow-color) / 0.06);
+	--shadow-warm-md:
+		0 4px 16px hsl(var(--shadow-color) / 0.1), 0 2px 6px hsl(var(--shadow-color) / 0.06);
+	--shadow-warm-lg:
+		0 8px 30px hsl(var(--shadow-color) / 0.12), 0 4px 10px hsl(var(--shadow-color) / 0.06);
+
+	/* Chord Diagram Colors - Fretboard visualization */
+	--diagram-bg: #fef9f3;
+	--diagram-bg-gradient: #faf5ee;
+	--diagram-wood-grain: #e8ddd0;
+	--diagram-string: #5c4a3d;
+	--diagram-fret: #8b7355;
+	--diagram-nut: #3d2e24;
+	--diagram-dot: #8b5a2b;
+	--diagram-dot-root: #b8860b;
+	--diagram-barre: #6b5344;
+	--diagram-muted: #a89080;
+	--diagram-fret-number: #7a6a5a;
+	--diagram-dot-text: #fef9f3;
+	--diagram-hover: #c9a227;
+	--diagram-selected: #2d8b6f;
 }
 
+/* Dark mode - Late night workshop */
 .dark {
-	--background: oklch(0.129 0.042 264.695);
-	--foreground: oklch(0.984 0.003 247.858);
-	--card: oklch(0.208 0.042 265.755);
-	--card-foreground: oklch(0.984 0.003 247.858);
-	--popover: oklch(0.208 0.042 265.755);
-	--popover-foreground: oklch(0.984 0.003 247.858);
-	--primary: oklch(0.929 0.013 255.508);
-	--primary-foreground: oklch(0.208 0.042 265.755);
-	--secondary: oklch(0.279 0.041 260.031);
-	--secondary-foreground: oklch(0.984 0.003 247.858);
-	--muted: oklch(0.279 0.041 260.031);
-	--muted-foreground: oklch(0.704 0.04 256.788);
-	--accent: oklch(0.279 0.041 260.031);
-	--accent-foreground: oklch(0.984 0.003 247.858);
-	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.551 0.027 264.364);
-	--chart-1: oklch(0.488 0.243 264.376);
-	--chart-2: oklch(0.696 0.17 162.48);
-	--chart-3: oklch(0.769 0.188 70.08);
-	--chart-4: oklch(0.627 0.265 303.9);
-	--chart-5: oklch(0.645 0.246 16.439);
-	--sidebar: oklch(0.208 0.042 265.755);
-	--sidebar-foreground: oklch(0.984 0.003 247.858);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-	--sidebar-accent: oklch(0.279 0.041 260.031);
-	--sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.551 0.027 264.364);
+	--background: oklch(0.16 0.02 50); /* Deep charcoal-brown */
+	--foreground: oklch(0.92 0.02 75); /* Warm cream text */
+
+	--card: oklch(0.2 0.025 50); /* Slightly lighter surface */
+	--card-foreground: oklch(0.92 0.02 75);
+
+	--popover: oklch(0.22 0.025 50);
+	--popover-foreground: oklch(0.92 0.02 75);
+
+	/* Primary - Brighter amber for dark mode */
+	--primary: oklch(0.75 0.15 65);
+	--primary-foreground: oklch(0.18 0.02 50);
+
+	--secondary: oklch(0.28 0.03 50);
+	--secondary-foreground: oklch(0.9 0.02 75);
+
+	--muted: oklch(0.26 0.02 50);
+	--muted-foreground: oklch(0.65 0.03 60);
+
+	/* Accent - Brighter teal for dark */
+	--accent: oklch(0.65 0.12 180);
+	--accent-foreground: oklch(0.18 0.02 180);
+
+	--destructive: oklch(0.65 0.22 25);
+
+	--border: oklch(0.3 0.03 50);
+	--input: oklch(0.28 0.025 50);
+	--ring: oklch(0.7 0.15 65);
+
+	--success: oklch(0.65 0.15 145);
+	--success-foreground: oklch(0.18 0.02 145);
+
+	/* Darker warm shadows */
+	--shadow-color: 30 40% 10%;
+	--shadow-warm-sm: 0 1px 2px hsl(var(--shadow-color) / 0.3);
+	--shadow-warm:
+		0 2px 8px hsl(var(--shadow-color) / 0.4), 0 1px 3px hsl(var(--shadow-color) / 0.3);
+	--shadow-warm-md:
+		0 4px 16px hsl(var(--shadow-color) / 0.5), 0 2px 6px hsl(var(--shadow-color) / 0.3);
+	--shadow-warm-lg:
+		0 8px 30px hsl(var(--shadow-color) / 0.6), 0 4px 10px hsl(var(--shadow-color) / 0.3);
+
+	/* Chord Diagram Colors - Dark mode (same warm tones, diagram is always light) */
+	/* We keep the diagram light even in dark mode for readability */
+	--diagram-bg: #fef9f3;
+	--diagram-bg-gradient: #faf5ee;
+	--diagram-wood-grain: #e8ddd0;
+	--diagram-string: #5c4a3d;
+	--diagram-fret: #8b7355;
+	--diagram-nut: #3d2e24;
+	--diagram-dot: #8b5a2b;
+	--diagram-dot-root: #b8860b;
+	--diagram-barre: #6b5344;
+	--diagram-muted: #a89080;
+	--diagram-fret-number: #7a6a5a;
+	--diagram-dot-text: #fef9f3;
+	--diagram-hover: #c9a227;
+	--diagram-selected: #2d8b6f;
 }
+
+/* ============================================================================
+   Tailwind Theme Integration
+   ============================================================================ */
 
 @theme inline {
+	/* Radius */
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
 	--radius-xl: calc(var(--radius) + 4px);
+
+	/* Colors */
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -93,6 +192,8 @@
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
+	--color-success: var(--success);
+	--color-success-foreground: var(--success-foreground);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
@@ -109,13 +210,235 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+
+	/* Typography */
+	--font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+	--font-body: 'Nunito Sans', system-ui, -apple-system, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+	/* Custom shadows */
+	--shadow-warm-sm: var(--shadow-warm-sm);
+	--shadow-warm: var(--shadow-warm);
+	--shadow-warm-md: var(--shadow-warm-md);
+	--shadow-warm-lg: var(--shadow-warm-lg);
 }
+
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
 
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
 	}
-	body {
-		@apply bg-background text-foreground;
+
+	html {
+		font-family: var(--font-body);
 	}
+
+	body {
+		@apply bg-background text-foreground antialiased;
+		font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+	}
+
+	/* Headings use display font */
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: var(--font-display);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	/* Code uses mono font */
+	code,
+	kbd,
+	pre,
+	samp {
+		font-family: var(--font-mono);
+	}
+
+	/* Smooth scrolling */
+	html {
+		scroll-behavior: smooth;
+	}
+
+	/* Focus states */
+	:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+}
+
+/* ============================================================================
+   Component Utilities
+   ============================================================================ */
+
+@layer utilities {
+	/* Warm shadows */
+	.shadow-warm-sm {
+		box-shadow: var(--shadow-warm-sm);
+	}
+	.shadow-warm {
+		box-shadow: var(--shadow-warm);
+	}
+	.shadow-warm-md {
+		box-shadow: var(--shadow-warm-md);
+	}
+	.shadow-warm-lg {
+		box-shadow: var(--shadow-warm-lg);
+	}
+
+	/* Subtle texture overlay (noise pattern) */
+	.bg-textured {
+		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+	}
+
+	/* Amber glow effect */
+	.glow-amber {
+		box-shadow: 0 0 20px oklch(0.65 0.15 55 / 0.25);
+	}
+
+	/* Interactive card lift */
+	.card-lift {
+		transition:
+			transform 0.2s ease-out,
+			box-shadow 0.2s ease-out;
+	}
+	.card-lift:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-warm-md);
+	}
+
+	/* Button press effect */
+	.btn-press:active {
+		transform: scale(0.98);
+	}
+
+	/* Fretboard line styling */
+	.fret-line {
+		background: linear-gradient(
+			90deg,
+			transparent,
+			oklch(0.5 0.03 50 / 0.3) 10%,
+			oklch(0.5 0.03 50 / 0.3) 90%,
+			transparent
+		);
+	}
+}
+
+/* ============================================================================
+   Animation Keyframes
+   ============================================================================ */
+
+@keyframes fade-in-up {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes pulse-subtle {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.7;
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: -200% 0;
+	}
+	100% {
+		background-position: 200% 0;
+	}
+}
+
+/* Animation utilities */
+.animate-fade-in-up {
+	animation: fade-in-up 0.4s ease-out forwards;
+}
+
+.animate-fade-in {
+	animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-pulse-subtle {
+	animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Staggered animation delays */
+.stagger-1 {
+	animation-delay: 0.05s;
+}
+.stagger-2 {
+	animation-delay: 0.1s;
+}
+.stagger-3 {
+	animation-delay: 0.15s;
+}
+.stagger-4 {
+	animation-delay: 0.2s;
+}
+.stagger-5 {
+	animation-delay: 0.25s;
+}
+.stagger-6 {
+	animation-delay: 0.3s;
+}
+
+/* ============================================================================
+   Scrollbar Styling
+   ============================================================================ */
+
+/* ::-webkit-scrollbar { */
+/* 	width: 10px; */
+/* 	height: 10px; */
+/* } */
+
+/* ::-webkit-scrollbar-track { */
+/* 	background: var(--muted); */
+/* 	border-radius: 5px; */
+/* } */
+
+/* ::-webkit-scrollbar-thumb { */
+/* 	background: var(--border); */
+/* 	border-radius: 5px; */
+/* 	border: 2px solid var(--muted); */
+/* } */
+
+/* ::-webkit-scrollbar-thumb:hover { */
+/* 	background: var(--muted-foreground); */
+/* } */
+
+/* ============================================================================
+   Selection Styling
+   ============================================================================ */
+
+::selection {
+	background: oklch(0.75 0.15 65 / 0.3);
+	color: var(--foreground);
+}
+
+.dark ::selection {
+	background: oklch(0.65 0.15 55 / 0.4);
 }

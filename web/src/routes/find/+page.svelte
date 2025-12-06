@@ -43,9 +43,19 @@
 	});
 </script>
 
-<div class="rounded-lg border border-border bg-card p-6 shadow-sm">
-	<h2 class="mb-4 text-xl font-semibold text-foreground">Find Fingerings</h2>
-	<p class="mb-4 text-muted-foreground">Enter a chord name to see all possible fingerings.</p>
+<div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
+	<!-- Header -->
+	<div class="mb-6">
+		<h2
+			class="text-2xl font-bold tracking-tight text-foreground"
+			style="font-family: var(--font-display);"
+		>
+			Find Fingerings
+		</h2>
+		<p class="mt-1 text-muted-foreground">
+			Enter a chord name to discover all possible fingerings.
+		</p>
+	</div>
 
 	<!-- Input -->
 	<Input
@@ -66,7 +76,7 @@
 
 	<!-- Share Button -->
 	{#if chordInput}
-		<div class="flex justify-end">
+		<div class="mt-3 flex justify-end">
 			<ShareButton url={page.url.href} title="Share Url" />
 		</div>
 	{/if}

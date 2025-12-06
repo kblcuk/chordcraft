@@ -6,13 +6,13 @@
 </script>
 
 {#if fingerings.length > 0}
-	<div class="mt-6 space-y-6">
-		<h3 class="text-lg font-medium text-foreground">
-			Found {fingerings.length} fingerings:
+	<div class="mt-8 space-y-6">
+		<h3 class="text-lg font-semibold text-foreground" style="font-family: var(--font-display);">
+			Found {fingerings.length} fingering{fingerings.length === 1 ? '' : 's'}
 		</h3>
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each fingerings as fingering (fingering.tab)}
-				<FingeringCard {fingering} size="medium" />
+		<div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+			{#each fingerings as fingering, index (fingering.tab)}
+				<FingeringCard {fingering} {index} size="medium" />
 			{/each}
 		</div>
 	</div>

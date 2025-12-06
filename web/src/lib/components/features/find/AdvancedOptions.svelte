@@ -58,7 +58,7 @@
 			id="find-capo"
 			value={capo}
 			onchange={(e) => onChange({ capo: Number(e.currentTarget.value) })}
-			class="w-full rounded-md border border-border px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+			class="w-full rounded-md border border-border px-4 py-2 focus:ring-2"
 		>
 			<option value={0}>No capo</option>
 			{#each [...Array(12).keys()] as i (i)}

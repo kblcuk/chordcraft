@@ -2,6 +2,8 @@
 	/**
 	 * SVG-based chord diagram component
 	 * Displays guitar fingerings visually on a fretboard
+	 *
+	 * Workshop Warmth Design - styled like a vintage chord chart
 	 */
 
 	import {
@@ -282,9 +284,46 @@
 	{width}
 	{height}
 	viewBox="0 0 {width} {height}"
-	class="rounded-lg border border-border bg-white p-1 dark:bg-white"
+	class="rounded-lg"
+	style="background: linear-gradient(180deg, {COLORS.background} 0%, {COLORS.backgroundGradient} 100%);"
 	xmlns="http://www.w3.org/2000/svg"
 >
+	<!-- Subtle wood grain texture (decorative) -->
+	<defs>
+		<pattern id="woodGrain" patternUnits="userSpaceOnUse" width="100" height="100">
+			<rect width="100" height="100" fill="none" />
+			<path
+				d="M0 20 Q25 18 50 20 T100 20"
+				stroke={COLORS.woodGrain}
+				stroke-width="0.5"
+				fill="none"
+				opacity="0.5"
+			/>
+			<path
+				d="M0 40 Q25 42 50 40 T100 40"
+				stroke={COLORS.woodGrain}
+				stroke-width="0.5"
+				fill="none"
+				opacity="0.5"
+			/>
+			<path
+				d="M0 60 Q25 58 50 60 T100 60"
+				stroke={COLORS.woodGrain}
+				stroke-width="0.5"
+				fill="none"
+				opacity="0.5"
+			/>
+			<path
+				d="M0 80 Q25 82 50 80 T100 80"
+				stroke={COLORS.woodGrain}
+				stroke-width="0.5"
+				fill="none"
+				opacity="0.5"
+			/>
+		</pattern>
+	</defs>
+	<rect {width} {height} fill="url(#woodGrain)" rx="8" />
+
 	<!-- Fret number indicator (for high positions) -->
 	{#if isHighPosition}
 		<text
@@ -341,7 +380,7 @@
 			stroke={COLORS.barre}
 			stroke-width="6"
 			stroke-linecap="round"
-			opacity="0.6"
+			opacity="0.7"
 		/>
 	{/each}
 
@@ -362,11 +401,11 @@
 				fill="none"
 				stroke={strokeColor}
 				stroke-width="2"
-				class="drop-shadow-sm"
 			/>
 		{:else}
-			<!-- Fretted position dot -->
-			<circle cx={x} cy={displayY} r={dotRadius} fill={fillColor} class="drop-shadow-md" />
+			<!-- Fretted position dot with subtle shadow -->
+			<circle cx={x} cy={displayY + 1} r={dotRadius} fill="rgba(0,0,0,0.15)" />
+			<circle cx={x} cy={displayY} r={dotRadius} fill={fillColor} />
 			{#if pos.fingerNumber}
 				<text
 					{x}
@@ -374,7 +413,7 @@
 					class="pointer-events-none font-bold select-none"
 					text-anchor="middle"
 					dominant-baseline="central"
-					fill="white"
+					fill={COLORS.dotText}
 					font-size={dotRadius * 1.2}
 				>
 					{pos.fingerNumber}

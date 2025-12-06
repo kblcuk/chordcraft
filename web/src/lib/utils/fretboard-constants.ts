@@ -1,6 +1,9 @@
 /**
  * Shared constants for fretboard diagrams
  * Used by both display and interactive chord diagrams
+ *
+ * Workshop Warmth Design System
+ * Colors are defined in app.css as CSS custom properties
  */
 
 // ============================================================================
@@ -25,20 +28,43 @@ export const DIMENSIONS = {
 export type DiagramSize = keyof typeof DIMENSIONS;
 
 // ============================================================================
-// Colors (Tailwind mappings for SVG)
+// Colors - CSS Variable References
+// These reference CSS custom properties defined in app.css
+// Use with style attributes: style="fill: {COLORS.string}"
 // ============================================================================
 
 export const COLORS = {
-	string: '#1f2937', // gray-800
-	fret: '#1f2937', // gray-800
-	nut: '#111827', // gray-900
-	fingerDot: '#1f2937', // gray-800
-	rootDot: '#2563eb', // blue-600
-	openString: '#1f2937', // gray-800
-	rootOpenString: '#2563eb', // blue-600
-	barre: '#4b5563', // gray-600
-	mutedString: '#9ca3af', // gray-400
-	fretNumber: '#6b7280', // gray-500
-	hoverDot: '#3b82f6', // blue-500 (for interactive mode)
-	selectedDot: '#10b981', // green-500 (for interactive mode)
+	// Fretboard structure - warm wood tones
+	string: 'var(--diagram-string)',
+	fret: 'var(--diagram-fret)',
+	nut: 'var(--diagram-nut)',
+
+	// Finger positions - deep amber
+	fingerDot: 'var(--diagram-dot)',
+	rootDot: 'var(--diagram-dot-root)',
+
+	// Open strings
+	openString: 'var(--diagram-string)',
+	rootOpenString: 'var(--diagram-dot-root)',
+
+	// Barre - subtle shadow
+	barre: 'var(--diagram-barre)',
+
+	// Muted string - subdued
+	mutedString: 'var(--diagram-muted)',
+
+	// Fret number label
+	fretNumber: 'var(--diagram-fret-number)',
+
+	// Dot text (finger numbers)
+	dotText: 'var(--diagram-dot-text)',
+
+	// Interactive states (for interactive mode)
+	hoverDot: 'var(--diagram-hover)',
+	selectedDot: 'var(--diagram-selected)',
+
+	// Background colors for SVG
+	background: 'var(--diagram-bg)',
+	backgroundGradient: 'var(--diagram-bg-gradient)',
+	woodGrain: 'var(--diagram-wood-grain)',
 } as const;
