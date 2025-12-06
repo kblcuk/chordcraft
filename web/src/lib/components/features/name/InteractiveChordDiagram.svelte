@@ -176,47 +176,43 @@
 	 * A barre is 3+ consecutive strings on the same fret
 	 */
 	function detectBarres(fingering: number[]): Barre[] {
-		const barres: Barre[] = [];
-		const fretGroups: Record<number, number[]> = {};
-
-		// Group strings by fret
-		fingering.forEach((fret, stringIndex) => {
-			if (fret > 0) {
-				if (!fretGroups[fret]) {
-					fretGroups[fret] = [];
+		// Group string indexes by fret number (>0 only)
+		const fretsToStrings = Object.entries(
+			fingering.reduce<Record<number, number[]>>((acc, fret, stringIdx) => {
+				if (fret > 0) {
+					(acc[fret] ||= []).push(stringIdx);
 				}
-				fretGroups[fret].push(stringIndex);
-			}
-		});
+				return acc;
+			}, {})
+		);
 
-		// Find consecutive strings on same fret
-		Object.entries(fretGroups).forEach(([fretStr, strings]) => {
+		// For each fret, find all consecutive runs of 2+ strings (barres)
+		return fretsToStrings.flatMap(([fretStr, strings]) => {
+			if (strings.length < 2) return [];
 			const fret = Number(fretStr);
-			if (strings.length < 3) return; // Need at least 3 strings for a barre
+			const sorted = strings.slice().sort((a, b) => a - b);
 
-			strings.sort((a, b) => a - b);
-
-			let start = strings[0];
-			let prev = strings[0];
-
-			for (let i = 1; i < strings.length; i++) {
-				if (strings[i] !== prev + 1) {
-					// Gap in sequence
-					if (prev - start + 1 >= 3) {
-						barres.push({ fret, fromString: start, toString: prev });
+			// Gather barres by walking through the sorted array
+			return sorted
+				.reduce<Barre[]>((barres, val, idx) => {
+					if (idx === 0) {
+						// Start new potential run
+						barres.push({ fret, fromString: val, toString: val });
+						return barres;
 					}
-					start = strings[i];
-				}
-				prev = strings[i];
-			}
 
-			// Check final sequence
-			if (prev - start + 1 >= 3) {
-				barres.push({ fret, fromString: start, toString: prev });
-			}
+					const last = barres[barres.length - 1];
+					if (val === last.toString + 1) {
+						// Continue current run
+						last.toString = val;
+					} else {
+						// Start new run
+						barres.push({ fret, fromString: val, toString: val });
+					}
+					return barres;
+				}, [])
+				.filter((b) => b.toString - b.fromString + 1 >= 2);
 		});
-
-		return barres;
 	}
 
 	let barres = $derived(detectBarres(fingering));
