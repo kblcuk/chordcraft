@@ -8,6 +8,9 @@
 	import AdvancedOptionsWrapper from '$lib/components/shared/AdvancedOptionsWrapper.svelte';
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
 	import ShareButton from '$lib/components/shared/ShareButton.svelte';
+	import { Button } from '$lib/components/ui/button';
+
+	import { commonProgressions } from '$lib/utils/examples';
 
 	// Subscribe to store
 	let storeState = $derived($progressionStore);
@@ -29,6 +32,12 @@
 			progressionStore.generate();
 		}
 	});
+
+	function handleExample(chords: string) {
+		progressionInput = chords;
+		progressionStore.setProgressionInput(progressionInput);
+		progressionStore.generate();
+	}
 
 	// React to URL changes (browser navigation, manual edits)
 	$effect(() => {
@@ -65,16 +74,34 @@
 	</div>
 
 	<!-- Input -->
-	<Input
-		bind:value={progressionInput}
-		onGenerate={() => progressionStore.generate()}
-		onClear={() => {
-			progressionInput = '';
-			progressionStore.clear();
-		}}
-		disabled={false}
-		loading={storeState.loading}
-	/>
+
+	<div class="space-y-4">
+		<!-- Common Progressions -->
+		<div>
+			<p class="mb-2 text-sm font-medium text-foreground">Common Progressions:</p>
+			<div class="flex flex-wrap gap-2">
+				{#each commonProgressions as progression (progression.name)}
+					<Button
+						onclick={() => handleExample(progression.chords)}
+						variant="secondary"
+						size="sm"
+					>
+						{progression.name}
+					</Button>
+				{/each}
+			</div>
+		</div>
+		<Input
+			bind:value={progressionInput}
+			onGenerate={() => progressionStore.generate()}
+			onClear={() => {
+				progressionInput = '';
+				progressionStore.clear();
+			}}
+			disabled={false}
+			loading={storeState.loading}
+		/>
+	</div>
 
 	<!-- Share Button -->
 	{#if progressionInput}
