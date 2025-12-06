@@ -17,7 +17,7 @@ fn main() {
         let _ = generate_fingerings(&chord, &guitar, &options);
     }
     let elapsed = start.elapsed();
-    println!("100 iterations: {:?}", elapsed);
+    println!("100 iterations: {elapsed:?}");
     println!("Per iteration: {:?}", elapsed / 100);
 
     // Complex 7th chord
@@ -28,7 +28,7 @@ fn main() {
         let _ = generate_fingerings(&chord, &guitar, &options);
     }
     let elapsed = start.elapsed();
-    println!("100 iterations: {:?}", elapsed);
+    println!("100 iterations: {elapsed:?}");
     println!("Per iteration: {:?}", elapsed / 100);
 
     // Very complex chord
@@ -39,7 +39,7 @@ fn main() {
         let _ = generate_fingerings(&chord, &guitar, &options);
     }
     let elapsed = start.elapsed();
-    println!("100 iterations: {:?}", elapsed);
+    println!("100 iterations: {elapsed:?}");
     println!("Per iteration: {:?}", elapsed / 100);
 
     // Chord analysis
@@ -50,7 +50,7 @@ fn main() {
         let _ = chordcraft_core::analyzer::analyze_fingering(&fingering, &guitar);
     }
     let elapsed = start.elapsed();
-    println!("1000 iterations: {:?}", elapsed);
+    println!("1000 iterations: {elapsed:?}");
     println!("Per iteration: {:?}", elapsed / 1000);
 
     // Memory test - generate many fingerings
@@ -70,6 +70,6 @@ fn main() {
     }
     let elapsed = start.elapsed();
     println!("Generated {} chords: {} total fingerings", chords.len(), total_fingerings);
-    println!("Total time: {:?}", elapsed);
+    println!("Total time: {elapsed:?}");
     println!("Per chord: {:?}", elapsed / chords.len() as u32);
 }

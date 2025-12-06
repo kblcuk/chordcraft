@@ -226,7 +226,7 @@ fn scored_fingering_to_js(sf: &ScoredFingering, instrument: &Guitar) -> JsScored
 		.fingering
 		.unique_pitch_classes(instrument)
 		.into_iter()
-		.map(|pc| format!("{:?}", pc))
+		.map(|pc| format!("{pc:?}"))
 		.collect();
 
 	JsScoredFingering {
@@ -243,9 +243,9 @@ fn scored_fingering_to_js(sf: &ScoredFingering, instrument: &Guitar) -> JsScored
 fn chord_match_to_js(cm: &ChordMatch) -> JsChordMatch {
 	let confidence = (cm.completeness * 100.0) as u8;
 	let explanation = if cm.root_in_bass {
-		format!("{}% complete with root in bass", confidence)
+		format!("{confidence}% complete with root in bass")
 	} else {
-		format!("{}% complete", confidence)
+		format!("{confidence}% complete")
 	};
 
 	JsChordMatch {
@@ -321,19 +321,19 @@ pub fn find_fingerings(
 ) -> Result<JsValue, JsValue> {
 	// Parse instrument type
 	let _inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
-		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {}", e)))?;
+		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {e}")))?;
 
 	// Parse options (use defaults if null/undefined)
 	let js_opts: JsGeneratorOptions = if options.is_null() || options.is_undefined() {
 		JsGeneratorOptions::default()
 	} else {
 		serde_wasm_bindgen::from_value(options)
-			.map_err(|e| JsValue::from_str(&format!("Invalid options: {}", e)))?
+			.map_err(|e| JsValue::from_str(&format!("Invalid options: {e}")))?
 	};
 
 	// Parse chord
 	let chord = Chord::parse(chord_name)
-		.map_err(|e| JsValue::from_str(&format!("Invalid chord name: {}", e)))?;
+		.map_err(|e| JsValue::from_str(&format!("Invalid chord name: {e}")))?;
 
 	// Create instrument
 	let instrument = Guitar::default();
@@ -343,7 +343,7 @@ pub fn find_fingerings(
 	let fingerings = if js_opts.capo > 0 {
 		let capo_instrument = instrument
 			.with_capo(js_opts.capo)
-			.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {}", e)))?;
+			.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
 		generate_fingerings(&chord, &capo_instrument, &gen_opts)
 	} else {
 		generate_fingerings(&chord, &instrument, &gen_opts)
@@ -357,7 +357,7 @@ pub fn find_fingerings(
 
 	// Serialize to JS
 	serde_wasm_bindgen::to_value(&js_fingerings)
-		.map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+		.map_err(|e| JsValue::from_str(&format!("Serialization error: {e}")))
 }
 
 /// Identify chord from fingering (tab notation)
@@ -379,11 +379,11 @@ pub fn find_fingerings(
 pub fn analyze_chord(tab_notation: &str, instrument_type: JsValue) -> Result<JsValue, JsValue> {
 	// Parse instrument type
 	let _inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
-		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {}", e)))?;
+		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {e}")))?;
 
 	// Parse fingering
 	let fingering = Fingering::parse(tab_notation)
-		.map_err(|e| JsValue::from_str(&format!("Invalid tab notation: {}", e)))?;
+		.map_err(|e| JsValue::from_str(&format!("Invalid tab notation: {e}")))?;
 
 	// Create instrument
 	let instrument = Guitar::default();
@@ -396,7 +396,7 @@ pub fn analyze_chord(tab_notation: &str, instrument_type: JsValue) -> Result<JsV
 
 	// Serialize to JS
 	serde_wasm_bindgen::to_value(&js_matches)
-		.map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+		.map_err(|e| JsValue::from_str(&format!("Serialization error: {e}")))
 }
 
 /// Generate optimal fingering progressions for a chord sequence
@@ -426,18 +426,18 @@ pub fn js_generate_progression(
 ) -> Result<JsValue, JsValue> {
 	// Parse instrument type
 	let _inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
-		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {}", e)))?;
+		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {e}")))?;
 
 	// Parse chord names
 	let chord_names_vec: Vec<String> = serde_wasm_bindgen::from_value(chord_names)
-		.map_err(|e| JsValue::from_str(&format!("Invalid chord names: {}", e)))?;
+		.map_err(|e| JsValue::from_str(&format!("Invalid chord names: {e}")))?;
 
 	// Parse options
 	let js_opts: JsProgressionOptions = if options.is_null() || options.is_undefined() {
 		JsProgressionOptions::default()
 	} else {
 		serde_wasm_bindgen::from_value(options)
-			.map_err(|e| JsValue::from_str(&format!("Invalid options: {}", e)))?
+			.map_err(|e| JsValue::from_str(&format!("Invalid options: {e}")))?
 	};
 
 	// Create instrument
@@ -458,7 +458,7 @@ pub fn js_generate_progression(
 	let progressions = if js_opts.generator_options.capo > 0 {
 		let capo_instrument = instrument
 			.with_capo(js_opts.generator_options.capo)
-			.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {}", e)))?;
+			.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
 		generate_progression(&chord_name_refs, &capo_instrument, &prog_opts)
 	} else {
 		generate_progression(&chord_name_refs, &instrument, &prog_opts)
@@ -472,7 +472,7 @@ pub fn js_generate_progression(
 
 	// Serialize to JS
 	serde_wasm_bindgen::to_value(&js_progressions)
-		.map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+		.map_err(|e| JsValue::from_str(&format!("Serialization error: {e}")))
 }
 
 // ============================================================================
