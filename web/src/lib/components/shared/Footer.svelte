@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Github from '@lucide/svelte/icons/github';
-	import Heart from '@lucide/svelte/icons/heart';
+	import Music4 from '@lucide/svelte/icons/music-4';
 </script>
 
 <footer class="mt-auto border-t border-border/50 bg-card/50">
@@ -10,7 +10,7 @@
 			<p class="flex items-center gap-2 text-sm text-muted-foreground">
 				<span>Built with</span>
 				<span class="inline-flex items-center gap-1">
-					<Heart class="h-3 w-3 text-destructive" />
+					<Music4 class="h-3 w-3 text-destructive" />
 				</span>
 				<span>using Rust + WASM + Svelte</span>
 			</p>
