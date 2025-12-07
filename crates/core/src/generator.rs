@@ -132,10 +132,10 @@ pub fn generate_fingerings<I: Instrument>(
 			};
 
 			// Apply voicing type filter - compare actual voicing type
-			if let Some(required_voicing) = &options.voicing_type {
-				if voicing_type != *required_voicing {
-					return None;
-				}
+			if let Some(required_voicing) = &options.voicing_type
+				&& voicing_type != *required_voicing
+			{
+				return None;
 			}
 
 			// Check root in bass if required
@@ -949,7 +949,10 @@ mod tests {
 		let core_fingerings = generate_fingerings(&chord, &guitar, &core_options);
 
 		// ALL results should be Core voicing type
-		assert!(!core_fingerings.is_empty(), "Should find some core voicings");
+		assert!(
+			!core_fingerings.is_empty(),
+			"Should find some core voicings"
+		);
 
 		for fingering in &core_fingerings {
 			assert_eq!(
@@ -976,7 +979,10 @@ mod tests {
 		let full_fingerings = generate_fingerings(&chord, &guitar, &full_options);
 
 		// ALL results should be Full voicing type
-		assert!(!full_fingerings.is_empty(), "Should find some full voicings");
+		assert!(
+			!full_fingerings.is_empty(),
+			"Should find some full voicings"
+		);
 
 		for fingering in &full_fingerings {
 			assert_eq!(
@@ -1003,7 +1009,10 @@ mod tests {
 		let jazzy_fingerings = generate_fingerings(&chord, &guitar, &jazzy_options);
 
 		// ALL results should be Jazzy voicing type
-		assert!(!jazzy_fingerings.is_empty(), "Should find some jazzy voicings");
+		assert!(
+			!jazzy_fingerings.is_empty(),
+			"Should find some jazzy voicings"
+		);
 
 		for fingering in &jazzy_fingerings {
 			assert_eq!(
