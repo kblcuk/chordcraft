@@ -1,6 +1,9 @@
 /**
- * Interactive Chord Diagram Tests
- * Tests the visual chord building interface with full keyboard accessibility
+ * Interactive Chord Diagram Component Tests
+ *
+ * Tests the visual chord building interface with interactions and accessibility.
+ * Note: Pure function logic (parseTabNotation, generateTabNotation, transposeFingeringToNewPosition)
+ * is tested in InteractiveChordDiagram-sync.test.ts
  */
 
 import { describe, it, expect } from 'vitest';
@@ -8,249 +11,224 @@ import { render, fireEvent, getByTestId } from '@testing-library/svelte';
 import InteractiveChordDiagram from '$lib/components/features/name/InteractiveChordDiagram.svelte';
 
 describe('InteractiveChordDiagram', () => {
-	describe('Tab Notation Generation', () => {
-		it('should generate correct tab for C major shape (x32010)', async () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: {
-					value: '',
-					size: 'medium',
-					startFret: 0,
-					capo: 0,
-				},
-			});
+	describe('Size Variants', () => {
+		it('should render correct SVG dimensions for each size', () => {
+			const sizes = [
+				{ size: 'small' as const, expectedWidth: '120' },
+				{ size: 'medium' as const, expectedWidth: '160' },
+				{ size: 'large' as const, expectedWidth: '200' },
+			];
 
-			// Simulate building C major: string 0 muted, string 1=3, string 2=2, string 3=0, string 4=1, string 5=0
-			// In practice, we'd need to click the actual SVG elements
-			// For now, test the component's ability to update
-			expect(container).toBeTruthy();
-		});
+			for (const { size, expectedWidth } of sizes) {
+				const { container, unmount } = render(InteractiveChordDiagram, {
+					props: { value: '', size, startFret: 0, capo: 0 },
+				});
 
-		it('should handle multi-digit frets with parentheses', () => {
-			const { component } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 8, capo: 0 },
-			});
+				const svg = container.querySelector('svg');
+				expect(
+					svg?.getAttribute('width'),
+					`${size} size should have width ${expectedWidth}`
+				).toBe(expectedWidth);
 
-			// When user clicks to create frets 10, 12, etc.
-			// Tab should be formatted as: x(10)(12)x... etc
-			expect(component).toBeTruthy();
+				unmount();
+			}
 		});
 	});
 
-	describe('Capo Transposition', () => {
-		it('should transpose tab notation when capo is set', () => {
-			const { component } = render(InteractiveChordDiagram, {
-				props: { value: '002210', size: 'medium', startFret: 0, capo: 3 },
-			});
-
-			// Player fingering 002210 (Am shape) + capo 3 = 335543 (Cm)
-			// The component should output transposed tab
-			// Note: This tests the generateTabNotation function
-			expect(component).toBeTruthy();
-		});
-
-		it('should handle capo with multi-digit frets', () => {
-			const { component } = render(InteractiveChordDiagram, {
-				props: { value: '022100', size: 'medium', startFret: 0, capo: 10 },
-			});
-
-			// Frets become 0,(10),(12),(12),(10),0
-			expect(component).toBeTruthy();
-		});
-	});
-
-	describe('Position Slider', () => {
-		it('should update visible fret range when position changes', () => {
+	describe('Default State (open position, empty value)', () => {
+		it('should render slider, accessibility attributes, placeholder text, and no fret indicator', () => {
 			const { container } = render(InteractiveChordDiagram, {
 				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
 			});
 
+			// Position slider
 			const slider = container.querySelector('input[type="range"]') as HTMLInputElement;
 			expect(slider).toBeTruthy();
-			expect(slider?.min).toBe('0');
-			expect(slider?.max).toBe('19');
+			expect(slider.min).toBe('0');
+			expect(slider.max).toBe('19');
+			expect(container.textContent).toContain('Open');
+
+			// Accessibility: role="button" and tabindex="0"
+			const buttons = container.querySelectorAll('[role="button"]');
+			expect(buttons.length).toBeGreaterThan(0);
+			const focusableElements = container.querySelectorAll('[tabindex="0"]');
+			expect(focusableElements.length).toBeGreaterThan(0);
+
+			// Accessibility: aria-labels
+			const labeledElements = container.querySelectorAll('[aria-label]');
+			expect(labeledElements.length).toBeGreaterThan(0);
+			const fretLabel = labeledElements[0].getAttribute('aria-label');
+			expect(fretLabel).toMatch(/string/i);
+			expect(fretLabel).toMatch(/fret/i);
+			const toggleLabels = Array.from(labeledElements)
+				.map((el) => el.getAttribute('aria-label'))
+				.filter((label) => label?.includes('Toggle'));
+			expect(toggleLabels.length).toBe(6);
+
+			// Placeholder text when empty
+			const tabDisplay = container.querySelector('.font-mono');
+			expect(tabDisplay?.textContent).toContain('Click on the fretboard');
+
+			// No fret indicator at open position
+			const fretIndicator = Array.from(container.querySelectorAll('text')).find((t) =>
+				t.textContent?.includes('fr')
+			);
+			expect(fretIndicator).toBeUndefined();
 		});
 
-		it('should show "Open" for position 0', () => {
+		it('should respond to keyboard events without error', async () => {
 			const { container } = render(InteractiveChordDiagram, {
 				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			const label = container.textContent;
-			expect(label).toContain('Open');
+			const button = container.querySelector('[role="button"]') as SVGElement;
+			expect(button).toBeTruthy();
+
+			await fireEvent.keyDown(button, { key: 'Enter' });
+			await fireEvent.keyDown(button, { key: ' ' });
 		});
 
-		it('should show fret range for higher positions', () => {
+		it('should show and clear hover indicator', async () => {
 			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 7, capo: 0 },
+				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			const label = container.textContent;
-			expect(label).toContain('Frets 8-12');
+			const button = container.querySelector('[role="button"]') as SVGElement;
+			const circlesBefore = container.querySelectorAll('circle').length;
+
+			await fireEvent.mouseEnter(button);
+			const circlesDuring = container.querySelectorAll('circle').length;
+			expect(circlesDuring).toBeGreaterThanOrEqual(circlesBefore);
+
+			await fireEvent.mouseLeave(button);
 		});
 	});
 
-	describe('Keyboard Accessibility', () => {
-		it('should have role="button" on interactive elements', () => {
+	describe('Higher Position State', () => {
+		it('should show fret range label and fret number indicator', () => {
 			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
+				props: { value: '', size: 'medium', startFret: 5, capo: 0 },
 			});
 
-			const buttons = container.querySelectorAll('[role="button"]');
-			expect(buttons.length).toBeGreaterThan(0);
+			// Fret range label
+			expect(container.textContent).toContain('Frets 6-10');
+
+			// Fret indicator shows "6fr" (startFret + 1)
+			const fretIndicator = Array.from(container.querySelectorAll('text')).find((t) =>
+				t.textContent?.includes('6fr')
+			);
+			expect(fretIndicator).toBeTruthy();
+		});
+	});
+
+	describe('Fret Click Interactions', () => {
+		it('should update fingering when clicking a fret and cycle back to open', async () => {
+			const { container } = render(InteractiveChordDiagram, {
+				props: { value: '000000', size: 'medium', startFret: 0, capo: 0 },
+			});
+
+			const fretButton = container.querySelector(
+				'[role="button"][aria-label="Set E string to fret 1"]'
+			) as SVGElement;
+			expect(fretButton).toBeTruthy();
+
+			// Click to set fret
+			await fireEvent.click(fretButton);
+			const tabDisplay = container.querySelector('.font-mono');
+			expect(tabDisplay?.textContent).toBe('100000');
+
+			// Click same position to cycle back to open
+			await fireEvent.click(fretButton);
+			expect(tabDisplay?.textContent).toBe('000000');
+		});
+	});
+
+	describe('String Marker Toggle', () => {
+		it('should toggle open -> muted -> open when clicking string marker', async () => {
+			const { container } = render(InteractiveChordDiagram, {
+				props: { value: '000000', size: 'medium', startFret: 0, capo: 0 },
+			});
+
+			const toggleButtons = container.querySelectorAll(
+				'[role="button"][aria-label*="Toggle"]'
+			);
+			expect(toggleButtons.length).toBe(6);
+
+			const tabDisplay = container.querySelector('.font-mono');
+
+			// Click to mute E string
+			await fireEvent.click(toggleButtons[0] as SVGElement);
+			expect(tabDisplay?.textContent).toBe('x00000');
+
+			// Click again to return to open
+			await fireEvent.click(toggleButtons[0] as SVGElement);
+			expect(tabDisplay?.textContent).toBe('000000');
 		});
 
-		it('should have tabindex="0" for keyboard navigation', () => {
+		it('should set fretted string to open when clicking its marker', async () => {
 			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
+				props: { value: '320000', size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			const focusableElements = container.querySelectorAll('[tabindex="0"]');
-			expect(focusableElements.length).toBeGreaterThan(0);
-		});
+			const toggleButtons = container.querySelectorAll(
+				'[role="button"][aria-label*="Toggle"]'
+			);
+			await fireEvent.click(toggleButtons[0] as SVGElement);
 
-		it('should have aria-labels for screen readers', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			const labeledElements = container.querySelectorAll('[aria-label]');
-			expect(labeledElements.length).toBeGreaterThan(0);
-
-			// Check for descriptive labels
-			const firstLabel = labeledElements[0].getAttribute('aria-label');
-			expect(firstLabel).toMatch(/string/i);
-			expect(firstLabel).toMatch(/fret/i);
-		});
-
-		it('should respond to Enter key press', async () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			const button = container.querySelector('[role="button"]') as SVGElement;
-			expect(button).toBeTruthy();
-
-			// Simulate Enter key press
-			await fireEvent.keyDown(button, { key: 'Enter' });
-
-			// Component should handle the interaction
-			expect(container).toBeTruthy();
-		});
-
-		it('should respond to Space key press', async () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			const button = container.querySelector('[role="button"]') as SVGElement;
-			expect(button).toBeTruthy();
-
-			// Simulate Space key press
-			await fireEvent.keyDown(button, { key: ' ' });
-
-			// Component should handle the interaction
-			expect(container).toBeTruthy();
+			const tabDisplay = container.querySelector('.font-mono');
+			expect(tabDisplay?.textContent).toBe('020000');
 		});
 	});
 
 	describe('Clear Functionality', () => {
-		it('should have a clear button', () => {
+		it('should reset all strings including muted to open (000000)', async () => {
 			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '032010', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			const clearButton = container.querySelector('button');
-			expect(clearButton).toBeTruthy();
-			expect(clearButton?.textContent).toContain('Clear');
-		});
-
-		it('should clear all fingerings when clear button is clicked', async () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '032010', size: 'medium', startFret: 0, capo: 0 },
+				props: { value: 'x32010', size: 'medium', startFret: 0, capo: 0 },
 			});
 
 			const clearButton: HTMLButtonElement = getByTestId(container, 'clear-button');
-			await fireEvent.click(clearButton);
+			expect(clearButton.textContent).toContain('Clear');
 
-			// After clearing, all strings should be open (000000)
+			await fireEvent.click(clearButton);
 			expect(container.textContent).toContain('000000');
 		});
 	});
 
-	describe('Visual Feedback', () => {
-		it('should show hover state when mouse enters', async () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
+	describe('Visual Rendering', () => {
+		it('should display value prop, muted X, open circles, and barre indicator correctly', () => {
+			// Test with C major (x32010) - has muted string, open strings, fretted notes
+			const { container: cContainer, unmount: unmountC } = render(InteractiveChordDiagram, {
+				props: { value: 'x32010', size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			const button = container.querySelector('[role="button"]') as SVGElement;
-			await fireEvent.mouseEnter(button);
+			// Value displayed
+			expect(cContainer.querySelector('.font-mono')?.textContent).toBe('x32010');
 
-			// Hover state should be visible (checked via hoveredPosition state)
-			expect(container).toBeTruthy();
-		});
+			// Muted string indicator (×)
+			const mutedIndicators = Array.from(cContainer.querySelectorAll('text')).filter(
+				(t) => t.textContent === '×'
+			);
+			expect(mutedIndicators.length).toBe(1);
 
-		it('should remove hover state when mouse leaves', async () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
+			unmountC();
+
+			// Test with E major (022100) - has 3 open strings
+			const { container: eContainer, unmount: unmountE } = render(InteractiveChordDiagram, {
+				props: { value: '022100', size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			const button = container.querySelector('[role="button"]') as SVGElement;
-			await fireEvent.mouseEnter(button);
-			await fireEvent.mouseLeave(button);
+			const openCircles = eContainer.querySelectorAll('circle[fill="none"]');
+			expect(openCircles.length).toBe(3);
 
-			// Hover state should be cleared
-			expect(container).toBeTruthy();
-		});
+			unmountE();
 
-		it('should display current tab notation below diagram', () => {
-			const value = 'x32033';
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value, size: 'medium', startFret: 0, capo: 0 },
+			// Test with F major barre (133211) - has barre indicator
+			const { container: fContainer } = render(InteractiveChordDiagram, {
+				props: { value: '133211', size: 'medium', startFret: 0, capo: 0 },
 			});
 
-			expect(container.textContent).toContain(value);
-		});
-
-		it('should display the tab notation passed as prop', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '032010', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			// Component should display the tab notation
-			// Note: The component maintains internal state and may not render dots for initial prop value
-			expect(container).toBeTruthy();
-			const svg = container.querySelector('svg');
-			expect(svg).toBeTruthy();
-		});
-	});
-
-	describe('Size Variants', () => {
-		it('should render small diagram', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'small', startFret: 0, capo: 0 },
-			});
-
-			const svg = container.querySelector('svg');
-			expect(svg?.getAttribute('width')).toBe('120');
-		});
-
-		it('should render medium diagram', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			const svg = container.querySelector('svg');
-			expect(svg?.getAttribute('width')).toBe('160');
-		});
-
-		it('should render large diagram', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'large', startFret: 0, capo: 0 },
-			});
-
-			const svg = container.querySelector('svg');
-			expect(svg?.getAttribute('width')).toBe('200');
+			const barreLines = fContainer.querySelectorAll('line[stroke-width="6"]');
+			expect(barreLines.length).toBeGreaterThan(0);
 		});
 	});
 });
