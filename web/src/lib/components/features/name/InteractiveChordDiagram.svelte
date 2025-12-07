@@ -16,6 +16,7 @@
 		parseTabNotation,
 		generateTabNotation,
 		transposeFingeringToNewPosition,
+		detectBarres,
 	} from '$lib/utils/tab-notation';
 
 	// ============================================================================
@@ -159,60 +160,6 @@
 
 	function getFretStrokeWidth(isNut: boolean): number {
 		return isNut ? 4 : 1.5;
-	}
-
-	// ============================================================================
-	// Barre Detection
-	// ============================================================================
-
-	interface Barre {
-		fret: number;
-		fromString: number;
-		toString: number;
-	}
-
-	/**
-	 * Auto-detect barres from current fingering
-	 * A barre is 3+ consecutive strings on the same fret
-	 */
-	function detectBarres(fingering: number[]): Barre[] {
-		// Group string indexes by fret number (>0 only)
-		const fretsToStrings = Object.entries(
-			fingering.reduce<Record<number, number[]>>((acc, fret, stringIdx) => {
-				if (fret > 0) {
-					(acc[fret] ||= []).push(stringIdx);
-				}
-				return acc;
-			}, {})
-		);
-
-		// For each fret, find all consecutive runs of 2+ strings (barres)
-		return fretsToStrings.flatMap(([fretStr, strings]) => {
-			if (strings.length < 2) return [];
-			const fret = Number(fretStr);
-			const sorted = strings.slice().sort((a, b) => a - b);
-
-			// Gather barres by walking through the sorted array
-			return sorted
-				.reduce<Barre[]>((barres, val, idx) => {
-					if (idx === 0) {
-						// Start new potential run
-						barres.push({ fret, fromString: val, toString: val });
-						return barres;
-					}
-
-					const last = barres[barres.length - 1];
-					if (val === last.toString + 1) {
-						// Continue current run
-						last.toString = val;
-					} else {
-						// Start new run
-						barres.push({ fret, fromString: val, toString: val });
-					}
-					return barres;
-				}, [])
-				.filter((b) => b.toString - b.fromString + 1 >= 2);
-		});
 	}
 
 	let barres = $derived(detectBarres(fingering));

@@ -58,31 +58,6 @@ describe('InteractiveChordDiagram', () => {
 		});
 	});
 
-	describe('Barre Detection', () => {
-		it('should detect barre on 3+ consecutive strings', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			// When strings 1, 2, 3 are all at fret 3
-			// Should render a barre line
-			const barreLines = container.querySelectorAll('line[stroke="#4b5563"]');
-			// Barre detection is visual, but we can test the component renders
-			expect(container).toBeTruthy();
-			expect(barreLines.length).toBeGreaterThanOrEqual(0);
-		});
-
-		it('should not create barre for non-consecutive strings', () => {
-			const { container } = render(InteractiveChordDiagram, {
-				props: { value: '', size: 'medium', startFret: 0, capo: 0 },
-			});
-
-			// When strings 0, 2, 4 are at fret 3 (not consecutive)
-			// Should NOT render a barre
-			expect(container).toBeTruthy();
-		});
-	});
-
 	describe('Position Slider', () => {
 		it('should update visible fret range when position changes', () => {
 			const { container } = render(InteractiveChordDiagram, {
