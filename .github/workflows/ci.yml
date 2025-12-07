@@ -81,6 +81,10 @@ jobs:
         working-directory: web
         run: bun install
 
+      - name: Generate svelte-kit type definitions
+        working-directory: web
+        run: bun run sync
+
       - name: Type check (svelte-check)
         working-directory: web
         run: bun run check

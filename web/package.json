@@ -12,6 +12,7 @@
 		"test:run": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"sync": "svelte-kit sync",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint": "eslint .",
