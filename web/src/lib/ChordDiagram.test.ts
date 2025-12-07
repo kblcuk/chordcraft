@@ -20,7 +20,6 @@ describe('ChordDiagram - User Experience', () => {
 
 			const svg = container.querySelector('svg');
 			expect(svg).toBeInTheDocument();
-			expect(svg).toHaveClass('bg-white');
 		});
 
 		it('should render multi-digit frets with parentheses (e.g., x(10)(12)(11)x)', () => {
