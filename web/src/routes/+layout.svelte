@@ -16,9 +16,10 @@
 	// Initialize fonts and WASM on mount
 	onMount(async () => {
 		// Wait for fonts to load (with timeout fallback)
-		const fontLoadPromise = document.fonts.ready.then(() => {
+		const fontLoadPromise = (async () => {
+			await document.fonts.ready;
 			fontsReady = true;
-		});
+		})();
 
 		// Fallback: show content after 1.5s even if fonts aren't loaded
 		const timeoutPromise = new Promise<void>((resolve) => {
@@ -29,16 +30,17 @@
 		});
 
 		// Initialize WASM in parallel
-		const wasmPromise = initializeWasm()
-			.then(() => {
+		const wasmLoadPromise = (async () => {
+			try {
+				await initializeWasm();
 				wasmReady = true;
-			})
-			.catch((error) => {
+			} catch (error) {
 				console.error('Failed to initialize WASM:', error);
-			});
+			}
+		})();
 
 		// Wait for fonts (or timeout) - WASM can continue loading in background
-		await Promise.race([fontLoadPromise, timeoutPromise]);
+		await Promise.all([wasmLoadPromise, Promise.race([fontLoadPromise, timeoutPromise])]);
 	});
 </script>
 
