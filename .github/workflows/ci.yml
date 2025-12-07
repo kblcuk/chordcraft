@@ -14,26 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Gate: only proceed if this is a push to main OR an approved PR review
-  should-run:
-    runs-on: ubuntu-latest
-    outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
-    steps:
-      - name: Check if should run
-        id: check
-        run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "pull_request_review" && "${{ github.event.review.state }}" == "approved" ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-          fi
-
   rust-checks:
-    needs: should-run
-    if: needs.should-run.outputs.should_run == 'true'
+    # Only run on push to main OR approved PR reviews (not comments/change requests)
+    if: github.event_name == 'push' || github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,8 +39,7 @@ jobs:
         run: cargo test --workspace
 
   web-checks:
-    needs: should-run
-    if: needs.should-run.outputs.should_run == 'true'
+    if: github.event_name == 'push' || github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
