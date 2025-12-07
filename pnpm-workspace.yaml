@@ -1,6 +1,0 @@
-packages:
-  - 'web'
-  - 'crates/wasm/pkg'
-onlyBuiltDependencies:
-  - esbuild
-  - '@tailwindcss/oxide'
