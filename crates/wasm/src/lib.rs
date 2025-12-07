@@ -226,7 +226,7 @@ fn scored_fingering_to_js(sf: &ScoredFingering, instrument: &Guitar) -> JsScored
 		.fingering
 		.unique_pitch_classes(instrument)
 		.into_iter()
-		.map(|pc| format!("{pc:?}"))
+		.map(|pc| format!("{pc}"))
 		.collect();
 
 	JsScoredFingering {
