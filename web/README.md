@@ -16,6 +16,7 @@ Interactive web application for chord-fingering conversion, built with SvelteKit
 - **SvelteKit** - Full-stack framework with Svelte 5
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first styling with semantic color system
+- **shadcn Svelte** - UI components
 - **mode-watcher** - Automatic dark mode detection and management
 - **Rust WASM** - High-performance chord generation (via `chordcraft-wasm`)
 - **Vite** - Fast build tooling (integrated with SvelteKit)
