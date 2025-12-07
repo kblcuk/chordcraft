@@ -75,7 +75,7 @@ jobs:
         run: cargo install wasm-pack
 
       - name: Build WASM
-        run: wasm-pack build crates/wasm --target bundler --release
+        run: wasm-pack build crates/wasm --target web --release
 
       - name: Install web dependencies
         working-directory: web
@@ -120,7 +120,7 @@ jobs:
         run: cargo install wasm-pack
 
       - name: Build WASM
-        run: wasm-pack build crates/wasm --target bundler --release
+        run: wasm-pack build crates/wasm --target web --release
 
       - name: Install web dependencies
         working-directory: web
