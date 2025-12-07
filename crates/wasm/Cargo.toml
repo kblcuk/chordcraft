@@ -3,7 +3,7 @@ name = "chordcraft-wasm"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
-license.workspace = true
+license-file.workspace = true
 repository.workspace = true
 description = "WASM bindings for ChordCraft music theory library"
 
@@ -28,11 +28,3 @@ wasm-bindgen-test = "0.3"
 [package.metadata.wasm-pack.profile.release]
 # Enable modern WASM features
 wasm-opt = ["-O", "--enable-bulk-memory", "--enable-nontrapping-float-to-int", "--enable-sign-ext", "--enable-mutable-globals"]
-
-[profile.release]
-# Optimize for small code size (critical for web)
-opt-level = "z"
-lto = true
-codegen-units = 1
-# Note: We don't strip debug info by default for better debugging
-# Add strip = true when deploying to production
