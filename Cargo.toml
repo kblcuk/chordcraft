@@ -10,7 +10,8 @@ members = [
 version = "0.1.0"
 edition = "2024"
 authors = ["ChordCraft Contributors"]
-license = "MIT"
+license = "AGPL-3.0-or-later"
+license-file = "LICENSE"
 repository = "https://github.com/kblcuk/chordcraft"
 
 [workspace.dependencies]

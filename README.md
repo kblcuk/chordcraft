@@ -72,7 +72,3 @@ cargo build --workspace
 ## Contributing
 
 This project is in early development. Contributions welcome!
-
-## License
-
-MIT OR Apache-2.0

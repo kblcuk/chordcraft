@@ -203,7 +203,3 @@ See [TESTING_NOTES.md](./TESTING_NOTES.md) for detailed explanation.
 ## Contributing
 
 See [../CLAUDE.md](../CLAUDE.md) for architecture overview and implementation details.
-
-## License
-
-MIT OR Apache-2.0
