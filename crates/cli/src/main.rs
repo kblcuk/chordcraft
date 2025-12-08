@@ -1,12 +1,23 @@
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
 
 use chordcraft_core::chord::{Chord, VoicingType};
 use chordcraft_core::generator::{
-	GeneratorOptions, PlayingContext, format_fingering_diagram, generate_fingerings,
+	GeneratorOptions, PlayingContext, ScoredFingering, format_fingering_diagram,
+	generate_fingerings,
 };
-use chordcraft_core::instrument::Guitar;
+use chordcraft_core::instrument::{Guitar, Ukulele};
+
+/// Instrument choice for CLI
+#[derive(Debug, Clone, Copy, Default, ValueEnum)]
+enum InstrumentChoice {
+	/// Standard 6-string guitar (EADGBE tuning)
+	#[default]
+	Guitar,
+	/// Standard ukulele (GCEA tuning)
+	Ukulele,
+}
 
 /// Parse voicing type string into VoicingType enum
 fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
@@ -64,6 +75,10 @@ enum Commands {
 		/// Capo position (fret number)
 		#[arg(short, long)]
 		capo: Option<u8>,
+
+		/// Instrument: guitar or ukulele (default: guitar)
+		#[arg(short, long, default_value = "guitar")]
+		instrument: InstrumentChoice,
 	},
 
 	/// Identify chord from fingering notation
@@ -74,6 +89,10 @@ enum Commands {
 		/// Capo position (fret number)
 		#[arg(short, long)]
 		capo: Option<u8>,
+
+		/// Instrument: guitar or ukulele (default: guitar)
+		#[arg(short, long, default_value = "guitar")]
+		instrument: InstrumentChoice,
 	},
 
 	/// Find optimal fingerings for a chord progression
@@ -104,6 +123,10 @@ enum Commands {
 		/// Capo position (fret number)
 		#[arg(short, long)]
 		capo: Option<u8>,
+
+		/// Instrument: guitar or ukulele (default: guitar)
+		#[arg(short, long, default_value = "guitar")]
+		instrument: InstrumentChoice,
 	},
 }
 
@@ -118,11 +141,16 @@ fn main() -> Result<()> {
 			voicing,
 			context,
 			capo,
+			instrument,
 		} => {
-			find_fingerings(&chord, limit, position, voicing, context, capo)?;
+			find_fingerings(&chord, limit, position, voicing, context, capo, instrument)?;
 		}
-		Commands::Name { fingering, capo } => {
-			name_chord(&fingering, capo)?;
+		Commands::Name {
+			fingering,
+			capo,
+			instrument,
+		} => {
+			name_chord(&fingering, capo, instrument)?;
 		}
 		Commands::Progression {
 			chords,
@@ -132,6 +160,7 @@ fn main() -> Result<()> {
 			voicing,
 			context,
 			capo,
+			instrument,
 		} => {
 			find_progression(
 				&chords,
@@ -141,6 +170,7 @@ fn main() -> Result<()> {
 				voicing,
 				context,
 				capo,
+				instrument,
 			)?;
 		}
 	}
@@ -155,6 +185,7 @@ fn find_fingerings(
 	voicing: Option<String>,
 	context: Option<String>,
 	capo: Option<u8>,
+	instrument: InstrumentChoice,
 ) -> Result<()> {
 	// Parse the chord
 	let original_chord =
@@ -182,11 +213,23 @@ fn find_fingerings(
 		..Default::default()
 	};
 
-	// Use standard guitar
-	let guitar = Guitar::default();
+	// Get instrument name for display
+	let instrument_name = match instrument {
+		InstrumentChoice::Guitar => "Guitar",
+		InstrumentChoice::Ukulele => "Ukulele",
+	};
 
-	// Generate fingerings for the search chord (shape when using capo)
-	let fingerings = generate_fingerings(&search_chord, &guitar, &options);
+	// Generate fingerings based on instrument choice
+	let fingerings: Vec<ScoredFingering> = match instrument {
+		InstrumentChoice::Guitar => {
+			let guitar = Guitar::default();
+			generate_fingerings(&search_chord, &guitar, &options)
+		}
+		InstrumentChoice::Ukulele => {
+			let ukulele = Ukulele::default();
+			generate_fingerings(&search_chord, &ukulele, &options)
+		}
+	};
 
 	if fingerings.is_empty() {
 		println!(
@@ -200,7 +243,7 @@ fn find_fingerings(
 	if let Some(shape) = shape_chord {
 		// Show both actual chord and the shape being used
 		println!(
-			"\n{} {} {} (showing {} of {} found)",
+			"\n{} {} {} [{instrument_name}] (showing {} of {} found)",
 			"Fingerings for".bold(),
 			chord_str.green().bold(),
 			format!("(Capo {})", capo.unwrap()).yellow(),
@@ -210,7 +253,7 @@ fn find_fingerings(
 		println!("{} {}\n", "Shape:".dimmed(), shape.to_string().cyan());
 	} else {
 		println!(
-			"\n{} {} (showing {} of {} found)\n",
+			"\n{} {} [{instrument_name}] (showing {} of {} found)\n",
 			"Fingerings for".bold(),
 			original_chord.to_string().green().bold(),
 			fingerings.len().min(limit),
@@ -225,7 +268,12 @@ fn find_fingerings(
 			(i + 1).to_string().cyan().bold(),
 			scored.fingering
 		);
-		println!("{}", format_fingering_diagram(scored, &guitar));
+		// Format diagram based on instrument
+		let diagram = match instrument {
+			InstrumentChoice::Guitar => format_fingering_diagram(scored, &Guitar::default()),
+			InstrumentChoice::Ukulele => format_fingering_diagram(scored, &Ukulele::default()),
+		};
+		println!("{diagram}");
 		println!();
 	}
 
@@ -240,6 +288,7 @@ fn find_progression(
 	voicing: Option<String>,
 	context: Option<String>,
 	capo: Option<u8>,
+	instrument: InstrumentChoice,
 ) -> Result<()> {
 	use chordcraft_core::progression::{ProgressionOptions, generate_progression};
 
@@ -290,11 +339,23 @@ fn find_progression(
 		..Default::default()
 	};
 
-	// Use standard guitar
-	let guitar = Guitar::default();
+	// Get instrument name for display
+	let instrument_name = match instrument {
+		InstrumentChoice::Guitar => "Guitar",
+		InstrumentChoice::Ukulele => "Ukulele",
+	};
 
-	// Generate progressions
-	let progressions = generate_progression(&search_chords, &guitar, &options);
+	// Generate progressions based on instrument choice
+	let progressions = match instrument {
+		InstrumentChoice::Guitar => {
+			let guitar = Guitar::default();
+			generate_progression(&search_chords, &guitar, &options)
+		}
+		InstrumentChoice::Ukulele => {
+			let ukulele = Ukulele::default();
+			generate_progression(&search_chords, &ukulele, &options)
+		}
+	};
 
 	if progressions.is_empty() {
 		println!("{}", "No valid progressions found".yellow());
@@ -302,7 +363,13 @@ fn find_progression(
 	}
 
 	// Display the results
-	display_progressions(&progressions, &chord_names, capo, &guitar);
+	display_progressions(
+		&progressions,
+		&chord_names,
+		capo,
+		instrument_name,
+		instrument,
+	);
 
 	Ok(())
 }
@@ -312,20 +379,21 @@ fn display_progressions(
 	progressions: &[chordcraft_core::progression::ProgressionSequence],
 	chord_names: &[&str],
 	capo: Option<u8>,
-	guitar: &Guitar,
+	instrument_name: &str,
+	instrument: InstrumentChoice,
 ) {
 	// Display header
 	let chord_display = chord_names.join(" → ");
 	if let Some(capo_fret) = capo {
 		println!(
-			"\n{} {} {}\n",
+			"\n{} {} {} [{instrument_name}]\n",
 			"Progression:".bold(),
 			chord_display.green().bold(),
 			format!("(Capo {capo_fret})").yellow()
 		);
 	} else {
 		println!(
-			"\n{} {}\n",
+			"\n{} {} [{instrument_name}]\n",
 			"Progression:".bold(),
 			chord_display.green().bold()
 		);
@@ -364,8 +432,13 @@ fn display_progressions(
 				fingering.position
 			);
 
-			// Display the fingering
-			let diagram = format_fingering_diagram(fingering, guitar);
+			// Display the fingering with correct instrument
+			let diagram = match instrument {
+				InstrumentChoice::Guitar => format_fingering_diagram(fingering, &Guitar::default()),
+				InstrumentChoice::Ukulele => {
+					format_fingering_diagram(fingering, &Ukulele::default())
+				}
+			};
 			for line in diagram.lines() {
 				println!("  {line}");
 			}
@@ -397,7 +470,7 @@ fn display_progressions(
 	}
 }
 
-fn name_chord(fingering_str: &str, capo: Option<u8>) -> Result<()> {
+fn name_chord(fingering_str: &str, capo: Option<u8>, instrument: InstrumentChoice) -> Result<()> {
 	use chordcraft_core::analyzer::analyze_fingering;
 	use chordcraft_core::fingering::Fingering;
 
@@ -405,22 +478,39 @@ fn name_chord(fingering_str: &str, capo: Option<u8>) -> Result<()> {
 	let fingering = Fingering::parse(fingering_str)
 		.with_context(|| format!("Invalid fingering notation: '{fingering_str}'"))?;
 
-	let guitar = Guitar::default();
+	// Get instrument name for display
+	let instrument_name = match instrument {
+		InstrumentChoice::Guitar => "Guitar",
+		InstrumentChoice::Ukulele => "Ukulele",
+	};
 
-	// Get the notes
-	let pitches = fingering.unique_pitch_classes(&guitar);
+	// Get the notes and analyze based on instrument choice
+	let (pitches, matches) = match instrument {
+		InstrumentChoice::Guitar => {
+			let guitar = Guitar::default();
+			let p = fingering.unique_pitch_classes(&guitar);
+			let m = analyze_fingering(&fingering, &guitar);
+			(p, m)
+		}
+		InstrumentChoice::Ukulele => {
+			let ukulele = Ukulele::default();
+			let p = fingering.unique_pitch_classes(&ukulele);
+			let m = analyze_fingering(&fingering, &ukulele);
+			(p, m)
+		}
+	};
 
 	// Display header with capo info
 	if let Some(capo_fret) = capo {
 		println!(
-			"\n{} {} {}\n",
+			"\n{} {} {} [{instrument_name}]\n",
 			"Analyzing fingering:".bold(),
 			fingering_str.green().bold(),
 			format!("(Capo {capo_fret})").yellow()
 		);
 	} else {
 		println!(
-			"\n{} {}\n",
+			"\n{} {} [{instrument_name}]\n",
 			"Analyzing fingering:".bold(),
 			fingering_str.green().bold()
 		);
@@ -434,9 +524,6 @@ fn name_chord(fingering_str: &str, capo: Option<u8>) -> Result<()> {
 			.collect::<Vec<_>>()
 			.join(", ")
 	);
-
-	// Analyze the fingering
-	let matches = analyze_fingering(&fingering, &guitar);
 
 	if matches.is_empty() {
 		println!("{}", "Could not identify chord (not enough notes)".yellow());

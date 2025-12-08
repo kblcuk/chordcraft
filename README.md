@@ -8,7 +8,7 @@ A multi-platform tool for bidirectional chord-fingering conversion, supporting g
 - **Fingering → Chord**: Input tab notation (e.g., "x32010") and identify the chord
 - **Multiple voicing types**: Core, Full, and Jazzy voicings for different playing contexts
 - **Position-aware**: Find fingerings near a specific fret position
-- **Multi-instrument**: Designed to support guitar, bass, ukulele, and more
+- **Multi-instrument**: Guitar and ukulele fully supported, designed for bass, mandolin, and more
 
 ## Project Status
 
@@ -31,20 +31,24 @@ cargo run -p chordcraft-cli -- find "Cmaj7"
 ## Usage
 
 ```bash
-# Find fingerings for a chord
+# Find fingerings for a chord (guitar by default)
 chordcraft find "Abm7"
 chordcraft find "Abm7" --limit 3
 chordcraft find "Abm7" --position 7        # Prefer fingerings near 7th fret
 chordcraft find "Abm7" --capo 3            # With capo on 3rd fret
 chordcraft find "Abm7" --context band      # For band playing (lighter voicings)
 
+# Ukulele support
+chordcraft find "C" --instrument ukulele
+chordcraft find "Am7" --instrument ukulele --capo 2
+
 # Identify chord from fingering
-chordcraft name "x32010"
-chordcraft name "022100"
+chordcraft name "x32010"                   # Guitar (default)
+chordcraft name "0003" --instrument ukulele
 
 # Chord progressions (optimize transitions)
 chordcraft progression "Cmaj7 Am7 Dm7 G7"
-chordcraft progression "I-IV-V" --limit 5 --max-distance 3
+chordcraft progression "C G Am F" --instrument ukulele
 ```
 
 ## Development

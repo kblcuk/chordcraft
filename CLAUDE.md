@@ -6,7 +6,7 @@ A multi-platform tool for bidirectional chord-fingering conversion:
 
 - **Chord → Fingering**: Input chord name (e.g., "Abm7"), get multiple fingering options
 - **Fingering → Chord**: Input tab notation (e.g., "x32010"), identify the chord
-- **Multi-instrument**: Guitar fully supported (CLI/web). Ukulele core library ready, CLI/web integration planned. Designed for bass, mandolin, and eventually keys.
+- **Multi-instrument**: Guitar and ukulele fully supported (CLI). Web app supports guitar, ukulele integration planned. Designed for bass, mandolin, and eventually keys.
 - **Multi-platform**: CLI tool (immediate use), web app (SvelteKit), potential mobile apps later
 
 ## Architecture
@@ -104,6 +104,8 @@ chordcraft/
       fn open_position_threshold(&self) -> u8;
       fn main_barre_threshold(&self) -> usize;
       fn min_played_strings(&self) -> usize;
+      fn string_names(&self) -> Vec<String>;    // For diagram display
+      fn bass_string_index(&self) -> usize;     // For "root in bass" scoring
   }
   ```
 
@@ -111,14 +113,26 @@ chordcraft/
     - max_stretch: 4 frets
     - min_played_strings: 3 (50% of 6 strings)
     - max_fingers: 4
-  - **Ukulele** (standard tuning GCEA) - Core library only, CLI/web integration planned
+    - bass_string_index: 0 (low E string)
+    - string_names: ["E", "A", "D", "G", "B", "e"]
+  - **Ukulele** (standard GCEA re-entrant tuning)
     - max_stretch: 5 frets (easier on shorter scale)
     - min_played_strings: 1 (allows minimal voicings like C="0003")
     - open_position_threshold: 5 frets
-    - Only 4 strings, so lower min doesn't cause performance issues
-  - **Guitar** is the only instrument currently exposed in CLI and web app
+    - bass_string_index: 1 (C string - see "Re-entrant Tuning" below)
+    - string_names: ["G", "C", "E", "A"]
+  - **CLI**: Both guitar and ukulele supported via `--instrument` flag
+  - **Web app**: Guitar only (ukulele integration planned)
   - Support for alternate tunings (future)
   - Other stringed instruments: bass, mandolin (future)
+
+  **Re-entrant Tuning Support**:
+
+  Ukulele uses re-entrant tuning (G4-C4-E4-A4) where the G string is higher pitched than the C string despite being physically "lower". The `bass_string_index()` method tells the scoring system which string is the true bass:
+  - Guitar: index 0 (low E at E2)
+  - Ukulele: index 1 (C string at C4, lower than G4)
+
+  This ensures "root in bass" scoring works correctly - ukulele's classic C chord "0003" is now properly recognized as having C in the bass.
 
 - [x] **Fingering representation** (`fingering.rs`)
   - Tab notation format (e.g., "x32010")
@@ -194,6 +208,16 @@ chordcraft/
 - ✅ Handles ambiguous fingerings (e.g., C vs Em/C)
 - ✅ Prefers complete, specific chords (G7 over G when 7th is present)
 
+**Root in Bass Concept**:
+
+"Root in bass" means the lowest-sounding note of the chord is the root note. For example:
+- C major chord with notes C-E-G: if C is the bass note, it has "root in bass"
+- C/E (C major with E in bass) does NOT have root in bass - it's a first inversion
+
+This is important for scoring because chords with root in bass generally sound more stable and grounded, especially for solo playing. The system gives bonus points to fingerings with root in bass.
+
+For instruments with re-entrant tuning (like ukulele), the "bass" string isn't necessarily the first string - see "Re-entrant Tuning Support" in the Instrument model section.
+
 ### Phase 4: CLI Tool ✓ COMPLETE
 
 **Goal**: Quick iteration, testing, and usable terminal tool
@@ -207,17 +231,23 @@ chordcraft/
 **Commands**:
 
 ```bash
-# Find fingerings for a chord
+# Find fingerings for a chord (guitar by default)
 chordcraft find "Abm7"
 chordcraft find "Abm7" --limit 3
 chordcraft find "Abm7" --position 7        # Prefer fingerings near 7th fret
 chordcraft find "Abm7" --voicing core      # Show only core voicings
 
-# Identify chord from fingering
-chordcraft name "x32010"
+# Ukulele support (use --instrument or -i flag)
+chordcraft find "C" --instrument ukulele
+chordcraft find "Am7" -i ukulele --capo 2
 
-# Chord progressions (Phase 5 - Planned)
+# Identify chord from fingering
+chordcraft name "x32010"                   # Guitar (default)
+chordcraft name "0003" --instrument ukulele
+
+# Chord progressions
 chordcraft progression "Cmaj7 Am7 Dm7 G7"
+chordcraft progression "C G Am F" --instrument ukulele
 chordcraft progression "Emaj7 D Bm Cmaj7" --limit 5 --max-distance 3
 ```
 
@@ -983,7 +1013,7 @@ This separation allows:
 
 ---
 
-**Last updated**: 2025-11-28 - Documentation audit completed, all implementation statuses verified
+**Last updated**: 2025-12-08 - Added ukulele CLI support with re-entrant tuning handling
 **Current status**:
 
 - ✅ Phases 1-5 complete (Core, Generator, Analyzer, CLI, Progressions)
@@ -994,4 +1024,9 @@ This separation allows:
   - ✅ Quick examples and presets (one-click loading)
   - ⏳ Interactive fretboard input (remaining)
   - ⏳ Additional UX features (autocomplete, favorites, sharing, etc.)
-    **Next priorities**: Interactive fretboard input OR additional UX enhancements (autocomplete, favorites, clipboard)
+- ✅ Multi-instrument CLI support:
+  - ✅ Guitar and ukulele fully supported via `--instrument` flag
+  - ✅ Re-entrant tuning handled correctly (ukulele bass string detection)
+  - ✅ Instrument-specific string names in diagrams
+  - ⏳ Web app ukulele integration (planned)
+**Next priorities**: Web app ukulele support OR interactive fretboard input

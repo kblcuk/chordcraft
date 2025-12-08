@@ -34,7 +34,7 @@ pub use analyzer::{ChordMatch, analyze_fingering};
 pub use chord::{Chord, ChordQuality};
 pub use fingering::Fingering;
 pub use generator::PlayingContext;
-pub use instrument::{CapoedInstrument, Guitar, Instrument};
+pub use instrument::{CapoedInstrument, Guitar, Instrument, Ukulele};
 pub use interval::Interval;
 pub use note::{Note, PitchClass};
 
