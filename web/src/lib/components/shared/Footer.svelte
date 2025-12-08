@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Github from '@lucide/svelte/icons/github';
 	import Music4 from '@lucide/svelte/icons/music-4';
+	import { env } from '$env/dynamic/public';
+	const PUBLIC_BUILD_VERSION = env.PUBLIC_BUILD_VERSION;
 </script>
 
 <footer class="mt-auto border-t border-border/50 bg-card/50">
@@ -28,7 +30,7 @@
 
 			<!-- Copyright -->
 			<p class="text-xs text-muted-foreground/70">
-				{new Date().getFullYear()} ChordCraft. Open source project.
+				{new Date().getFullYear()} ChordCraft. Version: {PUBLIC_BUILD_VERSION}.
 			</p>
 		</div>
 	</div>
