@@ -49,6 +49,16 @@ pub trait Instrument {
 	fn max_capo_fret(&self) -> u8 {
 		12.min(self.fret_range().1 / 2)
 	}
+
+	/// Get display names for strings (used in diagrams)
+	/// Returns names from lowest to highest pitch string
+	/// Default implementation uses the pitch class name of each open string
+	fn string_names(&self) -> Vec<String> {
+		self.tuning()
+			.iter()
+			.map(|note| note.pitch.to_string())
+			.collect()
+	}
 }
 
 /// Generic wrapper for an instrument with a capo
@@ -235,6 +245,18 @@ impl Instrument for Guitar {
 
 	fn max_stretch(&self) -> u8 {
 		self.max_stretch
+	}
+
+	/// Guitar string names use lowercase 'e' for high E (convention)
+	fn string_names(&self) -> Vec<String> {
+		vec![
+			"E".to_string(), // Low E
+			"A".to_string(),
+			"D".to_string(),
+			"G".to_string(),
+			"B".to_string(),
+			"e".to_string(), // High e
+		]
 	}
 }
 

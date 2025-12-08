@@ -467,15 +467,15 @@ pub fn format_fingering_diagram<I: Instrument>(scored: &ScoredFingering, instrum
 	let fingering = &scored.fingering;
 	let strings = fingering.strings();
 
-	// Standard guitar string names (high to low for display)
-	let string_names = ["e", "B", "G", "D", "A", "E"];
+	// Get string names from the instrument (already ordered low to high)
+	let string_names = instrument.string_names();
 
 	let mut lines = Vec::new();
 
 	// Display from highest string to lowest (reverse order)
 	for (i, state) in strings.iter().enumerate().rev() {
 		let name = if i < string_names.len() {
-			string_names[strings.len() - 1 - i]
+			&string_names[i]
 		} else {
 			"?"
 		};
