@@ -164,13 +164,17 @@ fn main() -> Result<()> {
 		} => {
 			find_progression(
 				&chords,
-				limit,
-				max_distance,
-				position,
-				voicing,
-				context,
-				capo,
-				instrument,
+				FindProgressionInstrumentOptions {
+					voicing,
+					context,
+					capo,
+					instrument,
+				},
+				FindProgressionOptions {
+					limit,
+					max_distance,
+					position,
+				},
 			)?;
 		}
 	}
@@ -280,17 +284,35 @@ fn find_fingerings(
 	Ok(())
 }
 
-fn find_progression(
-	chords_str: &str,
-	limit: usize,
-	max_distance: u8,
-	position: Option<u8>,
+struct FindProgressionInstrumentOptions {
+	instrument: InstrumentChoice,
 	voicing: Option<String>,
 	context: Option<String>,
 	capo: Option<u8>,
-	instrument: InstrumentChoice,
+}
+struct FindProgressionOptions {
+	limit: usize,
+	max_distance: u8,
+	position: Option<u8>,
+}
+fn find_progression(
+	chords_str: &str,
+	instrument_opts: FindProgressionInstrumentOptions,
+	progression_opts: FindProgressionOptions,
 ) -> Result<()> {
 	use chordcraft_core::progression::{ProgressionOptions, generate_progression};
+	let FindProgressionInstrumentOptions {
+		instrument,
+		voicing,
+		context,
+		capo,
+	} = instrument_opts;
+
+	let FindProgressionOptions {
+		limit,
+		max_distance,
+		position,
+	} = progression_opts;
 
 	// Parse chord names from the string
 	let chord_names: Vec<&str> = chords_str.split_whitespace().collect();
