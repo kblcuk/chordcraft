@@ -469,17 +469,39 @@ impl Fingering {
 	}
 
 	/// Get the bass note (lowest pitched note that's played)
+	///
+	/// This uses the instrument's `bass_string_index()` to determine which string
+	/// is considered the bass. For most instruments this is string 0, but for
+	/// re-entrant tunings like ukulele (GCEA), it's string 1 (the C string).
+	///
+	/// The function searches from the bass string toward higher strings to find
+	/// the first played note that would function as the bass in typical playing.
 	pub fn bass_note<I: Instrument>(&self, instrument: &I) -> Option<Note> {
 		let tuning = instrument.tuning();
+		let bass_idx = instrument.bass_string_index();
+		let string_count = self.strings.len().min(tuning.len());
 
-		for (i, state) in self.strings.iter().enumerate() {
-			if i >= tuning.len() {
-				break;
-			}
-			if let StringState::Fretted(fret) = state {
-				return Some(tuning[i].add_semitones(*fret as i32));
+		// Search from bass string toward higher strings (typical bass-to-treble order)
+		for (string_state, open_note) in self.strings[bass_idx..string_count]
+			.iter()
+			.zip(tuning[bass_idx..string_count].iter())
+		{
+			if let StringState::Fretted(fret) = string_state {
+				return Some(open_note.add_semitones(*fret as i32));
 			}
 		}
+
+		// If nothing found from bass_idx onward, check strings before bass_idx
+		// (for instruments where lower-indexed strings are higher pitched, like ukulele G string)
+		for (string_state, open_note) in self.strings[..bass_idx]
+			.iter()
+			.zip(tuning[..bass_idx].iter())
+		{
+			if let StringState::Fretted(fret) = string_state {
+				return Some(open_note.add_semitones(*fret as i32));
+			}
+		}
+
 		None
 	}
 }
@@ -639,6 +661,42 @@ mod tests {
 		let c_major = Fingering::parse("x32010").unwrap();
 		let bass = c_major.bass_note(&guitar).unwrap();
 		assert_eq!(bass.pitch, PitchClass::C); // C on 3rd fret of A string
+	}
+
+	#[test]
+	fn test_bass_note_ukulele() {
+		use crate::instrument::Ukulele;
+
+		let ukulele = Ukulele::default();
+
+		// Classic ukulele C chord: 0003 (G-C-E-A strings, frets 0-0-0-3)
+		// The C string (index 1) is the bass, not the G string (index 0)
+		// C string open = C, so bass note should be C
+		let c_chord = Fingering::parse("0003").unwrap();
+		let bass = c_chord.bass_note(&ukulele).unwrap();
+		assert_eq!(
+			bass.pitch,
+			PitchClass::C,
+			"Ukulele 0003: bass should be C (from C string), not G"
+		);
+
+		// Another test: 2010 (Am on ukulele)
+		// Strings: G=2 (A), C=0 (C), E=1 (F), A=0 (A)
+		// Bass string is C (index 1), which is open = C
+		let am_chord = Fingering::parse("2010").unwrap();
+		let bass = am_chord.bass_note(&ukulele).unwrap();
+		assert_eq!(bass.pitch, PitchClass::C, "Ukulele 2010: bass should be C");
+
+		// Test when C string is muted: xx03
+		// G (index 0) muted, C (index 1) muted
+		// Should find bass from next available string (E at index 2)
+		let partial = Fingering::parse("xx03").unwrap();
+		let bass = partial.bass_note(&ukulele).unwrap();
+		assert_eq!(
+			bass.pitch,
+			PitchClass::E,
+			"Ukulele xx03: bass should be E (G and C strings muted)"
+		);
 	}
 
 	#[test]

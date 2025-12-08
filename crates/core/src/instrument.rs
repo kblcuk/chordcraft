@@ -59,6 +59,17 @@ pub trait Instrument {
 			.map(|note| note.pitch.to_string())
 			.collect()
 	}
+
+	/// Get the string index that serves as the bass string for "root in bass" scoring.
+	///
+	/// For most instruments, this is string 0 (the physically lowest string).
+	/// For re-entrant tunings like ukulele (GCEA where G4 is higher than C4),
+	/// this should return the index of the lowest-pitched string.
+	///
+	/// Default: 0 (first string)
+	fn bass_string_index(&self) -> usize {
+		0
+	}
 }
 
 /// Generic wrapper for an instrument with a capo
@@ -176,6 +187,10 @@ impl<I: Instrument> Instrument for CapoedInstrument<I> {
 
 	fn min_played_strings(&self) -> usize {
 		self.inner.min_played_strings()
+	}
+
+	fn bass_string_index(&self) -> usize {
+		self.inner.bass_string_index()
 	}
 }
 
@@ -328,6 +343,13 @@ impl Instrument for Ukulele {
 	// Allow single-note voicings
 	fn min_played_strings(&self) -> usize {
 		1
+	}
+
+	// Ukulele has re-entrant tuning: G4-C4-E4-A4
+	// The C string (index 1) is the lowest pitch, not the G string (index 0)
+	// This affects "root in bass" scoring
+	fn bass_string_index(&self) -> usize {
+		1 // C string is the bass
 	}
 }
 
