@@ -1,6 +1,10 @@
 # vite & vitest
 .vite
 
+# wasm built package
+src/lib/pkg
+src/lib/wasm-pkg
+
 # sveltekit build and cache
 build
 .svelte-kit
