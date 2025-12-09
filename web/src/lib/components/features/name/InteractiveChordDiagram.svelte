@@ -2,10 +2,13 @@
 	/**
 	 * Interactive chord diagram for building fingerings visually
 	 * Allows clicking on fretboard to select finger positions
+	 *
+	 * Supports multiple instruments with variable string counts:
+	 * - Guitar: 6 strings
+	 * - Ukulele: 4 strings
 	 */
 
 	import {
-		STRING_COUNT,
 		VISIBLE_FRETS,
 		DIMENSIONS,
 		MARGIN_BOTTOM,
@@ -28,11 +31,15 @@
 		size = 'medium',
 		startFret = $bindable(0),
 		capo = 0,
+		stringCount = 6,
+		stringNames = ['E', 'A', 'D', 'G', 'B', 'e'],
 	}: {
 		value?: string;
 		size?: 'small' | 'medium' | 'large';
 		startFret?: number;
 		capo?: number;
+		stringCount?: number;
+		stringNames?: string[];
 	} = $props();
 
 	// ============================================================================
@@ -40,8 +47,8 @@
 	// ============================================================================
 
 	// Fingering state: -1 = muted, 0 = open, 1-24 = fret number
-	// Indexed from low E (0) to high E (5)
-	let fingering = $state<number[]>(parseTabNotation(value)); // -2 = not set
+	// Indexed from low string (0) to high string (stringCount-1)
+	let fingering = $state<number[]>(parseTabNotation(value));
 
 	// Hover state for visual feedback
 	let hoveredPosition = $state<{ string: number; fret: number } | null>(null);
@@ -53,7 +60,7 @@
 	let { width, height, dotRadius, marginTop } = $derived(DIMENSIONS[size]);
 	let fretboardWidth = $derived(width - MARGIN_SIDE * 2);
 	let fretboardHeight = $derived(height - marginTop - MARGIN_BOTTOM);
-	let stringSpacing = $derived(fretboardWidth / (STRING_COUNT - 1));
+	let stringSpacing = $derived(fretboardWidth / (stringCount - 1));
 	let fretSpacing = $derived(fretboardHeight / VISIBLE_FRETS);
 	let endFret = $derived(startFret + VISIBLE_FRETS);
 	let isOpenPosition = $derived(startFret === 0);
@@ -71,6 +78,28 @@
 	 * Track previous value for change detection
 	 */
 	let previousValue = $state(value);
+
+	/**
+	 * Track previous string count to detect instrument changes (not initial render)
+	 */
+	let previousStringCount: number | undefined;
+
+	/**
+	 * When stringCount changes (instrument switch), reset fingering to match new string count.
+	 * The old fingering doesn't make sense on a different instrument.
+	 * Uses $effect.pre to track previous value; skips initial mount via undefined check.
+	 */
+	$effect.pre(() => {
+		if (previousStringCount !== undefined && stringCount !== previousStringCount) {
+			// Reset to all open strings for the new instrument
+			fingering = Array(stringCount).fill(0);
+
+			// Reset position to open
+			startFret = 0;
+			previousStartFret = 0;
+		}
+		previousStringCount = stringCount;
+	});
 
 	/**
 	 * When startFret changes, transpose the fingering to match new position
@@ -126,7 +155,7 @@
 	}
 
 	export function clear() {
-		fingering = Array(STRING_COUNT).fill(0);
+		fingering = Array(stringCount).fill(0);
 	}
 
 	const handleKeyPress = (handler: () => void) => (event: KeyboardEvent) => {
@@ -155,7 +184,7 @@
 	}
 
 	function getStringStrokeWidth(stringIndex: number): number {
-		return stringIndex === 0 || stringIndex === 5 ? 2 : 1.5;
+		return stringIndex === 0 || stringIndex === stringCount - 1 ? 2 : 1.5;
 	}
 
 	function getFretStrokeWidth(isNut: boolean): number {
@@ -204,9 +233,9 @@
 		{/if}
 
 		<!-- Strings (vertical lines) -->
-		{#each Array(STRING_COUNT)
+		{#each Array(stringCount)
 			.fill(0)
-			.map((v, i) => i) as stringIndex (stringIndex)}
+			.map((_, i) => i) as stringIndex (stringIndex)}
 			{@const x = getStringX(stringIndex)}
 			<line
 				x1={x}
@@ -316,14 +345,14 @@
 			<!-- Open position: allow clicking frets 1-5 -->
 			{#each Array(VISIBLE_FRETS)
 				.fill(0)
-				.map((v, i) => i) as fretIndex (fretIndex)}
+				.map((_, i) => i) as fretIndex (fretIndex)}
 				{@const fret = fretIndex + 1}
-				{#each Array(STRING_COUNT)
+				{#each Array(stringCount)
 					.fill(0)
-					.map((v, i) => i) as stringIndex (`${fretIndex}-${stringIndex}`)}
+					.map((_, i) => i) as stringIndex (`${fretIndex}-${stringIndex}`)}
 					{@const x = getStringX(stringIndex)}
 					{@const y = getDotY(fret)}
-					{@const stringName = ['E', 'A', 'D', 'G', 'B', 'e'][stringIndex]}
+					{@const stringName = stringNames[stringIndex] || `String ${stringIndex + 1}`}
 					{@const handler = () => handleFretClick(stringIndex, fret)}
 					<circle
 						cx={x}
@@ -345,14 +374,14 @@
 			<!-- Higher position: allow clicking visible frets -->
 			{#each Array(VISIBLE_FRETS)
 				.fill(0)
-				.map((v, i) => i) as fretIndex (fretIndex)}
+				.map((_, i) => i) as fretIndex (fretIndex)}
 				{@const fret = startFret + fretIndex + 1}
-				{#each Array(STRING_COUNT)
+				{#each Array(stringCount)
 					.fill(0)
-					.map((v, i) => i) as stringIndex (`${fretIndex}-${stringIndex}`)}
+					.map((_, i) => i) as stringIndex (`${fretIndex}-${stringIndex}`)}
 					{@const x = getStringX(stringIndex)}
 					{@const y = getDotY(fret)}
-					{@const stringName = ['E', 'A', 'D', 'G', 'B', 'e'][stringIndex]}
+					{@const stringName = stringNames[stringIndex] || `String ${stringIndex + 1}`}
 					{@const handler = () => handleFretClick(stringIndex, fret)}
 					<circle
 						cx={x}
@@ -373,11 +402,11 @@
 		{/if}
 
 		<!-- Interactive zones for string markers (open/muted toggle) -->
-		{#each Array(STRING_COUNT)
+		{#each Array(stringCount)
 			.fill(0)
-			.map((v, i) => i) as stringIndex (stringIndex)}
+			.map((_, i) => i) as stringIndex (stringIndex)}
 			{@const x = getStringX(stringIndex)}
-			{@const stringName = ['E', 'A', 'D', 'G', 'B', 'e'][stringIndex]}
+			{@const stringName = stringNames[stringIndex] || `String ${stringIndex + 1}`}
 			{@const handler = () => handleStringMarkerClick(stringIndex)}
 			<circle
 				cx={x}

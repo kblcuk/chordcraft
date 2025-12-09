@@ -2,7 +2,7 @@
 	import ExampleButtons from '$lib/components/shared/ExampleButtons.svelte';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Label } from '$lib/components/ui/label';
-	import { exampleTabs } from '$lib/utils/examples';
+	import { guitarTabs, ukuleleTabs } from '$lib/utils/examples';
 
 	// Validation pattern and error message
 	const PATTERN = /^[0-9x()]{0,24}$/;
@@ -34,10 +34,18 @@
 	let {
 		value = $bindable('000000'),
 		disabled = false,
+		stringCount = 6,
 	}: {
 		value: string;
 		disabled?: boolean;
+		stringCount?: number;
 	} = $props();
+
+	// Select examples based on string count (4 = ukulele, 6 = guitar)
+	const examples = $derived(stringCount === 4 ? ukuleleTabs : guitarTabs);
+
+	// Default clear value based on string count
+	const defaultValue = $derived('0'.repeat(stringCount));
 
 	// Local state - what user actually types (can be invalid during typing)
 	let localInput = $state(value);
@@ -74,9 +82,9 @@
 	}
 
 	function clear() {
-		localInput = '000000';
-		value = '000000';
-		previousValue = '000000';
+		localInput = defaultValue;
+		value = defaultValue;
+		previousValue = defaultValue;
 		showError = false;
 	}
 
@@ -89,7 +97,7 @@
 </script>
 
 <div class="space-y-4">
-	<ExampleButtons examples={exampleTabs} onSelect={handleExample} {disabled} />
+	<ExampleButtons {examples} onSelect={handleExample} {disabled} />
 
 	<div class="space-y-2">
 		<Label for="tab-input">Tab Notation</Label>

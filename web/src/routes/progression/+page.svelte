@@ -7,6 +7,12 @@
 		countProgressionFilters,
 		PROGRESSION_DEFAULTS,
 	} from '$lib/utils/url-state';
+	import {
+		generateProgression,
+		getInstrumentInfo,
+		type ProgressionSequence,
+		type InstrumentInfo,
+	} from '$lib/wasm';
 	import Input from '$lib/components/features/progression/Input.svelte';
 	import AdvancedOptions from '$lib/components/features/progression/AdvancedOptions.svelte';
 	import Results from '$lib/components/features/progression/Results.svelte';
@@ -35,6 +41,13 @@
 	// Track last search params to detect meaningful changes
 	let lastSearchKey = '';
 
+	// Load instrument info when instrument changes
+	$effect(() => {
+		const instrument = urlState.instrument;
+		getInstrumentInfo(instrument).then((info) => {
+			instrumentInfo = info;
+		});
+	});
 
 	// React to URL changes - trigger generation when we have input
 	$effect(() => {
@@ -183,5 +196,5 @@
 	{/if}
 
 	<!-- Results -->
-	<Results sequences={storeState.results} />
+	<Results sequences={results} {stringCount} />
 </div>

@@ -4,12 +4,22 @@
 
 export const exampleChords = ['C', 'Cmaj7', 'Fm7', 'Abm7', 'F#7b9', 'Dsus4'];
 
-export const exampleTabs = [
+/** Guitar tab examples (6 strings) */
+export const guitarTabs = [
 	{ tab: 'x32010', label: 'C' },
 	{ tab: '022100', label: 'E' },
 	{ tab: '133211', label: 'F (barre)' },
 	{ tab: 'xx0232', label: 'D' },
 	{ tab: '320003', label: 'G' },
+];
+
+/** Ukulele tab examples (4 strings, GCEA tuning) */
+export const ukuleleTabs = [
+	{ tab: '0003', label: 'C' },
+	{ tab: '2000', label: 'Am' },
+	{ tab: '0232', label: 'G' },
+	{ tab: '2010', label: 'F' },
+	{ tab: '4442', label: 'E' },
 ];
 
 export const commonProgressions = [

@@ -3,7 +3,13 @@
 	import type { ProgressionSequence } from '$lib/wasm';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 
-	let { sequences }: { sequences: ProgressionSequence[] } = $props();
+	let {
+		sequences,
+		stringCount = 6,
+	}: {
+		sequences: ProgressionSequence[];
+		stringCount?: number;
+	} = $props();
 </script>
 
 {#if sequences.length > 0}
@@ -40,6 +46,7 @@
 										notes={fingering.notes}
 										rootNote={fingering.notes[0] || ''}
 										size="small"
+										{stringCount}
 									/>
 								</div>
 

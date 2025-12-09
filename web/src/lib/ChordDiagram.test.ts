@@ -318,4 +318,106 @@ describe('ChordDiagram - User Experience', () => {
 			expect(container.querySelector('svg')).toBeInTheDocument();
 		});
 	});
+
+	describe('Ukulele Support (4 strings)', () => {
+		it('should render ukulele C major chord (0003)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '0003',
+					notes: ['G', 'C', 'E', 'C'],
+					rootNote: 'C',
+					stringCount: 4,
+				},
+			});
+
+			expect(container.querySelector('svg')).toBeInTheDocument();
+		});
+
+		it('should render 4 strings for ukulele', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '0003',
+					notes: ['G', 'C', 'E', 'C'],
+					rootNote: 'C',
+					stringCount: 4,
+				},
+			});
+
+			// Count vertical lines (strings)
+			const lines = container.querySelectorAll('line');
+			const verticalLines = Array.from(lines).filter((line) => {
+				const x1 = line.getAttribute('x1');
+				const x2 = line.getAttribute('x2');
+				return x1 === x2; // Vertical line
+			});
+
+			expect(verticalLines.length).toBe(4);
+		});
+
+		it('should render ukulele Am chord (2000)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '2000',
+					notes: ['A', 'C', 'E', 'A'],
+					rootNote: 'A',
+					stringCount: 4,
+				},
+			});
+
+			expect(container.querySelector('svg')).toBeInTheDocument();
+		});
+
+		it('should render ukulele G chord (0232)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '0232',
+					notes: ['G', 'D', 'G', 'B'],
+					rootNote: 'G',
+					stringCount: 4,
+				},
+			});
+
+			expect(container.querySelector('svg')).toBeInTheDocument();
+		});
+
+		it('should render ukulele barre chord (4442)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '4442',
+					notes: ['B', 'E', 'G#', 'B'],
+					rootNote: 'E',
+					stringCount: 4,
+				},
+			});
+
+			expect(container.querySelector('svg')).toBeInTheDocument();
+		});
+
+		it('should handle ukulele muted strings (x232)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: 'x232',
+					notes: ['D', 'G', 'B'],
+					rootNote: 'G',
+					stringCount: 4,
+				},
+			});
+
+			const text = container.textContent;
+			expect(text).toContain('×');
+		});
+
+		it('should render ukulele high position chord (7779)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '7779',
+					notes: ['D', 'A', 'D', 'G'],
+					rootNote: 'D',
+					stringCount: 4,
+				},
+			});
+
+			expect(container.querySelector('svg')).toBeInTheDocument();
+		});
+	});
 });

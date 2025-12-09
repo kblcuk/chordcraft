@@ -35,12 +35,31 @@
 	// Track last analysis params to detect meaningful changes
 	let lastAnalysisKey = '';
 
+	// Track previous instrument to detect changes
+	let previousInstrument = $derived(urlState.instrument);
+
 	// Load instrument info when instrument changes
 	$effect(() => {
 		const instrument = urlState.instrument;
 		getInstrumentInfo(instrument).then((info) => {
 			instrumentInfo = info;
 		});
+	});
+
+	// Reset state when instrument changes
+	$effect(() => {
+		const instrument = urlState.instrument;
+		if (instrument === previousInstrument) return;
+
+		// Reset to default tab for new instrument
+		const newStringCount = instrument === 'ukulele' ? 4 : 6;
+		tabInput = '0'.repeat(newStringCount);
+		startFret = 0;
+		results = [];
+		error = '';
+		lastAnalysisKey = '';
+
+		previousInstrument = instrument;
 	});
 
 	// Sync local inputs with URL state (for browser back/forward)
@@ -168,7 +187,7 @@
 		<!-- Text Input Section -->
 		<div class="space-y-2">
 			<h3 class="font-medium text-foreground">Text Input</h3>
-			<Form bind:value={tabInput} disabled={false} />
+			<Form bind:value={tabInput} disabled={false} {stringCount} />
 		</div>
 
 		<!-- Share Button -->

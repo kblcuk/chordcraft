@@ -7,11 +7,21 @@ import init, {
 	analyzeChord as wasmAnalyzeChord,
 	findFingerings as wasmFindFingerings,
 	generateProgression as wasmGenerateProgression,
+	getInstrumentInfo as wasmGetInstrumentInfo,
 } from 'chordcraft-wasm';
 
 // ============================================================================
 // Types (matching Rust WASM types)
 // ============================================================================
+
+/** Supported instrument types */
+export type Instrument = 'guitar' | 'ukulele';
+
+/** Instrument configuration info */
+export interface InstrumentInfo {
+	stringCount: number;
+	stringNames: string[];
+}
 
 export interface ScoredFingering {
 	tab: string;
@@ -81,21 +91,42 @@ export async function initializeWasm(): Promise<void> {
 // API Functions
 // ============================================================================
 
+// Cache for instrument info to avoid repeated WASM calls
+const instrumentInfoCache: Map<Instrument, InstrumentInfo> = new Map();
+
+/**
+ * Get instrument configuration info (string count, names)
+ * Results are cached to avoid repeated WASM calls
+ */
+export async function getInstrumentInfo(instrument: Instrument): Promise<InstrumentInfo> {
+	await initializeWasm();
+
+	// Check cache first
+	const cached = instrumentInfoCache.get(instrument);
+	if (cached) return cached;
+
+	try {
+		const result = wasmGetInstrumentInfo(instrument);
+		instrumentInfoCache.set(instrument, result as InstrumentInfo);
+		return result as InstrumentInfo;
+	} catch (error) {
+		console.error('Error getting instrument info:', error);
+		throw new Error(`Failed to get instrument info for "${instrument}": ${error}`);
+	}
+}
+
 /**
  * Find fingerings for a chord
  */
 export async function findFingerings(
 	chordName: string,
+	instrument: Instrument = 'guitar',
 	options?: GeneratorOptions
 ): Promise<ScoredFingering[]> {
 	await initializeWasm();
 
 	try {
-		const result = wasmFindFingerings(
-			chordName,
-			'guitar', // Currently only guitar supported
-			options || null
-		);
+		const result = wasmFindFingerings(chordName, instrument, options || null);
 		return result as ScoredFingering[];
 	} catch (error) {
 		console.error('Error finding fingerings:', error);
@@ -106,14 +137,14 @@ export async function findFingerings(
 /**
  * Analyze a fingering and identify possible chords
  */
-export async function analyzeChord(tabNotation: string): Promise<ChordMatch[]> {
+export async function analyzeChord(
+	tabNotation: string,
+	instrument: Instrument = 'guitar'
+): Promise<ChordMatch[]> {
 	await initializeWasm();
 
 	try {
-		const result = wasmAnalyzeChord(
-			tabNotation,
-			'guitar' // Currently only guitar supported
-		);
+		const result = wasmAnalyzeChord(tabNotation, instrument);
 		return result as ChordMatch[];
 	} catch (error) {
 		console.error('Error analyzing chord:', error);
@@ -126,16 +157,13 @@ export async function analyzeChord(tabNotation: string): Promise<ChordMatch[]> {
  */
 export async function generateProgression(
 	chordNames: string[],
+	instrument: Instrument = 'guitar',
 	options?: ProgressionOptions
 ): Promise<ProgressionSequence[]> {
 	await initializeWasm();
 
 	try {
-		const result = wasmGenerateProgression(
-			chordNames,
-			'guitar', // Currently only guitar supported
-			options || null
-		);
+		const result = wasmGenerateProgression(chordNames, instrument, options || null);
 		return result as ProgressionSequence[];
 	} catch (error) {
 		console.error('Error generating progression:', error);

@@ -7,6 +7,12 @@
 		countFindFilters,
 		FIND_DEFAULTS,
 	} from '$lib/utils/url-state';
+	import {
+		findFingerings,
+		getInstrumentInfo,
+		type ScoredFingering,
+		type InstrumentInfo,
+	} from '$lib/wasm';
 	import Input from '$lib/components/features/find/Input.svelte';
 	import AdvancedOptions from '$lib/components/features/find/AdvancedOptions.svelte';
 	import Results from '$lib/components/features/find/Results.svelte';
@@ -23,8 +29,9 @@
 	let loading = $state(false);
 	let error = $state('');
 
-	// Track previous URL to detect changes
-	let previousUrl = '';
+	// Instrument info for string count (cached)
+	let instrumentInfo = $state<InstrumentInfo | null>(null);
+	const stringCount = $derived(instrumentInfo?.stringCount ?? 6);
 
 	// Local input value for controlled component
 	// Sync local input with URL state (for browser back/forward)
@@ -32,6 +39,13 @@
 
 	// Track last search params to detect meaningful changes
 	let lastSearchKey = '';
+
+	// Load instrument info when instrument changes
+	$effect(() => {
+		const instrument = urlState.instrument;
+		getInstrumentInfo(instrument).then((info) => {
+			instrumentInfo = info;
+		});
 	});
 
 	// React to URL changes - trigger search when we have input
@@ -169,5 +183,5 @@
 	{/if}
 
 	<!-- Results -->
-	<Results fingerings={storeState.results} />
+	<Results fingerings={results} {stringCount} />
 </div>

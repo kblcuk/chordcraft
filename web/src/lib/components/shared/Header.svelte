@@ -1,7 +1,28 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import DarkModeToggle from '$lib/DarkModeToggle.svelte';
 	import Guitar from '@lucide/svelte/icons/guitar';
+	import Ukulele from '@lucide/svelte/icons/tree-palm';
+	import { updateUrl } from '$lib/utils/url-state';
+	import type { Instrument } from '$lib/wasm';
+	import { Button } from '$lib/components/ui/button';
+
 	let { wasmReady = $bindable(false) }: { wasmReady?: boolean } = $props();
+
+	// Derive instrument directly from URL
+	const instrument = $derived<Instrument>(
+		page.url.searchParams.get('instrument') === 'ukulele' ? 'ukulele' : 'guitar'
+	);
+
+	function toggleInstrument() {
+		const newInstrument: Instrument = instrument === 'guitar' ? 'ukulele' : 'guitar';
+		// Just update URL - routes will react automatically
+		const currentParams = Object.fromEntries(page.url.searchParams.entries());
+		updateUrl({
+			...currentParams,
+			instrument: newInstrument,
+		});
+	}
 </script>
 
 <header class="relative border-b border-border/50 bg-card shadow-warm">
@@ -31,8 +52,23 @@
 				</div>
 			</div>
 
-			<!-- Right side: Status + Dark mode -->
-			<div class="flex items-center gap-4">
+			<!-- Right side: Instrument toggle + Status + Dark mode -->
+			<div class="flex items-center gap-3 sm:gap-4">
+				<!-- Instrument Toggle -->
+				<Button
+					onclick={toggleInstrument}
+					variant="outline"
+					title={`Switch to ${instrument === 'guitar' ? 'ukulele' : 'guitar'}`}
+				>
+					{#if instrument === 'guitar'}
+						<Guitar class="h-4 w-4" />
+						<span class="hidden sm:inline">Guitar</span>
+					{:else}
+						<Ukulele class="h-4 w-4" />
+						<span class="hidden sm:inline">Ukulele</span>
+					{/if}
+				</Button>
+
 				<!-- WASM Status -->
 				<div class="hidden items-center gap-2 sm:flex">
 					{#if wasmReady}

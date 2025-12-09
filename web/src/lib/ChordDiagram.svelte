@@ -1,13 +1,16 @@
 <script lang="ts">
 	/**
 	 * SVG-based chord diagram component
-	 * Displays guitar fingerings visually on a fretboard
+	 * Displays fingerings visually on a fretboard
+	 *
+	 * Supports multiple instruments with variable string counts:
+	 * - Guitar: 6 strings
+	 * - Ukulele: 4 strings
 	 *
 	 * Workshop Warmth Design - styled like a vintage chord chart
 	 */
 
 	import {
-		STRING_COUNT,
 		VISIBLE_FRETS,
 		DIMENSIONS,
 		MARGIN_BOTTOM,
@@ -24,11 +27,13 @@
 		notes = [],
 		rootNote = '',
 		size = 'medium',
+		stringCount = 6,
 	}: {
 		tab: string;
 		notes?: string[];
 		rootNote?: string;
 		size?: 'small' | 'medium' | 'large';
+		stringCount?: number;
 	} = $props();
 
 	// ============================================================================
@@ -36,7 +41,7 @@
 	// ============================================================================
 
 	interface Position {
-		string: number; // 0-5 (low E to high E)
+		string: number; // 0-based index (0 = lowest pitched string)
 		fret: number; // 0 = open, 1-24 = fretted, -1 = muted
 	}
 
@@ -59,7 +64,7 @@
 	let { width, height, dotRadius, marginTop } = $derived(DIMENSIONS[size]);
 	let fretboardWidth = $derived(width - MARGIN_SIDE * 2);
 	let fretboardHeight = $derived(height - marginTop - MARGIN_BOTTOM);
-	let stringSpacing = $derived(fretboardWidth / (STRING_COUNT - 1));
+	let stringSpacing = $derived(fretboardWidth / (stringCount - 1));
 	let fretSpacing = $derived(fretboardHeight / VISIBLE_FRETS);
 
 	// ============================================================================
@@ -76,7 +81,7 @@
 	 *
 	 * Format matches Rust backend implementation.
 	 */
-	const parseTab = (tab: string): Position[] => {
+	const parseTab = (tab: string, maxStrings: number): Position[] => {
 		const trimmed = tab.trim();
 		if (!trimmed) return [];
 
@@ -84,7 +89,7 @@
 		let i = 0;
 		let stringIndex = 0;
 
-		while (i < trimmed.length && stringIndex < STRING_COUNT) {
+		while (i < trimmed.length && stringIndex < maxStrings) {
 			const char = trimmed[i];
 
 			// Muted string
@@ -258,7 +263,7 @@
 	// Reactive Computations
 	// ============================================================================
 
-	let positions = $derived(parseTab(tab));
+	let positions = $derived(parseTab(tab, stringCount));
 	let [minFret] = $derived(calculateFretRange(positions));
 	let isHighPosition = $derived(minFret > 0);
 	let barres = $derived(detectBarres(positions));
@@ -271,8 +276,8 @@
 	// Helper Functions for Rendering
 	// ============================================================================
 
-	const getStringStrokeWidth = (stringIndex: number): number =>
-		stringIndex === 0 || stringIndex === 5 ? 2 : 1.5;
+	const getStringStrokeWidth = (stringIndex: number, totalStrings: number): number =>
+		stringIndex === 0 || stringIndex === totalStrings - 1 ? 2 : 1.5;
 
 	const getFretStrokeWidth = (isNut: boolean): number => (isNut ? 4 : 1.5);
 
@@ -338,7 +343,7 @@
 	{/if}
 
 	<!-- Strings (vertical lines) -->
-	{#each [...Array(STRING_COUNT).keys()] as stringIndex (stringIndex)}
+	{#each [...Array(stringCount).keys()] as stringIndex (stringIndex)}
 		{@const x = MARGIN_SIDE + stringIndex * stringSpacing}
 		<line
 			x1={x}
@@ -346,7 +351,7 @@
 			x2={x}
 			y2={marginTop + fretboardHeight}
 			stroke={COLORS.string}
-			stroke-width={getStringStrokeWidth(stringIndex)}
+			stroke-width={getStringStrokeWidth(stringIndex, stringCount)}
 			stroke-linecap="round"
 		/>
 	{/each}
