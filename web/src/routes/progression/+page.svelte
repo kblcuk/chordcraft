@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { progressionStore, activeProgressionFilters } from '$lib/stores/progression';
+	import {
+		parseProgressionParams,
+		buildProgressionParams,
+		updateUrl,
+		countProgressionFilters,
+		PROGRESSION_DEFAULTS,
+	} from '$lib/utils/url-state';
 	import Input from '$lib/components/features/progression/Input.svelte';
 	import AdvancedOptions from '$lib/components/features/progression/AdvancedOptions.svelte';
 	import Results from '$lib/components/features/progression/Results.svelte';
@@ -9,54 +14,111 @@
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
 	import ShareButton from '$lib/components/shared/ShareButton.svelte';
 	import { Button } from '$lib/components/ui/button';
-
 	import { commonProgressions } from '$lib/utils/examples';
 
-	// Subscribe to store
-	let storeState = $derived($progressionStore);
-	let activeFilters = $derived($activeProgressionFilters);
+	// Derive all input state from URL (single source of truth)
+	const urlState = $derived(parseProgressionParams(page.url.searchParams));
+	const activeFilters = $derived(countProgressionFilters(urlState));
 
-	// Local input value (controlled component pattern)
-	let progressionInput: string = $state('');
+	// Local state for results (not in URL)
+	let results = $state<ProgressionSequence[]>([]);
+	let loading = $state(false);
+	let error = $state('');
 
-	// Track previous URL to detect changes
-	let previousUrl = '';
+	// Instrument info for string count (cached)
+	let instrumentInfo = $state<InstrumentInfo | null>(null);
+	const stringCount = $derived(instrumentInfo?.stringCount ?? 6);
 
-	// Initialize from URL on mount
-	onMount(() => {
-		progressionStore.initFromUrl(page.url.searchParams);
-		progressionInput = storeState.progressionInput;
+	// Local input value for controlled component
+	let progressionInput = $derived(urlState.chords);
 
-		// If there's a progression in the URL, generate immediately
-		if (storeState.progressionInput) {
-			progressionStore.generate();
+	// Track last search params to detect meaningful changes
+	let lastSearchKey = '';
+
+
+	// React to URL changes - trigger generation when we have input
+	$effect(() => {
+		const { chords, instrument, limit, maxDistance, capo, context } = urlState;
+
+		// Create a key representing all search-relevant params
+		const searchKey = JSON.stringify({ chords, instrument, limit, maxDistance, capo, context });
+
+		// Only generate if params changed and we have input
+		if (searchKey !== lastSearchKey && chords.trim()) {
+			lastSearchKey = searchKey;
+			doGenerate();
 		}
 	});
+
+	async function doGenerate() {
+		const { chords, instrument, limit, maxDistance, capo, context } = urlState;
+
+		if (!chords.trim() || loading) return;
+
+		loading = true;
+		error = '';
+
+		try {
+			const chordList = chords.trim().split(/\s+/);
+			results = await generateProgression(chordList, instrument, {
+				limit,
+				maxFretDistance: maxDistance,
+				generatorOptions: {
+					capo,
+					playingContext: context,
+				},
+			});
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Unknown error';
+		} finally {
+			loading = false;
+		}
+	}
+
+	// Actions - update URL which triggers the effect
+	function handleGenerate() {
+		// Sync local input to URL state
+		if (progressionInput !== urlState.chords) {
+			updateUrl(buildProgressionParams({ ...urlState, chords: progressionInput }));
+		} else if (progressionInput.trim()) {
+			// Force re-generate if input hasn't changed
+			doGenerate();
+		}
+	}
+
+	function handleClear() {
+		progressionInput = '';
+		results = [];
+		error = '';
+		lastSearchKey = '';
+		updateUrl(buildProgressionParams({ ...urlState, chords: '' }));
+	}
 
 	function handleExample(chords: string) {
 		progressionInput = chords;
-		progressionStore.setProgressionInput(progressionInput);
-		progressionStore.generate();
+		updateUrl(buildProgressionParams({ ...urlState, chords }));
 	}
 
-	// React to URL changes (browser navigation, manual edits)
-	$effect(() => {
-		const currentUrl = page.url.href;
+	function handleOptionsChange(
+		opts: Partial<{
+			limit: number;
+			maxDistance: number;
+			capo: number;
+			context: 'solo' | 'band';
+		}>
+	) {
+		updateUrl(buildProgressionParams({ ...urlState, ...opts }));
+	}
 
-		// Only sync if URL actually changed (prevents state → URL → state loop)
-		if (currentUrl !== previousUrl) {
-			previousUrl = currentUrl;
-			progressionStore.initFromUrl(page.url.searchParams);
-			progressionInput = storeState.progressionInput; // Sync local state
-		}
-	});
-
-	// Watch for local input changes and update store + URL
-	$effect(() => {
-		if (progressionInput !== storeState.progressionInput) {
-			progressionStore.setProgressionInput(progressionInput);
-		}
-	});
+	function handleReset() {
+		updateUrl(
+			buildProgressionParams({
+				...PROGRESSION_DEFAULTS,
+				chords: urlState.chords,
+				instrument: urlState.instrument,
+			})
+		);
+	}
 </script>
 
 <div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
@@ -71,7 +133,6 @@
 	</div>
 
 	<!-- Input -->
-
 	<div class="space-y-4">
 		<!-- Common Progressions -->
 		<div>
@@ -90,13 +151,10 @@
 		</div>
 		<Input
 			bind:value={progressionInput}
-			onGenerate={() => progressionStore.generate()}
-			onClear={() => {
-				progressionInput = '';
-				progressionStore.clear();
-			}}
+			onGenerate={handleGenerate}
+			onClear={handleClear}
 			disabled={false}
-			loading={storeState.loading}
+			{loading}
 		/>
 	</div>
 
@@ -108,24 +166,21 @@
 	{/if}
 
 	<!-- Advanced Options -->
-	<AdvancedOptionsWrapper
-		activeFiltersCount={activeFilters}
-		onReset={() => progressionStore.resetOptions()}
-	>
+	<AdvancedOptionsWrapper activeFiltersCount={activeFilters} onReset={handleReset}>
 		{#snippet content()}
 			<AdvancedOptions
-				limit={storeState.limit}
-				maxDistance={storeState.maxDistance}
-				capo={storeState.capo}
-				context={storeState.context}
-				onChange={(opts) => progressionStore.setOptions(opts)}
+				limit={urlState.limit}
+				maxDistance={urlState.maxDistance}
+				capo={urlState.capo}
+				context={urlState.context}
+				onChange={handleOptionsChange}
 			/>
 		{/snippet}
 	</AdvancedOptionsWrapper>
 
 	<!-- Error -->
-	{#if storeState.error}
-		<ErrorAlert message={storeState.error} />
+	{#if error}
+		<ErrorAlert message={error} />
 	{/if}
 
 	<!-- Results -->

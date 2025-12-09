@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { nameStore } from '$lib/stores/name';
+	import { parseNameParams, buildNameParams, updateUrl } from '$lib/utils/url-state';
+	import {
+		analyzeChord,
+		getInstrumentInfo,
+		type ChordMatch,
+		type InstrumentInfo,
+	} from '$lib/wasm';
 	import Form from '$lib/components/features/name/Form.svelte';
 	import Results from '$lib/components/features/name/Results.svelte';
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
@@ -10,53 +15,94 @@
 	import { Label } from '$lib/components/ui/label';
 	import ShareButton from '$lib/components/shared/ShareButton.svelte';
 
-	// Subscribe to store
-	let storeState = $derived($nameStore);
+	// Derive all input state from URL (single source of truth)
+	const urlState = $derived(parseNameParams(page.url.searchParams));
 
-	// Local input values (controlled component pattern)
-	let tabInput: string = $state('000000');
-	let startFret: number = $state(0);
+	// Local state for results (not in URL)
+	let results = $state<ChordMatch[]>([]);
+	let loading = $state(false);
+	let error = $state('');
 
-	// Track previous URL to detect changes
-	let previousUrl = '';
+	// Instrument info for string count (cached)
+	let instrumentInfo = $state<InstrumentInfo | null>(null);
+	const stringCount = $derived(instrumentInfo?.stringCount ?? 6);
+	const stringNames = $derived(instrumentInfo?.stringNames ?? ['E', 'A', 'D', 'G', 'B', 'e']);
 
-	// Initialize from URL on mount
-	onMount(() => {
-		nameStore.initFromUrl(page.url.searchParams);
-		tabInput = storeState.tabInput;
-		startFret = storeState.startFret;
+	// Local input values for controlled components
+	let tabInput = $state('000000');
+	let startFret = $state(0);
 
-		// If there's a tab in the URL, analyze immediately
-		if (storeState.tabInput) {
-			nameStore.analyze();
+	// Track last analysis params to detect meaningful changes
+	let lastAnalysisKey = '';
+
+	// Load instrument info when instrument changes
+	$effect(() => {
+		const instrument = urlState.instrument;
+		getInstrumentInfo(instrument).then((info) => {
+			instrumentInfo = info;
+		});
+	});
+
+	// Sync local inputs with URL state (for browser back/forward)
+	$effect(() => {
+		// Only update if URL has a tab value
+		if (urlState.tab) {
+			tabInput = urlState.tab;
+		}
+		startFret = urlState.startFret;
+	});
+
+	// React to URL changes - trigger analysis when we have input
+	$effect(() => {
+		const { tab, instrument, capo } = urlState;
+
+		// Create a key representing all analysis-relevant params
+		const analysisKey = JSON.stringify({ tab, instrument, capo });
+
+		// Only analyze if params changed and we have input
+		if (analysisKey !== lastAnalysisKey && tab.trim()) {
+			lastAnalysisKey = analysisKey;
+			doAnalysis();
 		}
 	});
 
-	// React to URL changes (browser navigation, manual edits)
-	$effect(() => {
-		const currentUrl = page.url.href;
-		// Only sync if URL actually changed (prevents state → URL → state loop)
-		if (currentUrl === previousUrl) return;
+	async function doAnalysis() {
+		const { tab, instrument } = urlState;
 
-		previousUrl = currentUrl;
-		nameStore.initFromUrl(page.url.searchParams);
-		tabInput = storeState.tabInput; // Sync local state
-		startFret = storeState.startFret;
+		if (!tab.trim() || loading) return;
+
+		loading = true;
+		error = '';
+
+		try {
+			const allResults = await analyzeChord(tab.trim(), instrument);
+			results = allResults.slice(0, 5); // Top 5 results
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Unknown error';
+			results = [];
+		} finally {
+			loading = false;
+		}
+	}
+
+	// Watch for local tab changes and sync to URL (triggers analysis via effect)
+	$effect(() => {
+		if (tabInput !== urlState.tab && tabInput.trim()) {
+			updateUrl(buildNameParams({ ...urlState, tab: tabInput }));
+		}
 	});
 
-	// Watch for startFret changes and update store + URL
+	// Watch for startFret changes and sync to URL
 	$effect(() => {
-		if (startFret === storeState.startFret) return;
-		nameStore.setStartFret(startFret);
+		if (startFret !== urlState.startFret) {
+			updateUrl(buildNameParams({ ...urlState, startFret }));
+		}
 	});
 
-	// Watch for tab changes and auto-analyze
-	$effect(() => {
-		if (tabInput === storeState.tabInput) return;
-
-		nameStore.setTabInput(tabInput);
-		nameStore.analyze();
-	});
+	// Actions
+	function handleCapoChange(capo: number) {
+		updateUrl(buildNameParams({ ...urlState, capo }));
+	}
 </script>
 
 <div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
@@ -79,8 +125,8 @@
 					<Label for="capo-select" class="text-sm font-medium">Capo:</Label>
 					<select
 						id="capo-select"
-						value={storeState.capo}
-						onchange={(e) => nameStore.setCapo(Number(e.currentTarget.value))}
+						value={urlState.capo}
+						onchange={(e) => handleCapoChange(Number(e.currentTarget.value))}
 						class="rounded-lg border border-border bg-card px-3 py-1.5 text-sm shadow-warm-sm transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-ring/30 focus:outline-none"
 					>
 						<option value="0">None</option>
@@ -88,9 +134,9 @@
 							<option value={fretNum}>Fret {fretNum}</option>
 						{/each}
 					</select>
-					{#if storeState.capo > 0}
+					{#if urlState.capo > 0}
 						<span class="text-xs text-muted-foreground">
-							(+{storeState.capo} semitones)
+							(+{urlState.capo} semitones)
 						</span>
 					{/if}
 				</div>
@@ -101,8 +147,10 @@
 				<InteractiveChordDiagram
 					bind:value={tabInput}
 					bind:startFret
-					capo={storeState.capo}
+					capo={urlState.capo}
 					size="large"
+					{stringCount}
+					{stringNames}
 				/>
 			</div>
 		</div>
@@ -132,21 +180,21 @@
 	</div>
 
 	<!-- Error -->
-	{#if storeState.error}
+	{#if error}
 		<div class="mt-6">
-			<ErrorAlert message={storeState.error} />
+			<ErrorAlert message={error} />
 		</div>
 	{/if}
 
 	<!-- Results -->
-	{#if storeState.results.length > 0}
+	{#if results.length > 0}
 		<div class="mt-6 space-y-4">
 			<!-- Finger Count Badge -->
 			<div class="flex justify-center">
-				<FingerCountBadge tab={storeState.tabInput} />
+				<FingerCountBadge tab={urlState.tab} />
 			</div>
 
-			<Results matches={storeState.results} />
+			<Results matches={results} />
 		</div>
 	{/if}
 </div>

@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { findStore, activeFindFilters } from '$lib/stores/find';
+	import {
+		parseFindParams,
+		buildFindParams,
+		updateUrl,
+		countFindFilters,
+		FIND_DEFAULTS,
+	} from '$lib/utils/url-state';
 	import Input from '$lib/components/features/find/Input.svelte';
 	import AdvancedOptions from '$lib/components/features/find/AdvancedOptions.svelte';
 	import Results from '$lib/components/features/find/Results.svelte';
@@ -9,38 +14,112 @@
 	import ErrorAlert from '$lib/components/shared/ErrorAlert.svelte';
 	import ShareButton from '$lib/components/shared/ShareButton.svelte';
 
-	// Subscribe to store
-	let storeState = $derived($findStore);
-	let activeFilters = $derived($activeFindFilters);
+	// Derive all input state from URL (single source of truth)
+	const urlState = $derived(parseFindParams(page.url.searchParams));
+	const activeFilters = $derived(countFindFilters(urlState));
 
-	// Local input value (controlled component pattern)
-	let chordInput: string = $state('');
+	// Local state for results (not in URL)
+	let results = $state<ScoredFingering[]>([]);
+	let loading = $state(false);
+	let error = $state('');
 
 	// Track previous URL to detect changes
 	let previousUrl = '';
 
-	// Initialize from URL on mount
-	onMount(() => {
-		findStore.initFromUrl(page.url.searchParams);
-		chordInput = storeState.chordInput;
+	// Local input value for controlled component
+	// Sync local input with URL state (for browser back/forward)
+	let chordInput = $derived(urlState.chord);
 
-		// If there's a chord in the URL, search immediately
-		if (storeState.chordInput) {
-			findStore.search();
-		}
+	// Track last search params to detect meaningful changes
+	let lastSearchKey = '';
 	});
 
-	// React to URL changes (browser navigation, manual edits)
+	// React to URL changes - trigger search when we have input
 	$effect(() => {
-		const currentUrl = page.url.href;
+		const { chord, instrument, limit, capo, voicing, position, context } = urlState;
 
-		// Only sync if URL actually changed (prevents state → URL → state loop)
-		if (currentUrl !== previousUrl) {
-			previousUrl = currentUrl;
-			findStore.initFromUrl(page.url.searchParams);
-			chordInput = storeState.chordInput; // Sync local state
+		// Create a key representing all search-relevant params
+		const searchKey = JSON.stringify({
+			chord,
+			instrument,
+			limit,
+			capo,
+			voicing,
+			position,
+			context,
+		});
+
+		// Only search if params changed and we have input
+		if (searchKey !== lastSearchKey && chord.trim()) {
+			lastSearchKey = searchKey;
+			doSearch();
 		}
 	});
+
+	async function doSearch() {
+		const { chord, instrument, limit, capo, voicing, position, context } = urlState;
+
+		if (!chord.trim() || loading) return;
+
+		loading = true;
+		error = '';
+
+		try {
+			const voicingType = voicing === 'all' ? undefined : voicing;
+			results = await findFingerings(chord.trim(), instrument, {
+				limit,
+				capo,
+				voicingType,
+				preferredPosition: position ?? undefined,
+				playingContext: context,
+			});
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Unknown error';
+		} finally {
+			loading = false;
+		}
+	}
+
+	// Actions - update URL which triggers the effect
+	function handleSearch() {
+		// Sync local input to URL state
+		if (chordInput !== urlState.chord) {
+			updateUrl(buildFindParams({ ...urlState, chord: chordInput }));
+		} else if (chordInput.trim()) {
+			// Force re-search if input hasn't changed
+			doSearch();
+		}
+	}
+
+	function handleClear() {
+		chordInput = '';
+		results = [];
+		error = '';
+		lastSearchKey = '';
+		updateUrl(buildFindParams({ ...urlState, chord: '' }));
+	}
+
+	function handleOptionsChange(
+		opts: Partial<{
+			limit: number;
+			capo: number;
+			voicing: 'all' | 'core' | 'full' | 'jazzy';
+			position: number | null;
+			context: 'solo' | 'band';
+		}>
+	) {
+		updateUrl(buildFindParams({ ...urlState, ...opts }));
+	}
+
+	function handleReset() {
+		updateUrl(
+			buildFindParams({
+				...FIND_DEFAULTS,
+				chord: urlState.chord,
+				instrument: urlState.instrument,
+			})
+		);
+	}
 </script>
 
 <div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
@@ -57,18 +136,10 @@
 	<!-- Input -->
 	<Input
 		bind:value={chordInput}
-		onSearch={() => {
-			if (chordInput !== storeState.chordInput) {
-				findStore.setChordInput(chordInput);
-			}
-			findStore.search();
-		}}
-		onClear={() => {
-			chordInput = '';
-			findStore.clear();
-		}}
+		onSearch={handleSearch}
+		onClear={handleClear}
 		disabled={false}
-		loading={storeState.loading}
+		{loading}
 	/>
 
 	<!-- Share Button -->
@@ -79,25 +150,22 @@
 	{/if}
 
 	<!-- Advanced Options -->
-	<AdvancedOptionsWrapper
-		activeFiltersCount={activeFilters}
-		onReset={() => findStore.resetOptions()}
-	>
+	<AdvancedOptionsWrapper activeFiltersCount={activeFilters} onReset={handleReset}>
 		{#snippet content()}
 			<AdvancedOptions
-				limit={storeState.limit}
-				capo={storeState.capo}
-				voicing={storeState.voicing}
-				position={storeState.position}
-				context={storeState.context}
-				onChange={(opts) => findStore.setOptions(opts)}
+				limit={urlState.limit}
+				capo={urlState.capo}
+				voicing={urlState.voicing}
+				position={urlState.position}
+				context={urlState.context}
+				onChange={handleOptionsChange}
 			/>
 		{/snippet}
 	</AdvancedOptionsWrapper>
 
 	<!-- Error -->
-	{#if storeState.error}
-		<ErrorAlert message={storeState.error} />
+	{#if error}
+		<ErrorAlert message={error} />
 	{/if}
 
 	<!-- Results -->
