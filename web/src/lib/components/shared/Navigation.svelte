@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { routes } from '$lib/utils/url-state';
 	import Search from '@lucide/svelte/icons/search';
 	import Music from '@lucide/svelte/icons/music';
 	import ListMusic from '@lucide/svelte/icons/list-music';
+	import Button from '../ui/button/button.svelte';
 
 	const icons = {
 		'/find': Search,
@@ -32,12 +32,13 @@
 		<div class="pointer-events-none absolute inset-x-2 top-0 h-px bg-border/30"></div>
 		<div class="pointer-events-none absolute inset-x-2 bottom-0 h-px bg-border/30"></div>
 
-		<div class="flex gap-1.5">
+		<div class="flex flex-wrap gap-1.5">
 			{#each routes as route (route.label)}
 				{@const Icon = icons[route.path as keyof typeof icons]}
 				{@const active = isActive(route.path)}
-				<a
-					href={resolve(route.path)}
+				<Button
+					variant="ghost"
+					href={route.path}
 					class="group relative flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200
 						{active
 						? 'bg-primary text-primary-foreground shadow-warm-sm'
@@ -56,7 +57,7 @@
 							class="absolute -bottom-3 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary"
 						></span>
 					{/if}
-				</a>
+				</Button>
 			{/each}
 		</div>
 	</div>

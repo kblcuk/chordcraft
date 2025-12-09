@@ -154,7 +154,6 @@
 			onGenerate={handleGenerate}
 			onClear={handleClear}
 			disabled={false}
-			{loading}
 		/>
 	</div>
 
