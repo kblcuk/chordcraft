@@ -12,8 +12,16 @@
 		'/progression': ListMusic,
 	} as const;
 
+	// Preserve instrument param across navigation
+	const instrument = $derived(page.url.searchParams.get('instrument'));
+
 	function isActive(path: string): boolean {
 		return page.url.pathname === path;
+	}
+
+	function getHref(path: keyof typeof icons): string {
+		// Include instrument param if not default (guitar)
+		return instrument ? `${path}?instrument=${instrument}` : path;
 	}
 </script>
 
@@ -38,7 +46,7 @@
 				{@const active = isActive(route.path)}
 				<Button
 					variant="ghost"
-					href={route.path}
+					href={getHref(route.path) as typeof route.path}
 					class="group relative flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200
 						{active
 						? 'bg-primary text-primary-foreground shadow-warm-sm'
