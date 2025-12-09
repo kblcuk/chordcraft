@@ -4,7 +4,7 @@
 //! allowing chord-fingering conversion to run in web browsers.
 
 use chordcraft_core::{
-	Chord, Fingering, Guitar, PlayingContext,
+	Chord, Fingering, Guitar, Instrument, PlayingContext, Ukulele,
 	analyzer::{ChordMatch, analyze_fingering},
 	chord::VoicingType,
 	generator::{GeneratorOptions, ScoredFingering, generate_fingerings},
@@ -28,7 +28,8 @@ pub fn init() {
 #[serde(rename_all = "lowercase")]
 pub enum InstrumentType {
 	Guitar,
-	// Future: Ukulele, Bass, Mandolin
+	Ukulele,
+	// Future: Bass, Mandolin
 }
 
 /// Options for fingering generation (JS-friendly)
@@ -221,7 +222,10 @@ fn js_to_generator_options(js_opts: &JsGeneratorOptions) -> GeneratorOptions {
 }
 
 /// Convert ScoredFingering to JsScoredFingering
-fn scored_fingering_to_js(sf: &ScoredFingering, instrument: &Guitar) -> JsScoredFingering {
+fn scored_fingering_to_js<I: Instrument>(
+	sf: &ScoredFingering,
+	instrument: &I,
+) -> JsScoredFingering {
 	let notes = sf
 		.fingering
 		.unique_pitch_classes(instrument)
@@ -256,7 +260,10 @@ fn chord_match_to_js(cm: &ChordMatch) -> JsChordMatch {
 }
 
 /// Convert ProgressionSequence to JsProgressionSequence
-fn progression_to_js(seq: &ProgressionSequence, instrument: &Guitar) -> JsProgressionSequence {
+fn progression_to_js<I: Instrument>(
+	seq: &ProgressionSequence,
+	instrument: &I,
+) -> JsProgressionSequence {
 	let js_fingerings: Vec<JsScoredFingering> = seq
 		.fingerings
 		.iter()
@@ -287,15 +294,65 @@ fn progression_to_js(seq: &ProgressionSequence, instrument: &Guitar) -> JsProgre
 	}
 }
 
+/// Instrument configuration info (JS-friendly)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JsInstrumentInfo {
+	/// Number of strings
+	pub string_count: usize,
+	/// String names from low to high (e.g., ["E", "A", "D", "G", "B", "e"] for guitar)
+	pub string_names: Vec<String>,
+}
+
 // ============================================================================
 // WASM Exports
 // ============================================================================
+
+/// Get instrument configuration info (string count, names)
+///
+/// # Arguments
+/// * `instrument_type` - Instrument type ("guitar" or "ukulele")
+///
+/// # Returns
+/// JSON object with stringCount and stringNames
+///
+/// # Example (JavaScript)
+/// ```javascript
+/// const info = getInstrumentInfo("ukulele");
+/// console.log(info.stringCount); // 4
+/// console.log(info.stringNames); // ["G", "C", "E", "A"]
+/// ```
+#[wasm_bindgen(js_name = getInstrumentInfo)]
+pub fn get_instrument_info(instrument_type: JsValue) -> Result<JsValue, JsValue> {
+	let inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
+		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {e}")))?;
+
+	let info = match inst_type {
+		InstrumentType::Guitar => {
+			let guitar = Guitar::default();
+			JsInstrumentInfo {
+				string_count: guitar.string_count(),
+				string_names: guitar.string_names(),
+			}
+		}
+		InstrumentType::Ukulele => {
+			let ukulele = Ukulele::default();
+			JsInstrumentInfo {
+				string_count: ukulele.string_count(),
+				string_names: ukulele.string_names(),
+			}
+		}
+	};
+
+	serde_wasm_bindgen::to_value(&info)
+		.map_err(|e| JsValue::from_str(&format!("Serialization error: {e}")))
+}
 
 /// Find fingerings for a chord
 ///
 /// # Arguments
 /// * `chord_name` - Chord name (e.g., "Cmaj7", "Abm7")
-/// * `instrument_type` - Instrument type (currently only "guitar")
+/// * `instrument_type` - Instrument type ("guitar" or "ukulele")
 /// * `options` - Generation options (or null for defaults)
 ///
 /// # Returns
@@ -320,7 +377,7 @@ pub fn find_fingerings(
 	options: JsValue,
 ) -> Result<JsValue, JsValue> {
 	// Parse instrument type
-	let _inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
+	let inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
 		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {e}")))?;
 
 	// Parse options (use defaults if null/undefined)
@@ -335,25 +392,41 @@ pub fn find_fingerings(
 	let chord = Chord::parse(chord_name)
 		.map_err(|e| JsValue::from_str(&format!("Invalid chord name: {e}")))?;
 
-	// Create instrument
-	let instrument = Guitar::default();
-
-	// Generate fingerings (with capo applied if needed)
 	let gen_opts = js_to_generator_options(&js_opts);
-	let fingerings = if js_opts.capo > 0 {
-		let capo_instrument = instrument
-			.with_capo(js_opts.capo)
-			.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
-		generate_fingerings(&chord, &capo_instrument, &gen_opts)
-	} else {
-		generate_fingerings(&chord, &instrument, &gen_opts)
-	};
 
-	// Convert to JS-friendly format
-	let js_fingerings: Vec<JsScoredFingering> = fingerings
-		.iter()
-		.map(|sf| scored_fingering_to_js(sf, &instrument))
-		.collect();
+	// Generate fingerings based on instrument type
+	let js_fingerings: Vec<JsScoredFingering> = match inst_type {
+		InstrumentType::Guitar => {
+			let instrument = Guitar::default();
+			let fingerings = if js_opts.capo > 0 {
+				let capo_instrument = instrument
+					.with_capo(js_opts.capo)
+					.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
+				generate_fingerings(&chord, &capo_instrument, &gen_opts)
+			} else {
+				generate_fingerings(&chord, &instrument, &gen_opts)
+			};
+			fingerings
+				.iter()
+				.map(|sf| scored_fingering_to_js(sf, &instrument))
+				.collect()
+		}
+		InstrumentType::Ukulele => {
+			let instrument = Ukulele::default();
+			let fingerings = if js_opts.capo > 0 {
+				let capo_instrument = instrument
+					.with_capo(js_opts.capo)
+					.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
+				generate_fingerings(&chord, &capo_instrument, &gen_opts)
+			} else {
+				generate_fingerings(&chord, &instrument, &gen_opts)
+			};
+			fingerings
+				.iter()
+				.map(|sf| scored_fingering_to_js(sf, &instrument))
+				.collect()
+		}
+	};
 
 	// Serialize to JS
 	serde_wasm_bindgen::to_value(&js_fingerings)
@@ -363,8 +436,8 @@ pub fn find_fingerings(
 /// Identify chord from fingering (tab notation)
 ///
 /// # Arguments
-/// * `tab_notation` - Tab notation (e.g., "x32010")
-/// * `instrument_type` - Instrument type (currently only "guitar")
+/// * `tab_notation` - Tab notation (e.g., "x32010" for guitar, "0003" for ukulele)
+/// * `instrument_type` - Instrument type ("guitar" or "ukulele")
 ///
 /// # Returns
 /// JSON array of chord matches with confidence scores
@@ -378,18 +451,24 @@ pub fn find_fingerings(
 #[wasm_bindgen(js_name = analyzeChord)]
 pub fn analyze_chord(tab_notation: &str, instrument_type: JsValue) -> Result<JsValue, JsValue> {
 	// Parse instrument type
-	let _inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
+	let inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
 		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {e}")))?;
 
 	// Parse fingering
 	let fingering = Fingering::parse(tab_notation)
 		.map_err(|e| JsValue::from_str(&format!("Invalid tab notation: {e}")))?;
 
-	// Create instrument
-	let instrument = Guitar::default();
-
-	// Analyze fingering
-	let matches = analyze_fingering(&fingering, &instrument);
+	// Analyze fingering based on instrument type
+	let matches = match inst_type {
+		InstrumentType::Guitar => {
+			let instrument = Guitar::default();
+			analyze_fingering(&fingering, &instrument)
+		}
+		InstrumentType::Ukulele => {
+			let instrument = Ukulele::default();
+			analyze_fingering(&fingering, &instrument)
+		}
+	};
 
 	// Convert to JS-friendly format
 	let js_matches: Vec<JsChordMatch> = matches.iter().map(chord_match_to_js).collect();
@@ -403,7 +482,7 @@ pub fn analyze_chord(tab_notation: &str, instrument_type: JsValue) -> Result<JsV
 ///
 /// # Arguments
 /// * `chord_names` - Array of chord names (e.g., ["C", "Am", "F", "G"])
-/// * `instrument_type` - Instrument type (currently only "guitar")
+/// * `instrument_type` - Instrument type ("guitar" or "ukulele")
 /// * `options` - Progression options (or null for defaults)
 ///
 /// # Returns
@@ -425,7 +504,7 @@ pub fn js_generate_progression(
 	options: JsValue,
 ) -> Result<JsValue, JsValue> {
 	// Parse instrument type
-	let _inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
+	let inst_type: InstrumentType = serde_wasm_bindgen::from_value(instrument_type)
 		.map_err(|e| JsValue::from_str(&format!("Invalid instrument type: {e}")))?;
 
 	// Parse chord names
@@ -440,9 +519,6 @@ pub fn js_generate_progression(
 			.map_err(|e| JsValue::from_str(&format!("Invalid options: {e}")))?
 	};
 
-	// Create instrument
-	let instrument = Guitar::default();
-
 	// Build progression options
 	let prog_opts = ProgressionOptions {
 		limit: js_opts.limit,
@@ -454,21 +530,39 @@ pub fn js_generate_progression(
 	// Convert Vec<String> to Vec<&str> for API compatibility
 	let chord_name_refs: Vec<&str> = chord_names_vec.iter().map(|s| s.as_str()).collect();
 
-	// Generate progressions (with capo applied if needed)
-	let progressions = if js_opts.generator_options.capo > 0 {
-		let capo_instrument = instrument
-			.with_capo(js_opts.generator_options.capo)
-			.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
-		generate_progression(&chord_name_refs, &capo_instrument, &prog_opts)
-	} else {
-		generate_progression(&chord_name_refs, &instrument, &prog_opts)
+	// Generate progressions based on instrument type
+	let js_progressions: Vec<JsProgressionSequence> = match inst_type {
+		InstrumentType::Guitar => {
+			let instrument = Guitar::default();
+			let progressions = if js_opts.generator_options.capo > 0 {
+				let capo_instrument = instrument
+					.with_capo(js_opts.generator_options.capo)
+					.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
+				generate_progression(&chord_name_refs, &capo_instrument, &prog_opts)
+			} else {
+				generate_progression(&chord_name_refs, &instrument, &prog_opts)
+			};
+			progressions
+				.iter()
+				.map(|seq| progression_to_js(seq, &instrument))
+				.collect()
+		}
+		InstrumentType::Ukulele => {
+			let instrument = Ukulele::default();
+			let progressions = if js_opts.generator_options.capo > 0 {
+				let capo_instrument = instrument
+					.with_capo(js_opts.generator_options.capo)
+					.map_err(|e| JsValue::from_str(&format!("Invalid capo position: {e}")))?;
+				generate_progression(&chord_name_refs, &capo_instrument, &prog_opts)
+			} else {
+				generate_progression(&chord_name_refs, &instrument, &prog_opts)
+			};
+			progressions
+				.iter()
+				.map(|seq| progression_to_js(seq, &instrument))
+				.collect()
+		}
 	};
-
-	// Convert to JS-friendly format
-	let js_progressions: Vec<JsProgressionSequence> = progressions
-		.iter()
-		.map(|seq| progression_to_js(seq, &instrument))
-		.collect();
 
 	// Serialize to JS
 	serde_wasm_bindgen::to_value(&js_progressions)
@@ -494,10 +588,52 @@ mod tests {
 	}
 
 	#[wasm_bindgen_test]
+	fn test_find_fingerings_ukulele() {
+		let inst = serde_wasm_bindgen::to_value(&InstrumentType::Ukulele).unwrap();
+		let opts = JsValue::NULL;
+
+		let result = find_fingerings("C", inst, opts);
+		assert!(result.is_ok());
+	}
+
+	#[wasm_bindgen_test]
 	fn test_analyze_chord_basic() {
 		let inst = serde_wasm_bindgen::to_value(&InstrumentType::Guitar).unwrap();
 
 		let result = analyze_chord("x32010", inst);
 		assert!(result.is_ok());
+	}
+
+	#[wasm_bindgen_test]
+	fn test_analyze_chord_ukulele() {
+		let inst = serde_wasm_bindgen::to_value(&InstrumentType::Ukulele).unwrap();
+
+		// 0003 is C on ukulele (G-C-E-C)
+		let result = analyze_chord("0003", inst);
+		assert!(result.is_ok());
+	}
+
+	#[wasm_bindgen_test]
+	fn test_get_instrument_info_guitar() {
+		let inst = serde_wasm_bindgen::to_value(&InstrumentType::Guitar).unwrap();
+
+		let result = get_instrument_info(inst);
+		assert!(result.is_ok());
+
+		let info: JsInstrumentInfo = serde_wasm_bindgen::from_value(result.unwrap()).unwrap();
+		assert_eq!(info.string_count, 6);
+		assert_eq!(info.string_names.len(), 6);
+	}
+
+	#[wasm_bindgen_test]
+	fn test_get_instrument_info_ukulele() {
+		let inst = serde_wasm_bindgen::to_value(&InstrumentType::Ukulele).unwrap();
+
+		let result = get_instrument_info(inst);
+		assert!(result.is_ok());
+
+		let info: JsInstrumentInfo = serde_wasm_bindgen::from_value(result.unwrap()).unwrap();
+		assert_eq!(info.string_count, 4);
+		assert_eq!(info.string_names.len(), 4);
 	}
 }
