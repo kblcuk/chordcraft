@@ -194,6 +194,133 @@ describe('InteractiveChordDiagram', () => {
 		});
 	});
 
+	describe('Capo Behavior - Stale Value Bug Regression', () => {
+		/**
+		 * This test simulates the EXACT bug scenario:
+		 *
+		 * In the real app, when capo changes:
+		 * 1. Component receives new capo + old value from parent
+		 * 2. [value-sync] effect: value===previousValue, early returns
+		 * 3. [fingering→value] effect: generates new value, updates previousValue
+		 * 4. Parent re-renders AGAIN with its stale value (binding is async)
+		 * 5. [value-sync] effect: value!==previousValue, parses stale value → BUG!
+		 *
+		 * The key is step 4 - parent echoes stale value AFTER we updated.
+		 */
+		it('should NOT parse stale parent value after generating new value', async () => {
+			const { container, rerender } = render(InteractiveChordDiagram, {
+				props: { value: '000000', size: 'medium', startFret: 0, capo: 0 },
+			});
+
+			const tabDisplay = container.querySelector('.font-mono');
+			expect(tabDisplay?.textContent).toBe('000000');
+
+			// Step 1: Set capo to 3, component generates "333333"
+			await rerender({ value: '000000', size: 'medium', startFret: 0, capo: 3 });
+			expect(tabDisplay?.textContent).toBe('333333');
+
+			// Step 2: Change capo to 2
+			// First rerender - component sees new capo, generates "222222"
+			await rerender({ value: '333333', size: 'medium', startFret: 0, capo: 2 });
+			expect(tabDisplay?.textContent).toBe('222222');
+
+			// Step 3: CRITICAL - Simulate parent re-rendering with STALE value
+			// This is what happens in real app: parent hasn't received updated binding yet
+			// and re-renders child with old value "333333"
+			//
+			// BUG: Component parses "333333" → [3,3,3,3,3,3], + capo 2 = "555555"
+			// FIX: Component recognizes this is stale, ignores it
+			await rerender({ value: '333333', size: 'medium', startFret: 0, capo: 2 });
+			expect(tabDisplay?.textContent).toBe('222222'); // Should stay "222222", NOT become "555555"
+		});
+
+		it('should handle rapid capo changes with stale parent values', async () => {
+			const { container, rerender } = render(InteractiveChordDiagram, {
+				props: { value: '000000', size: 'medium', startFret: 0, capo: 0 },
+			});
+
+			const tabDisplay = container.querySelector('.font-mono');
+
+			// Capo 3
+			await rerender({ value: '000000', size: 'medium', startFret: 0, capo: 3 });
+			expect(tabDisplay?.textContent).toBe('333333');
+
+			// Capo 2 + stale echo
+			await rerender({ value: '333333', size: 'medium', startFret: 0, capo: 2 });
+			expect(tabDisplay?.textContent).toBe('222222');
+			await rerender({ value: '333333', size: 'medium', startFret: 0, capo: 2 }); // Stale echo
+			expect(tabDisplay?.textContent).toBe('222222');
+
+			// Capo 5 + stale echo
+			await rerender({ value: '222222', size: 'medium', startFret: 0, capo: 5 });
+			expect(tabDisplay?.textContent).toBe('555555');
+			await rerender({ value: '222222', size: 'medium', startFret: 0, capo: 5 }); // Stale echo
+			expect(tabDisplay?.textContent).toBe('555555');
+
+			// Capo 0 + stale echo
+			await rerender({ value: '555555', size: 'medium', startFret: 0, capo: 0 });
+			expect(tabDisplay?.textContent).toBe('000000');
+			await rerender({ value: '555555', size: 'medium', startFret: 0, capo: 0 }); // Stale echo
+			expect(tabDisplay?.textContent).toBe('000000');
+		});
+	});
+
+	describe('Capo Behavior (direct props)', () => {
+		it('should handle capo changes with explicit value props', async () => {
+			// This tests the component directly with explicit props
+			const { container, rerender } = render(InteractiveChordDiagram, {
+				props: { value: '000000', size: 'medium', startFret: 0, capo: 0 },
+			});
+
+			const tabDisplay = container.querySelector('.font-mono');
+			expect(tabDisplay?.textContent).toBe('000000');
+
+			// Capo 3 - parent has old value "000000"
+			await rerender({ value: '000000', size: 'medium', startFret: 0, capo: 3 });
+			expect(tabDisplay?.textContent).toBe('333333');
+
+			// Capo 2 - parent has stale value "333333"
+			await rerender({ value: '333333', size: 'medium', startFret: 0, capo: 2 });
+			expect(tabDisplay?.textContent).toBe('222222');
+		});
+
+		it('should transpose fingering when position slider changes (no capo)', async () => {
+			// Basic test: position slider should transpose internal fingering
+			const { container, rerender } = render(InteractiveChordDiagram, {
+				props: { value: '000000', size: 'medium', startFret: 0, capo: 0 },
+			});
+
+			const tabDisplay = container.querySelector('.font-mono');
+			expect(tabDisplay?.textContent).toBe('000000');
+
+			// Move to position 4 - internal fingering [0,0,0,0,0,0] -> [4,4,4,4,4,4]
+			await rerender({ value: '444444', size: 'medium', startFret: 4, capo: 0 });
+			expect(tabDisplay?.textContent).toBe('444444');
+		});
+
+		it('should handle position slider with capo correctly', async () => {
+			// Position slider transposes internal fingering, capo is added on top
+			const { container, rerender } = render(InteractiveChordDiagram, {
+				props: { value: '000000', size: 'medium', startFret: 0, capo: 3 },
+			});
+
+			const tabDisplay = container.querySelector('.font-mono');
+			expect(tabDisplay?.textContent).toBe('333333');
+
+			// Move position slider to 4:
+			// - Internal fingering [0,0,0,0,0,0] -> [4,4,4,4,4,4]
+			// - Displayed: [4,4,4,4,4,4] + capo 3 = "777777"
+			await rerender({ value: '333333', size: 'medium', startFret: 4, capo: 3 });
+			expect(tabDisplay?.textContent).toBe('777777');
+
+			// Move position slider to 8:
+			// - Internal fingering [4,4,4,4,4,4] -> [8,8,8,8,8,8]
+			// - Displayed: [8,8,8,8,8,8] + capo 3 = "(11)(11)(11)(11)(11)(11)"
+			await rerender({ value: '777777', size: 'medium', startFret: 8, capo: 3 });
+			expect(tabDisplay?.textContent).toBe('(11)(11)(11)(11)(11)(11)');
+		});
+	});
+
 	describe('Visual Rendering', () => {
 		it('should display value prop, muted X, open circles, and barre indicator correctly', () => {
 			// Test with C major (x32010) - has muted string, open strings, fretted notes

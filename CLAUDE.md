@@ -1030,3 +1030,4 @@ This separation allows:
   - ✅ Instrument-specific string names in diagrams
   - ⏳ Web app ukulele integration (planned)
 **Next priorities**: Web app ukulele support OR interactive fretboard input
+- use bun commands to run tests, lints and builds

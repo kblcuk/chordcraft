@@ -111,14 +111,45 @@
 	});
 
 	/**
+	 * Track the last value we generated ourselves in the fingering→value effect.
+	 * This helps us distinguish between:
+	 * - Parent echoing back our generated value (should skip)
+	 * - User actually typing a new value (should parse)
+	 */
+	let lastGeneratedValue: string | undefined;
+
+	/**
 	 * When value prop changes (from text input), parse into fingering
 	 * Only runs when value actually changes (not on every fingering change)
+	 *
+	 * IMPORTANT: When capo changes, the parent's bound value becomes "stale"
+	 * (it was generated with the OLD capo). We must detect this and NOT
+	 * re-parse the stale value into fingering, which would corrupt it.
 	 */
 	$effect(() => {
-		if (!value || value === previousValue) return;
+		if (!value || value === previousValue) {
+			return;
+		}
 
+		// If this value matches what we ourselves last generated, skip.
+		// This handles the case where parent re-renders with stale value after
+		// we already generated a new one - we don't want to parse our own output.
+		if (lastGeneratedValue !== undefined && value !== lastGeneratedValue) {
+			// Check if this is an old value we generated (parent echoing stale binding)
+			// by seeing if we can regenerate it with current fingering + any capo
+			const couldBeStale =
+				generateTabNotation(fingering, capo) !== value && // Not current
+				previousValue === lastGeneratedValue; // We just generated something else
+
+			if (couldBeStale) {
+				// Parent is echoing a stale value - ignore it, let fingering→value fix it
+				previousValue = value;
+				return;
+			}
+		}
+
+		// User actually typed something new - parse it
 		const parsed = parseTabNotation(value);
-		// Only update fingering if it would produce a different result
 		const currentGenerated = generateTabNotation(fingering, capo);
 		if (currentGenerated !== value) {
 			fingering = parsed;
@@ -134,6 +165,7 @@
 		const newTab = generateTabNotation(fingering, capo);
 		if (newTab === value) return;
 
+		lastGeneratedValue = newTab;
 		value = newTab;
 		previousValue = newTab;
 	});
