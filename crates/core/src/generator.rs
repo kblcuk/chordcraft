@@ -7,30 +7,20 @@ use crate::chord::{Chord, VoicingType};
 use crate::fingering::{Fingering, StringState};
 use crate::instrument::Instrument;
 
-/// Playing context affects voicing preferences
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PlayingContext {
-	/// Solo playing - need full bass coverage and complete voicings
 	#[default]
 	Solo,
-	/// Band playing - bassist/keys cover bass, prefer compact voicings
 	Band,
 }
 
-/// Options for fingering generation
 #[derive(Debug, Clone)]
 pub struct GeneratorOptions {
-	/// Maximum number of fingerings to return
 	pub limit: usize,
-	/// Preferred fret position (fingerings near this position are ranked higher)
 	pub preferred_position: Option<u8>,
-	/// Voicing type filter
 	pub voicing_type: Option<VoicingType>,
-	/// Whether to include fingerings with the root in the bass
 	pub root_in_bass: bool,
-	/// Maximum fret to consider
 	pub max_fret: u8,
-	/// Playing context (solo vs band) - affects voicing preferences
 	pub playing_context: PlayingContext,
 }
 
@@ -47,17 +37,15 @@ impl Default for GeneratorOptions {
 	}
 }
 
-/// A scored fingering with metadata
 #[derive(Debug, Clone)]
 pub struct ScoredFingering {
 	pub fingering: Fingering,
 	pub score: u8,
 	pub voicing_type: VoicingType,
 	pub has_root_in_bass: bool,
-	pub position: u8, // Average fret position
+	pub position: u8,
 }
 
-/// Generate fingerings for a chord on an instrument
 pub fn generate_fingerings<I: Instrument>(
 	chord: &Chord,
 	instrument: &I,
@@ -65,13 +53,9 @@ pub fn generate_fingerings<I: Instrument>(
 ) -> Vec<ScoredFingering> {
 	let tuning = instrument.tuning();
 	let string_count = tuning.len();
-
-	// Get required notes for different voicing types
 	let all_notes = chord.notes();
 	let core_notes = chord.core_notes();
 	let root = chord.root;
-
-	// For each string, find all fret positions that produce a chord tone
 	let max_fret = options.max_fret;
 	let string_options: Vec<Vec<StringState>> = tuning
 		.iter()
@@ -89,7 +73,6 @@ pub fn generate_fingerings<I: Instrument>(
 		})
 		.collect();
 
-	// Generate all combinations with instrument-aware pruning
 	let mut fingerings = Vec::new();
 	generate_combinations_for_instrument(
 		&string_options,
@@ -99,27 +82,21 @@ pub fn generate_fingerings<I: Instrument>(
 		instrument,
 	);
 
-	// Filter and score fingerings
 	let mut scored: Vec<ScoredFingering> = fingerings
 		.into_iter()
 		.filter_map(|states| {
 			let fingering = Fingering::new(states);
 
-			// Must be physically playable for this instrument
 			if !fingering.is_playable_for(instrument) {
 				return None;
 			}
 
-			// Must have at least min_played_strings notes played
 			let played_count = fingering.strings().iter().filter(|s| s.is_played()).count();
 			if played_count < instrument.min_played_strings() {
 				return None;
 			}
 
-			// Get the pitch classes in this fingering
 			let pitches = fingering.unique_pitch_classes(instrument);
-
-			// Must contain all core notes for core voicings, or filter by voicing type
 			let has_all_core = core_notes.iter().all(|n| pitches.contains(n));
 			let has_all_notes = all_notes.iter().all(|n| pitches.contains(n));
 
@@ -131,22 +108,15 @@ pub fn generate_fingerings<I: Instrument>(
 				VoicingType::Jazzy
 			};
 
-			// Apply voicing type filter - compare actual voicing type
 			if let Some(required_voicing) = &options.voicing_type
 				&& voicing_type != *required_voicing
 			{
 				return None;
 			}
 
-			// Check root in bass if required
 			let bass_pitch = fingering.bass_note(instrument).map(|n| n.pitch);
 			let has_root_in_bass = bass_pitch == Some(root);
 
-			if options.root_in_bass && !has_root_in_bass {
-				// Don't filter out, just score lower
-			}
-
-			// Calculate position (average of fretted positions)
 			let fretted_frets: Vec<u8> = fingering
 				.strings()
 				.iter()
@@ -163,7 +133,6 @@ pub fn generate_fingerings<I: Instrument>(
 					as u8
 			};
 
-			// Calculate score using extracted scoring function
 			let score = score_fingering(
 				&fingering,
 				instrument,
@@ -188,19 +157,13 @@ pub fn generate_fingerings<I: Instrument>(
 		})
 		.collect();
 
-	// Sort by score (descending)
 	scored.sort_by(|a, b| b.score.cmp(&a.score));
-
-	// Deduplicate similar fingerings (keep highest scored)
 	scored = deduplicate_fingerings(scored);
-
-	// Apply limit
 	scored.truncate(options.limit);
 
 	scored
 }
 
-/// Generate all combinations of string states with early pruning
 fn generate_combinations_for_instrument<I: Instrument>(
 	string_options: &[Vec<StringState>],
 	current: &mut Vec<StringState>,
@@ -218,7 +181,6 @@ fn generate_combinations_for_instrument<I: Instrument>(
 	);
 }
 
-/// Generate combinations with early pruning based on stretch and finger constraints
 fn generate_combinations_pruned(
 	string_options: &[Vec<StringState>],
 	current: &mut Vec<StringState>,
@@ -237,7 +199,6 @@ fn generate_combinations_pruned(
 	for state in &string_options[string_idx] {
 		current.push(*state);
 
-		// Early pruning: check if current partial fingering is still viable
 		if should_continue_branch(current, total_strings, max_stretch, min_played) {
 			generate_combinations_pruned(
 				string_options,
@@ -253,7 +214,6 @@ fn generate_combinations_pruned(
 	}
 }
 
-/// Check if we should continue exploring this branch
 #[inline]
 fn should_continue_branch(
 	current: &[StringState],
@@ -261,21 +221,17 @@ fn should_continue_branch(
 	max_stretch: u8,
 	min_played: usize,
 ) -> bool {
-	// Quick check: count played strings - avoid allocation if possible
 	let played = current.iter().filter(|s| s.is_played()).count();
 	let remaining = total_strings - current.len();
 
-	// If we can't possibly get to min_played strings, prune early
 	if played + remaining < min_played {
 		return false;
 	}
 
-	// Only check stretch if we have multiple fretted notes
 	if played < 2 {
 		return true;
 	}
 
-	// Find min/max without allocation
 	let mut min = u8::MAX;
 	let mut max = 0u8;
 	let mut has_fretted = false;
@@ -294,7 +250,6 @@ fn should_continue_branch(
 		return true;
 	}
 
-	// Prune if stretch is already exceeded
 	max - min <= max_stretch
 }
 
@@ -303,16 +258,12 @@ fn should_continue_branch(
 const STRING_USAGE_BONUS: i32 = 8;
 const INTERIOR_MUTE_PENALTY: i32 = 30;
 const POSITION_DISTANCE_PENALTY: i32 = 3;
-
-// Solo mode scoring weights
 const SOLO_ROOT_IN_BASS_BONUS: i32 = 30;
 const SOLO_FULL_VOICING_BONUS: i32 = 20;
 const SOLO_CORE_VOICING_BONUS: i32 = 5;
 const SOLO_JAZZY_WITHOUT_ROOT_PENALTY: i32 = 15;
 const SOLO_POSITION_THRESHOLD: u8 = 5;
 const SOLO_HIGH_POSITION_PENALTY: i32 = 5;
-
-// Band mode scoring weights
 const BAND_ROOT_IN_BASS_BONUS: i32 = 5;
 const BAND_COMPACT_VOICING_BONUS: i32 = 20;
 const BAND_FULL_VOICING_BONUS: i32 = 5;
@@ -320,8 +271,6 @@ const BAND_AVOID_LOW_STRINGS_BONUS: i32 = 10;
 const BAND_MID_NECK_MIN: u8 = 3;
 const BAND_MID_NECK_MAX: u8 = 10;
 const BAND_POSITION_PENALTY: i32 = 3;
-
-// Guitar string indices (for bass string detection)
 const GUITAR_LOW_E_STRING: usize = 0;
 const GUITAR_A_STRING: usize = 1;
 
@@ -334,7 +283,6 @@ pub struct FingeringScorerOptions {
 	pub voicing_type: VoicingType,
 }
 
-/// Calculate score for a fingering based on various criteria
 fn score_fingering<I: Instrument>(
 	fingering: &Fingering,
 	instrument: &I,
@@ -342,12 +290,9 @@ fn score_fingering<I: Instrument>(
 	fingering_options: FingeringScorerOptions,
 ) -> i32 {
 	let mut score = fingering.playability_score_for(instrument) as i32;
-
-	// Bonus for using more strings, but moderate (don't over-penalize compact shapes)
 	score += (fingering_options.played_count as i32) * STRING_USAGE_BONUS;
 
-	// Heavy penalty for interior mutes (muted strings between played strings)
-	// But leading mutes (bass side) are fine - e.g., xx0232 for D is standard
+	// Penalize interior mutes (leading mutes like xx0232 are fine)
 	let strings = fingering.strings();
 	let first_played = strings.iter().position(|s| s.is_played());
 	let last_played = strings.iter().rposition(|s| s.is_played());
@@ -359,53 +304,42 @@ fn score_fingering<I: Instrument>(
 		score -= (interior_mutes as i32) * INTERIOR_MUTE_PENALTY;
 	}
 
-	// Context-aware scoring
 	match options.playing_context {
 		PlayingContext::Solo => {
-			// Solo mode: Strong emphasis on root in bass and full voicings
 			if fingering_options.has_root_in_bass {
 				score += SOLO_ROOT_IN_BASS_BONUS;
 			}
 
-			// Prefer full voicings in solo mode
 			if fingering_options.has_all_notes {
 				score += SOLO_FULL_VOICING_BONUS;
 			} else if fingering_options.has_all_core {
 				score += SOLO_CORE_VOICING_BONUS;
 			}
 
-			// Penalize jazzy voicings without root in bass (they lack harmonic foundation for solo)
 			if fingering_options.voicing_type == VoicingType::Jazzy
 				&& !fingering_options.has_root_in_bass
 			{
 				score -= SOLO_JAZZY_WITHOUT_ROOT_PENALTY;
 			}
 
-			// Solo mode prefers lower positions (fuller sound)
 			if let Some(pref_pos) = options.preferred_position {
 				let distance = (fingering_options.position as i32 - pref_pos as i32).abs();
 				score -= distance * POSITION_DISTANCE_PENALTY;
-			} else {
-				// Default: prefer open/low position chords (0-5)
-				if fingering_options.position > SOLO_POSITION_THRESHOLD {
-					score -= ((fingering_options.position - SOLO_POSITION_THRESHOLD) as i32)
-						* SOLO_HIGH_POSITION_PENALTY;
-				}
+			} else if fingering_options.position > SOLO_POSITION_THRESHOLD {
+				score -= ((fingering_options.position - SOLO_POSITION_THRESHOLD) as i32)
+					* SOLO_HIGH_POSITION_PENALTY;
 			}
 		}
 		PlayingContext::Band => {
-			// Band mode: Relaxed root in bass (bassist covers it)
 			if fingering_options.has_root_in_bass {
 				score += BAND_ROOT_IN_BASS_BONUS;
 			}
 
-			// Prefer core/jazzy voicings in band mode (more compact, stay out of bass player's way)
 			match fingering_options.voicing_type {
 				VoicingType::Core | VoicingType::Jazzy => score += BAND_COMPACT_VOICING_BONUS,
-				VoicingType::Full => score += BAND_FULL_VOICING_BONUS, // Still okay, just not preferred
+				VoicingType::Full => score += BAND_FULL_VOICING_BONUS,
 			}
 
-			// Bonus for avoiding low E/A strings (soft filter - prefer but allow if needed)
 			let strings = fingering.strings();
 			let uses_low_e = strings
 				.get(GUITAR_LOW_E_STRING)
@@ -420,20 +354,14 @@ fn score_fingering<I: Instrument>(
 				score += BAND_AVOID_LOW_STRINGS_BONUS;
 			}
 
-			// Band mode prefers mid-neck positions (3-10) for clarity in mix
 			if let Some(pref_pos) = options.preferred_position {
 				let distance = (fingering_options.position as i32 - pref_pos as i32).abs();
 				score -= distance * POSITION_DISTANCE_PENALTY;
 			} else {
-				// Prefer mid-neck (frets 3-10)
 				let pos = fingering_options.position;
-				if (BAND_MID_NECK_MIN..=BAND_MID_NECK_MAX).contains(&pos) {
-					// Sweet spot - no penalty
-				} else if pos < BAND_MID_NECK_MIN {
-					// Too low for band
+				if pos < BAND_MID_NECK_MIN {
 					score -= (BAND_MID_NECK_MIN as i32 - pos as i32) * BAND_POSITION_PENALTY;
-				} else {
-					// Too high
+				} else if pos > BAND_MID_NECK_MAX {
 					score -= ((pos - BAND_MID_NECK_MAX) as i32) * BAND_POSITION_PENALTY;
 				}
 			}
@@ -443,7 +371,6 @@ fn score_fingering<I: Instrument>(
 	score
 }
 
-/// Remove duplicate or very similar fingerings
 fn deduplicate_fingerings(mut fingerings: Vec<ScoredFingering>) -> Vec<ScoredFingering> {
 	use std::collections::HashSet;
 
@@ -451,7 +378,6 @@ fn deduplicate_fingerings(mut fingerings: Vec<ScoredFingering>) -> Vec<ScoredFin
 	let mut unique = Vec::new();
 
 	for f in fingerings.drain(..) {
-		// Create a hash key from the fingering's string states
 		let key: Vec<_> = f.fingering.strings().to_vec();
 
 		if seen.insert(key) {
@@ -462,17 +388,13 @@ fn deduplicate_fingerings(mut fingerings: Vec<ScoredFingering>) -> Vec<ScoredFin
 	unique
 }
 
-/// Format fingerings as ASCII tab diagram
 pub fn format_fingering_diagram<I: Instrument>(scored: &ScoredFingering, instrument: &I) -> String {
 	let fingering = &scored.fingering;
 	let strings = fingering.strings();
-
-	// Get string names from the instrument (already ordered low to high)
 	let string_names = instrument.string_names();
 
 	let mut lines = Vec::new();
 
-	// Display from highest string to lowest (reverse order)
 	for (i, state) in strings.iter().enumerate().rev() {
 		let name = if i < string_names.len() {
 			&string_names[i]
@@ -488,7 +410,6 @@ pub fn format_fingering_diagram<I: Instrument>(scored: &ScoredFingering, instrum
 		lines.push(format!("{name}|---{fret_str}---"));
 	}
 
-	// Add metadata
 	lines.push(String::new());
 	lines.push(format!(
 		"Score: {} | Position: Fret {} | Voicing: {:?}",
@@ -499,7 +420,6 @@ pub fn format_fingering_diagram<I: Instrument>(scored: &ScoredFingering, instrum
 		lines.push("Root in bass: Yes".to_string());
 	}
 
-	// Add notes
 	let pitches = fingering.unique_pitch_classes(instrument);
 	let pitch_names: Vec<String> = pitches.iter().map(|p| p.to_string()).collect();
 	lines.push(format!("Notes: {}", pitch_names.join(", ")));

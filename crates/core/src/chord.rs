@@ -11,7 +11,6 @@ use crate::interval::*;
 use crate::note::PitchClass;
 use std::fmt;
 
-/// Chord quality/type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumIter)]
 pub enum ChordQuality {
 	// Triads
@@ -59,8 +58,7 @@ pub enum ChordQuality {
 }
 
 impl ChordQuality {
-	/// Get the interval formula for this chord type
-	/// Returns (required_intervals, optional_intervals)
+	/// Returns (required_intervals, optional_intervals).
 	pub fn intervals(&self) -> (Vec<Interval>, Vec<Interval>) {
 		use ChordQuality::*;
 
@@ -259,8 +257,7 @@ impl ChordQuality {
 		}
 	}
 
-	/// Check if the 5th can be omitted in voicings
-	/// Typically true for 7th chords and extended chords where the 7th is present
+	/// The 7th defines the chord's color, making the 5th redundant in extended chords.
 	pub fn can_omit_fifth(&self) -> bool {
 		use ChordQuality::*;
 		matches!(
@@ -279,7 +276,6 @@ impl ChordQuality {
 		)
 	}
 
-	/// Get a display name for this chord quality
 	pub fn display_name(&self) -> &'static str {
 		use ChordQuality::*;
 		match self {
@@ -327,7 +323,6 @@ pub enum VoicingType {
 	Jazzy,
 }
 
-/// A chord with root note and quality
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Chord {
 	pub root: PitchClass,
@@ -336,7 +331,6 @@ pub struct Chord {
 }
 
 impl Chord {
-	/// Create a new chord
 	pub fn new(root: PitchClass, quality: ChordQuality) -> Self {
 		Chord {
 			root,
@@ -345,7 +339,6 @@ impl Chord {
 		}
 	}
 
-	/// Create a slash chord (e.g., C/G)
 	pub fn with_bass(root: PitchClass, quality: ChordQuality, bass: PitchClass) -> Self {
 		Chord {
 			root,
@@ -354,8 +347,6 @@ impl Chord {
 		}
 	}
 
-	/// Transpose the chord by the specified number of semitones
-	///
 	/// # Examples
 	///
 	/// ```
@@ -378,7 +369,6 @@ impl Chord {
 		}
 	}
 
-	/// Get all notes in this chord (pitch classes)
 	pub fn notes(&self) -> Vec<PitchClass> {
 		let (required, optional) = self.quality.intervals();
 		let all_intervals: Vec<_> = required.into_iter().chain(optional).collect();
@@ -389,7 +379,6 @@ impl Chord {
 			.collect()
 	}
 
-	/// Get required notes (for core voicings)
 	pub fn required_notes(&self) -> Vec<PitchClass> {
 		let (required, _) = self.quality.intervals();
 		required
@@ -398,14 +387,10 @@ impl Chord {
 			.collect()
 	}
 
-	/// Get core notes (essential for chord identity)
-	/// For triads: root, 3rd, 5th
-	/// For 7th chords: root, 3rd, 7th (5th can be omitted)
-	/// For extended: root, 3rd, 7th, extension
+	/// For triads: root, 3rd, 5th. For 7th chords: root, 3rd, 7th (5th omittable).
 	pub fn core_notes(&self) -> Vec<PitchClass> {
 		let (required, _) = self.quality.intervals();
 
-		// For most 7th and extended chords, the 5th is not essential
 		let skip_fifth = self.quality.can_omit_fifth();
 
 		required
@@ -421,14 +406,12 @@ impl Chord {
 			.collect()
 	}
 
-	/// Parse a chord from a string (e.g., "Cmaj7", "Abm", "G7/B")
 	pub fn parse(s: &str) -> Result<Self> {
 		let s = s.trim();
 		if s.is_empty() {
 			return Err(ChordCraftError::InvalidChordName(s.to_string()));
 		}
 
-		// Check for slash chord (e.g., "C/G")
 		if let Some(slash_pos) = s.find('/') {
 			let chord_part = &s[..slash_pos];
 			let bass_part = &s[slash_pos + 1..];
@@ -439,7 +422,6 @@ impl Chord {
 			return Ok(chord);
 		}
 
-		// Parse root note (1-2 characters)
 		let root_end = if s.len() > 1 && (s.as_bytes()[1] == b'#' || s.as_bytes()[1] == b'b') {
 			2
 		} else {
@@ -448,27 +430,21 @@ impl Chord {
 
 		let root = PitchClass::parse(&s[..root_end])?;
 		let quality_str = &s[root_end..];
-
-		// Parse quality
 		let quality = Self::parse_quality(quality_str)?;
 
 		Ok(Chord::new(root, quality))
 	}
 
-	/// Parse chord quality from string
 	fn parse_quality(s: &str) -> Result<ChordQuality> {
 		use ChordQuality::*;
 
-		// Empty means major
 		if s.is_empty() {
 			return Ok(Major);
 		}
 
-		// Normalize the string
 		let s = s.replace(['♭', '♯'], "");
 		let s_lower = s.to_lowercase();
 
-		// Try to match chord quality
 		// Order matters - check longer patterns first!
 		match s_lower.as_str() {
 			// Minor variations

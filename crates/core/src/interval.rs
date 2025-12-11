@@ -7,7 +7,6 @@
 use crate::error::{ChordCraftError, Result};
 use std::fmt;
 
-/// The quality of an interval
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IntervalQuality {
 	Perfect,
@@ -17,7 +16,6 @@ pub enum IntervalQuality {
 	Diminished,
 }
 
-/// A musical interval with quality and distance
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Interval {
 	pub quality: IntervalQuality,
@@ -25,12 +23,10 @@ pub struct Interval {
 }
 
 impl Interval {
-	/// Create a new interval
 	pub fn new(quality: IntervalQuality, distance: u8) -> Self {
 		Interval { quality, distance }
 	}
 
-	/// Convert interval to semitones
 	pub fn to_semitones(&self) -> u8 {
 		use IntervalQuality::*;
 
@@ -62,7 +58,7 @@ impl Interval {
 		}
 	}
 
-	/// Create interval from semitones (returns major/perfect intervals by default)
+	/// Defaults to major/perfect intervals; ambiguous intervals like tritone become aug 4th.
 	pub fn from_semitones(semitones: u8) -> Self {
 		use IntervalQuality::*;
 
@@ -83,7 +79,6 @@ impl Interval {
 		}
 	}
 
-	/// Check if this is a perfect interval (1, 4, 5, 8, and their compounds)
 	fn is_perfect_interval(&self) -> bool {
 		// Normalize to 1-7 range, then check if it's 1, 4, or 5
 		let normalized = (self.distance - 1) % 7 + 1;

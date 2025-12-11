@@ -8,52 +8,21 @@ use crate::fingering::Fingering;
 use crate::generator::{GeneratorOptions, PlayingContext, ScoredFingering, generate_fingerings};
 use crate::instrument::Instrument;
 
-// Transition scoring constants
-// These weights define the priority of different transition qualities
-
-/// Base score for any transition
 const BASE_SCORE: i32 = 100;
-
-/// Weight for each finger saved from moving (Primary factor)
-/// Higher value = fewer finger movements are strongly preferred
 const MOVEMENT_WEIGHT: i32 = 30;
-
-/// Bonus points for each finger that stays anchored (Secondary factor)
-/// Anchored fingers make transitions more stable and easier
 const ANCHOR_BONUS: i32 = 20;
-
-/// Bonus for similar barre patterns (Tertiary factor)
-/// Transitions between barres feel more natural
 const BARRE_SIMILARITY_BONUS: i32 = 15;
-
-/// Bonus for both fingerings in open position (Tertiary factor)
-/// Open position transitions are generally easier
 const OPEN_POSITION_BONUS: i32 = 10;
-
-/// Bonus for similar number of fretted strings (Tertiary factor)
-/// Similar hand shapes are easier to transition between
 const STRING_COUNT_SIMILARITY_BONUS: i32 = 5;
-
-/// Penalty multiplier for fret distance (Quaternary factor)
-/// Each fret of distance reduces score by this amount
 const DISTANCE_PENALTY: i32 = 5;
-
-// Band mode adjustments - prioritize compact movements over full voicings
-/// Band mode movement weight (increased emphasis on minimal movement)
 const BAND_MOVEMENT_WEIGHT: i32 = 40;
-/// Band mode distance penalty (stronger penalty for position jumps)
 const BAND_DISTANCE_PENALTY: i32 = 8;
 
-/// Options for progression generation
 #[derive(Debug, Clone)]
 pub struct ProgressionOptions {
-	/// Number of alternative progressions to show (default: 3)
 	pub limit: usize,
-	/// Maximum fret distance between consecutive fingerings (default: 3)
 	pub max_fret_distance: u8,
-	/// Number of fingering candidates to consider per chord (default: 20)
 	pub candidates_per_chord: usize,
-	/// Options for generating fingerings for each chord
 	pub generator_options: GeneratorOptions,
 }
 
@@ -68,7 +37,6 @@ impl Default for ProgressionOptions {
 	}
 }
 
-/// Scored transition between two fingerings
 #[derive(Debug, Clone)]
 pub struct ChordTransition {
 	pub from_chord: String,
@@ -81,7 +49,6 @@ pub struct ChordTransition {
 	pub position_distance: u8,
 }
 
-/// Complete progression sequence with all fingerings and transitions
 #[derive(Debug, Clone)]
 pub struct ProgressionSequence {
 	pub chords: Vec<String>,
@@ -111,7 +78,6 @@ pub fn generate_progression<I: Instrument>(
 	instrument: &I,
 	options: &ProgressionOptions,
 ) -> Vec<ProgressionSequence> {
-	// Parse all chords
 	let chords: Vec<Chord> = chord_names
 		.iter()
 		.filter_map(|name| Chord::parse(name).ok())
@@ -121,7 +87,6 @@ pub fn generate_progression<I: Instrument>(
 		return vec![];
 	}
 
-	// Generate candidates for each chord
 	let mut candidates: Vec<Vec<ScoredFingering>> = Vec::new();
 	for chord in &chords {
 		let mut opts = options.generator_options.clone();
@@ -130,12 +95,10 @@ pub fn generate_progression<I: Instrument>(
 		candidates.push(fingerings);
 	}
 
-	// If any chord has no fingerings, we can't build a progression
 	if candidates.iter().any(|c| c.is_empty()) {
 		return vec![];
 	}
 
-	// Build multiple progression sequences using different starting fingerings
 	let mut sequences = Vec::new();
 	let start_limit = options.limit.min(candidates[0].len());
 
@@ -152,15 +115,11 @@ pub fn generate_progression<I: Instrument>(
 		}
 	}
 
-	// Sort by total score (descending)
 	sequences.sort_by(|a, b| b.total_score.cmp(&a.total_score));
-
-	// Return top N
 	sequences.truncate(options.limit);
 	sequences
 }
 
-/// Build a single progression sequence starting from a specific fingering
 fn build_progression_sequence<I: Instrument>(
 	chords: &[Chord],
 	chord_names: &[&str],
@@ -172,16 +131,12 @@ fn build_progression_sequence<I: Instrument>(
 	let mut selected_fingerings = Vec::new();
 	let mut transitions = Vec::new();
 
-	// Start with the specified fingering
 	selected_fingerings.push(candidates[0][start_idx].clone());
 
-	// For each subsequent chord, pick the fingering with the best transition
 	for i in 1..chords.len() {
 		let from = &selected_fingerings[i - 1];
 		let from_chord_name = chord_names[i - 1].to_string();
 		let to_chord_name = chord_names[i].to_string();
-
-		// Score all possible transitions to fingerings of the next chord
 		let mut best_transition: Option<(ChordTransition, ScoredFingering)> = None;
 
 		for to in &candidates[i] {
@@ -194,7 +149,6 @@ fn build_progression_sequence<I: Instrument>(
 				options.generator_options.playing_context,
 			);
 
-			// Skip if transition exceeds max distance
 			if transition.position_distance > options.max_fret_distance {
 				continue;
 			}
@@ -206,14 +160,12 @@ fn build_progression_sequence<I: Instrument>(
 			}
 		}
 
-		// If no valid transition found, bail out
 		let (transition, to_fingering) = best_transition?;
 
 		transitions.push(transition);
 		selected_fingerings.push(to_fingering);
 	}
 
-	// Calculate total score
 	let total_score: i32 = transitions.iter().map(|t| t.score).sum();
 	let avg_transition_score = if transitions.is_empty() {
 		0.0
@@ -230,7 +182,6 @@ fn build_progression_sequence<I: Instrument>(
 	})
 }
 
-/// Score a transition between two fingerings
 fn score_transition<I: Instrument>(
 	from_chord: String,
 	to_chord: String,
@@ -246,26 +197,18 @@ fn score_transition<I: Instrument>(
 
 	let mut score = BASE_SCORE;
 
-	// Context-aware weight selection
 	let (movement_weight, distance_penalty) = match playing_context {
 		PlayingContext::Solo => (MOVEMENT_WEIGHT, DISTANCE_PENALTY),
 		PlayingContext::Band => (BAND_MOVEMENT_WEIGHT, BAND_DISTANCE_PENALTY),
 	};
 
-	// 1. FINGER MOVEMENT (Primary - most important)
-	// Band mode uses higher weight to prioritize compact movements
 	let (movements, anchors) = calculate_finger_changes(from, to);
 	score += (4_i32.saturating_sub(movements as i32)) * movement_weight;
-
-	// 2. COMMON ANCHORS (Secondary)
 	score += (anchors as i32) * ANCHOR_BONUS;
 
-	// 3. SHAPE SIMILARITY (Tertiary)
 	let shape_bonus = calculate_shape_similarity(from, to, instrument);
 	score += shape_bonus;
 
-	// 4. POSITION DISTANCE (Quaternary)
-	// Band mode uses stronger penalty for position jumps
 	let distance = (to_pos as i32 - from_pos as i32).unsigned_abs() as u8;
 	score -= (distance as i32) * distance_penalty;
 
@@ -281,7 +224,6 @@ fn score_transition<I: Instrument>(
 	}
 }
 
-/// Calculate how many fingers move and how many stay anchored
 fn calculate_finger_changes(from: &Fingering, to: &Fingering) -> (usize, usize) {
 	let from_strings = from.strings();
 	let to_strings = to.strings();
@@ -312,14 +254,13 @@ fn calculate_finger_changes(from: &Fingering, to: &Fingering) -> (usize, usize) 
 			(crate::fingering::StringState::Muted, crate::fingering::StringState::Fretted(_)) => {
 				movements += 1;
 			}
-			_ => {} // Both muted, no change
+			_ => {}
 		}
 	}
 
 	(movements, anchors)
 }
 
-/// Calculate similarity between fingering shapes/patterns
 fn calculate_shape_similarity<I: Instrument>(
 	from: &Fingering,
 	to: &Fingering,
@@ -327,17 +268,14 @@ fn calculate_shape_similarity<I: Instrument>(
 ) -> i32 {
 	let mut bonus = 0;
 
-	// Both use barre in similar position
 	if from.has_barre() && to.has_barre() {
 		bonus += BARRE_SIMILARITY_BONUS;
 	}
 
-	// Both are open position
 	if from.is_open_position_for(instrument) && to.is_open_position_for(instrument) {
 		bonus += OPEN_POSITION_BONUS;
 	}
 
-	// Similar number of fretted strings
 	let from_count = from.strings().iter().filter(|s| s.is_played()).count();
 	let to_count = to.strings().iter().filter(|s| s.is_played()).count();
 	if (from_count as i32 - to_count as i32).abs() <= 1 {

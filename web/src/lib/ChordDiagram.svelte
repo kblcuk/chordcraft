@@ -328,7 +328,6 @@
 	</defs>
 	<rect {width} {height} fill="url(#woodGrain)" rx="8" />
 
-	<!-- Fret number indicator (for high positions) -->
 	{#if isHighPosition}
 		<text
 			x="5"
@@ -342,7 +341,6 @@
 		</text>
 	{/if}
 
-	<!-- Strings (vertical lines) -->
 	{#each [...Array(stringCount).keys()] as stringIndex (stringIndex)}
 		{@const x = MARGIN_SIDE + stringIndex * stringSpacing}
 		<line
@@ -356,7 +354,6 @@
 		/>
 	{/each}
 
-	<!-- Frets (horizontal lines) -->
 	{#each [...Array(VISIBLE_FRETS + 1).keys()] as fretIndex (fretIndex)}
 		{@const y = getFretYPos(minFret + fretIndex)}
 		{@const isNut = fretIndex === 0 && minFret === 0}
@@ -371,7 +368,6 @@
 		/>
 	{/each}
 
-	<!-- Barres (lines behind finger dots) -->
 	{#each barres as barre (`${barre.fret}-${barre.fromString}-${barre.toString}`)}
 		{@const y = getPosition(0, barre.fret).y - fretSpacing / 2}
 		{@const x1 = MARGIN_SIDE + barre.fromString * stringSpacing}
@@ -388,7 +384,6 @@
 		/>
 	{/each}
 
-	<!-- Finger positions (dots) -->
 	{#each fingerPositions as pos (pos)}
 		{@const { x, y } = getPosition(pos.string, pos.fret)}
 		{@const displayY = getDisplayY(pos.fret, y)}
@@ -397,7 +392,6 @@
 		{@const fillColor = pos.isRoot ? COLORS.rootDot : COLORS.fingerDot}
 
 		{#if isOpen}
-			<!-- Open string circle -->
 			<circle
 				cx={x}
 				cy={displayY}
@@ -407,7 +401,6 @@
 				stroke-width="2"
 			/>
 		{:else}
-			<!-- Fretted position dot with subtle shadow -->
 			<circle cx={x} cy={displayY + 1} r={dotRadius} fill="rgba(0,0,0,0.15)" />
 			<circle cx={x} cy={displayY} r={dotRadius} fill={fillColor} />
 			{#if pos.fingerNumber}
@@ -426,7 +419,6 @@
 		{/if}
 	{/each}
 
-	<!-- Muted string indicators (X) at top -->
 	{#each positions.filter((p) => p.fret === -1) as pos (pos)}
 		{@const x = MARGIN_SIDE + pos.string * stringSpacing}
 		<text

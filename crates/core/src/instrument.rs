@@ -6,53 +6,36 @@
 use crate::error::{ChordCraftError, Result};
 use crate::note::Note;
 
-/// Trait for stringed instruments
 pub trait Instrument {
-	/// Get the tuning of the instrument (notes for each string from lowest to highest)
 	fn tuning(&self) -> &[Note];
-
-	/// Get the fret range (min, max)
 	fn fret_range(&self) -> (u8, u8);
-
-	/// Maximum finger stretch (in frets)
 	fn max_stretch(&self) -> u8;
 
-	/// Number of strings
 	fn string_count(&self) -> usize {
 		self.tuning().len()
 	}
 
-	/// Maximum number of fretting fingers available (default 4)
 	fn max_fingers(&self) -> u8 {
 		4
 	}
 
-	/// Maximum fret position considered "open position" (default 4)
 	fn open_position_threshold(&self) -> u8 {
 		4
 	}
 
-	/// Minimum consecutive strings to be considered a "main barre"
-	/// Default is 50% of strings, minimum 2
+	/// Default: 50% of strings, minimum 2.
 	fn main_barre_threshold(&self) -> usize {
 		(self.string_count() / 2).max(2)
 	}
 
-	/// Minimum number of strings that must be played for a valid chord
-	/// Default is half the strings, with a minimum of 2
 	fn min_played_strings(&self) -> usize {
 		(self.string_count() / 2).max(2)
 	}
 
-	/// Maximum reasonable capo position for this instrument
-	/// Default is 12 frets (one octave), or half the fret range, whichever is smaller
 	fn max_capo_fret(&self) -> u8 {
 		12.min(self.fret_range().1 / 2)
 	}
 
-	/// Get display names for strings (used in diagrams)
-	/// Returns names from lowest to highest pitch string
-	/// Default implementation uses the pitch class name of each open string
 	fn string_names(&self) -> Vec<String> {
 		self.tuning()
 			.iter()
@@ -60,40 +43,13 @@ pub trait Instrument {
 			.collect()
 	}
 
-	/// Get the string index that serves as the bass string for "root in bass" scoring.
-	///
-	/// For most instruments, this is string 0 (the physically lowest string).
-	/// For re-entrant tunings like ukulele (GCEA where G4 is higher than C4),
-	/// this should return the index of the lowest-pitched string.
-	///
-	/// Default: 0 (first string)
+	/// For re-entrant tunings, returns the lowest-pitched string (not necessarily index 0).
 	fn bass_string_index(&self) -> usize {
 		0
 	}
 }
 
-/// Generic wrapper for an instrument with a capo
-///
-/// This transposes the tuning up by the capo position and reduces
-/// the available fret range accordingly, while delegating all other
-/// instrument properties to the wrapped instrument.
-///
-/// # Examples
-///
-/// ```
-/// use chordcraft_core::instrument::{Guitar, CapoedInstrument, Instrument};
-/// use chordcraft_core::note::PitchClass;
-///
-/// let guitar = Guitar::default();
-/// let capo_guitar = CapoedInstrument::new(guitar, 3).unwrap();
-///
-/// // Open strings are now 3 semitones higher
-/// assert_eq!(capo_guitar.tuning()[0].pitch, PitchClass::G);  // E + 3 = G
-/// ```
-///
-/// # Errors
-///
-/// Returns an error if the capo position exceeds the instrument's maximum capo fret.
+/// Transposes tuning up and reduces fret range. Delegates other properties to inner instrument.
 #[derive(Debug, Clone)]
 pub struct CapoedInstrument<I: Instrument> {
 	inner: I,
@@ -102,32 +58,6 @@ pub struct CapoedInstrument<I: Instrument> {
 }
 
 impl<I: Instrument> CapoedInstrument<I> {
-	/// Create a capoed instrument at the specified fret
-	///
-	/// # Arguments
-	///
-	/// * `instrument` - The base instrument to apply the capo to
-	/// * `fret` - The fret position of the capo (0 means no capo)
-	///
-	/// # Errors
-	///
-	/// Returns `ChordCraftError::InvalidCapoPosition` if the fret position is invalid.
-	/// Valid range is 0 to the instrument's `max_capo_fret()`.
-	///
-	/// # Examples
-	///
-	/// ```
-	/// use chordcraft_core::instrument::{Guitar, CapoedInstrument};
-	///
-	/// let guitar = Guitar::default();
-	///
-	/// // Valid capo position
-	/// let capo_guitar = CapoedInstrument::new(guitar.clone(), 5).unwrap();
-	///
-	/// // Invalid capo position (too high)
-	/// let result = CapoedInstrument::new(guitar, 20);
-	/// assert!(result.is_err());
-	/// ```
 	pub fn new(instrument: I, fret: u8) -> Result<Self> {
 		let max_capo = instrument.max_capo_fret();
 
@@ -150,7 +80,6 @@ impl<I: Instrument> CapoedInstrument<I> {
 		})
 	}
 
-	/// Get the underlying instrument
 	pub fn inner(&self) -> &I {
 		&self.inner
 	}
@@ -194,7 +123,6 @@ impl<I: Instrument> Instrument for CapoedInstrument<I> {
 	}
 }
 
-/// Standard guitar in EADGBE tuning
 #[derive(Debug, Clone)]
 pub struct Guitar {
 	tuning: Vec<Note>,
@@ -207,7 +135,6 @@ impl Default for Guitar {
 		use crate::note::PitchClass::*;
 
 		Guitar {
-			// Standard tuning: E2, A2, D3, G3, B3, E4
 			tuning: vec![
 				Note::new(E, 2),
 				Note::new(A, 2),
@@ -223,27 +150,6 @@ impl Default for Guitar {
 }
 
 impl Guitar {
-	/// Create a capoed guitar at the specified fret
-	///
-	/// This returns a `CapoedInstrument<Guitar>` that transposes the tuning
-	/// up by the capo position and reduces the available fret range accordingly.
-	///
-	/// # Examples
-	///
-	/// ```
-	/// use chordcraft_core::instrument::{Guitar, Instrument};
-	/// use chordcraft_core::note::PitchClass;
-	///
-	/// let guitar = Guitar::default();
-	/// let capo_guitar = guitar.with_capo(3).unwrap();
-	///
-	/// // Open strings are now 3 semitones higher
-	/// assert_eq!(capo_guitar.tuning()[0].pitch, PitchClass::G);  // E + 3 = G
-	/// ```
-	///
-	/// # Errors
-	///
-	/// Returns an error if the capo position exceeds the maximum capo fret.
 	pub fn with_capo(&self, fret: u8) -> Result<CapoedInstrument<Guitar>> {
 		CapoedInstrument::new(self.clone(), fret)
 	}
@@ -262,7 +168,6 @@ impl Instrument for Guitar {
 		self.max_stretch
 	}
 
-	/// Guitar string names use lowercase 'e' for high E (convention)
 	fn string_names(&self) -> Vec<String> {
 		vec![
 			"E".to_string(), // Low E
@@ -275,7 +180,6 @@ impl Instrument for Guitar {
 	}
 }
 
-/// Ukulele in standard GCEA tuning (soprano/concert/tenor)
 #[derive(Debug, Clone)]
 pub struct Ukulele {
 	tuning: Vec<Note>,
@@ -287,8 +191,8 @@ impl Default for Ukulele {
 	fn default() -> Self {
 		use crate::note::PitchClass::*;
 
+		// Re-entrant tuning: G4 is higher than C4
 		Ukulele {
-			// Standard ukulele tuning: G4 (re-entrant), C4, E4, A4
 			tuning: vec![
 				Note::new(G, 4),
 				Note::new(C, 4),
@@ -296,20 +200,12 @@ impl Default for Ukulele {
 				Note::new(A, 4),
 			],
 			fret_range: (0, 15),
-			max_stretch: 5, // Easier to stretch on shorter scale
+			max_stretch: 5,
 		}
 	}
 }
 
 impl Ukulele {
-	/// Create a capoed ukulele at the specified fret
-	///
-	/// This returns a `CapoedInstrument<Ukulele>` that transposes the tuning
-	/// up by the capo position and reduces the available fret range accordingly.
-	///
-	/// # Errors
-	///
-	/// Returns an error if the capo position exceeds the maximum capo fret.
 	pub fn with_capo(&self, fret: u8) -> Result<CapoedInstrument<Ukulele>> {
 		CapoedInstrument::new(self.clone(), fret)
 	}
@@ -328,28 +224,21 @@ impl Instrument for Ukulele {
 		self.max_stretch
 	}
 
-	// Ukulele has shorter scale, so "open position" extends a bit further
 	fn open_position_threshold(&self) -> u8 {
 		5
 	}
 
-	// With only 4 strings, a 2-string barre is already 50%
-	// So we use the default: string_count/2 = 2
 	fn main_barre_threshold(&self) -> usize {
 		2
 	}
 
-	// Ukulele can have very minimal fingerings (e.g., C major is often just "0003")
-	// Allow single-note voicings
 	fn min_played_strings(&self) -> usize {
 		1
 	}
 
-	// Ukulele has re-entrant tuning: G4-C4-E4-A4
-	// The C string (index 1) is the lowest pitch, not the G string (index 0)
-	// This affects "root in bass" scoring
+	/// C string (index 1) is the lowest pitch due to re-entrant tuning.
 	fn bass_string_index(&self) -> usize {
-		1 // C string is the bass
+		1
 	}
 }
 

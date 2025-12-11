@@ -8,22 +8,17 @@ use crate::instrument::Instrument;
 use crate::note::{Note, PitchClass};
 use std::fmt;
 
-/// Represents a single string's state in a fingering
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StringState {
-	/// String is muted/not played
 	Muted,
-	/// String is played at a specific fret (0 = open)
-	Fretted(u8),
+	Fretted(u8), // 0 = open string
 }
 
 impl StringState {
-	/// Check if the string is played (not muted)
 	pub fn is_played(&self) -> bool {
 		matches!(self, StringState::Fretted(_))
 	}
 
-	/// Get the fret number if the string is played
 	pub fn fret(&self) -> Option<u8> {
 		match self {
 			StringState::Muted => None,
@@ -32,36 +27,17 @@ impl StringState {
 	}
 }
 
-/// A chord fingering on a stringed instrument
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fingering {
-	/// State of each string, from lowest (bass) to highest (treble)
-	strings: Vec<StringState>,
+	strings: Vec<StringState>, // Ordered lowest (bass) to highest (treble)
 }
 
 impl Fingering {
-	/// Create a new fingering from string states
 	pub fn new(strings: Vec<StringState>) -> Self {
 		Fingering { strings }
 	}
 
-	/// Parse a fingering from tab notation
-	///
-	/// Format: String of characters where each character represents a string
-	/// - 'x' or 'X' = muted string
-	/// - '0'-'9' = fret number 0-9
-	/// - For frets 10+, use parentheses: "(10)" or "(12)"
-	///
-	/// The notation is from lowest string to highest (E A D G B e for guitar)
-	///
-	/// # Examples
-	/// ```
-	/// use chordcraft_core::fingering::Fingering;
-	///
-	/// let c_major = Fingering::parse("x32010").unwrap();
-	/// let barre_f = Fingering::parse("133211").unwrap();
-	/// let high_fret = Fingering::parse("x(10)(10)9(10)x").unwrap();
-	/// ```
+	/// Format: 'x'=muted, '0'-'9'=fret, '(10)'=high frets. Ordered low to high string.
 	pub fn parse(s: &str) -> Result<Self> {
 		let s = s.trim();
 		if s.is_empty() {
@@ -78,7 +54,6 @@ impl Fingering {
 				'x' | 'X' => StringState::Muted,
 				'0'..='9' => StringState::Fretted(c.to_digit(10).unwrap() as u8),
 				'(' => {
-					// Parse multi-digit fret number
 					let mut num_str = String::new();
 					while let Some(&next) = chars.peek() {
 						if next == ')' {
@@ -111,22 +86,19 @@ impl Fingering {
 		Ok(Fingering { strings })
 	}
 
-	/// Get the string states
 	pub fn strings(&self) -> &[StringState] {
 		&self.strings
 	}
 
-	/// Get the number of strings
 	pub fn string_count(&self) -> usize {
 		self.strings.len()
 	}
 
-	/// Get the state of a specific string (0-indexed from lowest)
 	pub fn get_string(&self, index: usize) -> Option<&StringState> {
 		self.strings.get(index)
 	}
 
-	/// Get all fretted positions (excluding muted and open strings)
+	/// Returns (string_index, fret) pairs, excluding muted and open strings.
 	pub fn fretted_positions(&self) -> Vec<(usize, u8)> {
 		self.strings
 			.iter()
@@ -138,7 +110,6 @@ impl Fingering {
 			.collect()
 	}
 
-	/// Get the lowest fret position (excluding open strings)
 	pub fn min_fret(&self) -> Option<u8> {
 		self.strings
 			.iter()
@@ -149,12 +120,10 @@ impl Fingering {
 			.min()
 	}
 
-	/// Get the highest fret position
 	pub fn max_fret(&self) -> Option<u8> {
 		self.strings.iter().filter_map(|s| s.fret()).max()
 	}
 
-	/// Calculate the fret span (stretch required)
 	pub fn fret_span(&self) -> u8 {
 		let fretted: Vec<u8> = self
 			.strings
@@ -174,7 +143,6 @@ impl Fingering {
 		max - min
 	}
 
-	/// Check if this is an open position chord for a specific instrument
 	pub fn is_open_position_for<I: Instrument>(&self, instrument: &I) -> bool {
 		self.strings
 			.iter()
@@ -182,7 +150,6 @@ impl Fingering {
 			&& self.max_fret().unwrap_or(0) <= instrument.open_position_threshold()
 	}
 
-	/// Check if this fingering requires a barre
 	pub fn requires_barre(&self) -> bool {
 		if let Some(min) = self.min_fret() {
 			let count_at_min = self
@@ -196,22 +163,16 @@ impl Fingering {
 		}
 	}
 
-	/// Check if this fingering uses a barre (alias for requires_barre)
 	pub fn has_barre(&self) -> bool {
 		self.requires_barre()
 	}
 
-	/// Detect if there's a barre at a fret higher than the minimum fret
-	/// This is awkward because you'd need to barre with ring/pinkie instead of index finger
-	///
-	/// Only penalizes if the LARGEST barre is not at the minimum fret, since having
-	/// small barres above a foundation barre (like F chord: barre at 1, mini-barre at 3)
-	/// is a normal and comfortable technique.
+	/// Detects awkward barres above the minimum fret (requiring ring/pinkie barre).
+	/// Only penalizes if the LARGEST barre isn't at the base position.
 	pub fn has_high_barre_for<I: Instrument>(&self, instrument: &I) -> bool {
 		self.has_high_barre_with_threshold(instrument.main_barre_threshold())
 	}
 
-	/// Internal helper for high barre detection with configurable threshold
 	fn has_high_barre_with_threshold(&self, threshold: usize) -> bool {
 		use std::collections::HashMap;
 
@@ -220,7 +181,6 @@ impl Fingering {
 			None => return false,
 		};
 
-		// Count consecutive strings at each fret
 		let mut fret_groups: HashMap<u8, Vec<usize>> = HashMap::new();
 
 		for (string_idx, state) in self.strings.iter().enumerate() {
@@ -231,7 +191,6 @@ impl Fingering {
 			}
 		}
 
-		// Find the longest barre (most consecutive strings at any fret)
 		let mut max_barre_length = 0;
 		let mut max_barre_fret = 0;
 
@@ -243,12 +202,9 @@ impl Fingering {
 			}
 		}
 
-		// Penalize only if the longest barre is above the minimum fret
-		// (this means the foundation barre is not at the base position)
 		max_barre_length >= threshold && max_barre_fret > min_fret
 	}
 
-	/// Count the maximum number of consecutive strings in a group
 	fn count_consecutive_strings(strings: &[usize]) -> usize {
 		if strings.is_empty() {
 			return 0;
@@ -272,10 +228,7 @@ impl Fingering {
 		max_consecutive
 	}
 
-	/// Calculate the minimum number of fingers required to play this fingering
-	///
-	/// This accounts for barres (consecutive strings at the same fret can use one finger)
-	/// and returns the total finger count needed. Should be <= 4 for standard guitar.
+	/// Accounts for barres: consecutive strings at the same fret use one finger.
 	pub fn min_fingers_required(&self) -> u8 {
 		use std::collections::BTreeMap;
 
@@ -286,23 +239,19 @@ impl Fingering {
 			if let StringState::Fretted(fret) = state
 				&& *fret > 0
 			{
-				// Exclude open strings (don't need fingers)
 				frets_map.entry(*fret).or_default().push(string_idx);
 			}
 		}
 
 		let mut total_fingers = 0;
-
 		for (_fret, strings) in frets_map.iter() {
-			// Count how many fingers needed for this fret's strings
 			total_fingers += Self::count_fingers_for_strings(strings);
 		}
 
 		total_fingers
 	}
 
-	/// Count fingers needed for a group of strings at the same fret
-	/// Consecutive strings can be barred with one finger, gaps need separate fingers
+	/// Consecutive strings can be barred; gaps require separate fingers.
 	fn count_fingers_for_strings(strings: &[usize]) -> u8 {
 		if strings.is_empty() {
 			return 0;
@@ -312,7 +261,6 @@ impl Fingering {
 			return 1;
 		}
 
-		// Sort string indices to find consecutive groups
 		let mut sorted = strings.to_vec();
 		sorted.sort_unstable();
 
@@ -320,10 +268,7 @@ impl Fingering {
 		let mut i = 0;
 
 		while i < sorted.len() {
-			// Start a new finger/barre
 			finger_count += 1;
-
-			// Extend this finger across consecutive strings
 			while i + 1 < sorted.len() && sorted[i + 1] == sorted[i] + 1 {
 				i += 1;
 			}
@@ -334,19 +279,14 @@ impl Fingering {
 		finger_count
 	}
 
-	/// Check if the fingering is physically playable for a specific instrument
 	pub fn is_playable_for<I: Instrument>(&self, instrument: &I) -> bool {
 		self.is_playable_with_constraints(instrument.max_stretch(), instrument.max_fingers())
 	}
 
-	/// Internal helper for playability check with configurable constraints
 	fn is_playable_with_constraints(&self, max_stretch: u8, max_fingers: u8) -> bool {
-		// Must fit within stretch limit
 		if self.fret_span() > max_stretch {
 			return false;
 		}
-
-		// Must not require more fingers than available
 		if self.min_fingers_required() > max_fingers {
 			return false;
 		}
@@ -354,7 +294,6 @@ impl Fingering {
 		true
 	}
 
-	/// Get the notes produced by this fingering on a given instrument
 	pub fn notes<I: Instrument>(&self, instrument: &I) -> Vec<Note> {
 		let tuning = instrument.tuning();
 
@@ -373,7 +312,6 @@ impl Fingering {
 			.collect()
 	}
 
-	/// Get the pitch classes (notes without octave) produced by this fingering
 	pub fn pitch_classes<I: Instrument>(&self, instrument: &I) -> Vec<PitchClass> {
 		self.notes(instrument)
 			.into_iter()
@@ -381,7 +319,6 @@ impl Fingering {
 			.collect()
 	}
 
-	/// Get unique pitch classes (deduplicated)
 	pub fn unique_pitch_classes<I: Instrument>(&self, instrument: &I) -> Vec<PitchClass> {
 		let mut pitches = self.pitch_classes(instrument);
 		pitches.sort_by_key(|p| p.to_semitone());
@@ -389,7 +326,7 @@ impl Fingering {
 		pitches
 	}
 
-	/// Calculate a playability score for a specific instrument (0-100, higher is easier to play)
+	/// Returns 0-100, higher is easier to play.
 	pub fn playability_score_for<I: Instrument>(&self, instrument: &I) -> u8 {
 		self.playability_score_with_params(
 			instrument.max_stretch(),
@@ -399,7 +336,6 @@ impl Fingering {
 		)
 	}
 
-	/// Internal helper for playability scoring with configurable parameters
 	fn playability_score_with_params(
 		&self,
 		max_stretch: u8,
@@ -408,41 +344,32 @@ impl Fingering {
 		open_position_threshold: u8,
 	) -> u8 {
 		let mut score: i32 = 100;
-
-		// Penalize for stretch
 		let span = self.fret_span();
 		if span > max_stretch {
 			return 0; // Unplayable
 		}
 		score -= (span as i32) * 10;
 
-		// Finger count is crucial - heavily penalize inefficient fingerings
 		let fingers = self.min_fingers_required();
 		if fingers > max_fingers {
-			return 0; // Unplayable (this should be caught by is_playable, but safety check)
+			return 0;
 		}
-		// Reward efficient finger usage (relative to max available)
-		// 1-2 fingers: bonus (easy, leaves fingers free)
-		// 3 fingers: good
-		// 4 fingers: cramped (if max is 4), penalize
+		// Reward efficient finger usage: fewer fingers = easier transitions
 		let finger_ratio = (fingers as f32) / (max_fingers as f32);
 		if finger_ratio <= 0.25 {
-			score += 15; // Very easy (1 finger if max=4)
+			score += 15;
 		} else if finger_ratio <= 0.5 {
-			score += 10; // Easy (2 fingers if max=4)
+			score += 10;
 		} else if finger_ratio <= 0.75 {
-			score += 0; // Neutral (3 fingers if max=4)
+			score += 0;
 		} else {
-			score -= 20; // All fingers occupied, harder to play cleanly
+			score -= 20;
 		}
 
-		// HEAVY penalty for high barres (barre not at minimum fret)
-		// This requires barreing with ring/pinkie which is very difficult
 		if self.has_high_barre_with_threshold(main_barre_threshold) {
 			score -= 40;
 		}
 
-		// Bonus for open position
 		let is_open = self
 			.strings
 			.iter()
@@ -452,14 +379,12 @@ impl Fingering {
 			score += 10;
 		}
 
-		// Penalize for high fret positions (harder to reach)
 		if let Some(min) = self.min_fret()
 			&& min > 7
 		{
 			score -= ((min - 7) as i32) * 2;
 		}
 
-		// Penalize for many muted strings in the middle
 		let muted_count = self.strings.iter().filter(|s| !s.is_played()).count();
 		if muted_count > 1 {
 			score -= ((muted_count - 1) as i32) * 5;
@@ -468,20 +393,12 @@ impl Fingering {
 		score.clamp(0, 100) as u8
 	}
 
-	/// Get the bass note (lowest pitched note that's played)
-	///
-	/// This uses the instrument's `bass_string_index()` to determine which string
-	/// is considered the bass. For most instruments this is string 0, but for
-	/// re-entrant tunings like ukulele (GCEA), it's string 1 (the C string).
-	///
-	/// The function searches from the bass string toward higher strings to find
-	/// the first played note that would function as the bass in typical playing.
+	/// Uses instrument's `bass_string_index()` for re-entrant tunings (e.g., ukulele).
 	pub fn bass_note<I: Instrument>(&self, instrument: &I) -> Option<Note> {
 		let tuning = instrument.tuning();
 		let bass_idx = instrument.bass_string_index();
 		let string_count = self.strings.len().min(tuning.len());
 
-		// Search from bass string toward higher strings (typical bass-to-treble order)
 		for (string_state, open_note) in self.strings[bass_idx..string_count]
 			.iter()
 			.zip(tuning[bass_idx..string_count].iter())
@@ -491,8 +408,7 @@ impl Fingering {
 			}
 		}
 
-		// If nothing found from bass_idx onward, check strings before bass_idx
-		// (for instruments where lower-indexed strings are higher pitched, like ukulele G string)
+		// Fallback: check strings before bass_idx (for re-entrant tunings)
 		for (string_state, open_note) in self.strings[..bass_idx]
 			.iter()
 			.zip(tuning[..bass_idx].iter())
@@ -519,20 +435,17 @@ impl fmt::Display for Fingering {
 	}
 }
 
-/// Builder for creating fingerings programmatically
 pub struct FingeringBuilder {
 	strings: Vec<StringState>,
 }
 
 impl FingeringBuilder {
-	/// Create a new builder for an instrument with the given number of strings
 	pub fn new(string_count: usize) -> Self {
 		FingeringBuilder {
 			strings: vec![StringState::Muted; string_count],
 		}
 	}
 
-	/// Set a string to a specific fret
 	pub fn fret(mut self, string: usize, fret: u8) -> Self {
 		if string < self.strings.len() {
 			self.strings[string] = StringState::Fretted(fret);
@@ -540,7 +453,6 @@ impl FingeringBuilder {
 		self
 	}
 
-	/// Set a string to muted
 	pub fn mute(mut self, string: usize) -> Self {
 		if string < self.strings.len() {
 			self.strings[string] = StringState::Muted;
@@ -548,7 +460,6 @@ impl FingeringBuilder {
 		self
 	}
 
-	/// Build the fingering
 	pub fn build(self) -> Fingering {
 		Fingering::new(self.strings)
 	}

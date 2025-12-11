@@ -27,7 +27,6 @@ pub enum PitchClass {
 }
 
 impl PitchClass {
-	/// Convert pitch class to semitone offset from C (0-11)
 	pub fn to_semitone(&self) -> u8 {
 		match self {
 			PitchClass::C => 0,
@@ -45,7 +44,6 @@ impl PitchClass {
 		}
 	}
 
-	/// Create pitch class from semitone offset (0-11)
 	pub fn from_semitone(semitone: u8) -> Self {
 		match semitone % 12 {
 			0 => PitchClass::C,
@@ -120,14 +118,14 @@ impl PitchClass {
 		}
 	}
 
-	/// Add semitones to this pitch class
+	/// Wraps around octave boundaries using modular arithmetic.
 	pub fn add_semitones(&self, semitones: i32) -> Self {
 		let current = self.to_semitone() as i32;
 		let new_semitone = (current + semitones).rem_euclid(12) as u8;
 		Self::from_semitone(new_semitone)
 	}
 
-	/// Calculate semitone distance to another pitch class
+	/// Always returns ascending distance (0-11), useful for interval calculation.
 	pub fn semitone_distance_to(&self, other: &PitchClass) -> u8 {
 		let from = self.to_semitone() as i32;
 		let to = other.to_semitone() as i32;
@@ -150,7 +148,6 @@ pub struct Note {
 }
 
 impl Note {
-	/// Create a new note with pitch class and octave
 	pub fn new(pitch: PitchClass, octave: i8) -> Self {
 		Note { pitch, octave }
 	}
@@ -160,7 +157,6 @@ impl Note {
 		((self.octave + 1) * 12 + self.pitch.to_semitone() as i8) as u8
 	}
 
-	/// Create note from MIDI note number
 	pub fn from_midi(midi: u8) -> Self {
 		let octave = (midi as i8 / 12) - 1;
 		let pitch = PitchClass::from_semitone(midi % 12);
@@ -188,13 +184,11 @@ impl Note {
 		Ok(Note::new(pitch, octave))
 	}
 
-	/// Add semitones to this note
 	pub fn add_semitones(&self, semitones: i32) -> Self {
 		let midi = self.to_midi() as i32 + semitones;
 		Self::from_midi(midi.clamp(0, 127) as u8)
 	}
 
-	/// Calculate semitone distance to another note
 	pub fn semitone_distance_to(&self, other: &Note) -> i32 {
 		other.to_midi() as i32 - self.to_midi() as i32
 	}

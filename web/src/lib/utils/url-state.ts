@@ -175,7 +175,6 @@ export function updateUrl(
 	const searchParams = new URLSearchParams();
 
 	Object.entries(params).forEach(([key, value]) => {
-		// Skip null, undefined, empty string
 		if (value === null || value === undefined || value === '') return;
 
 		// Skip instrument if guitar (default)

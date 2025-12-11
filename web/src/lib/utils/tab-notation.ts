@@ -18,26 +18,15 @@ export function parseTabNotation(tab: string, stringCount = STRING_COUNT): numbe
 	// Separators and invalid chars are automatically ignored
 	const matches = tab.matchAll(/x|X|\((\d+)\)|\d/gi);
 
-	return (
-		Array.from(matches) // Ensure at least stringCount matches
-			// Map each match to a fret number
-			.map((match) => {
-				const value = match[0].toLowerCase();
-
-				// Muted string
-				if (value === 'x') return -1;
-
-				// Multi-digit in parentheses (capture group 1)
-				if (match[1]) return parseInt(match[1], 10);
-
-				// Single digit
-				return parseInt(value, 10);
-			})
-			// Filter out any NaN (shouldn't happen, but defensive)
-			.filter((fret) => !isNaN(fret))
-			// Limit to X strings
-			.slice(0, stringCount)
-	);
+	return Array.from(matches)
+		.map((match) => {
+			const value = match[0].toLowerCase();
+			if (value === 'x') return -1;
+			if (match[1]) return parseInt(match[1], 10);
+			return parseInt(value, 10);
+		})
+		.filter((fret) => !isNaN(fret))
+		.slice(0, stringCount);
 }
 
 /**
@@ -50,10 +39,9 @@ export function parseTabNotation(tab: string, stringCount = STRING_COUNT): numbe
 export function generateTabNotation(fingering: number[], capo: number): string {
 	return fingering
 		.map((fret) => {
-			if (fret === -2 || fret === -1) return 'x'; // Both not-set and muted -> 'x'
+			if (fret === -2 || fret === -1) return 'x';
 
 			// Apply capo transposition: player fret + capo = actual sounding fret
-			// Note: Even open strings (0) are transposed when capo is applied
 			const actualFret = fret + capo;
 			return actualFret > 9 ? `(${actualFret})` : String(actualFret);
 		})
@@ -76,13 +64,9 @@ export function transposeFingeringToNewPosition(
 	if (delta === 0) return fingering;
 
 	return fingering.map((fret) => {
-		// Keep special values unchanged
 		if (fret === -2 || fret === -1) return fret;
 
-		// Transpose all other values
 		const transposed = fret + delta;
-
-		// Clamp to valid range [0, 24]
 		return Math.max(0, Math.min(24, transposed));
 	});
 }
@@ -102,7 +86,6 @@ interface Barre {
  * 2. Higher frets only get mini-barres if they have 2+ truly consecutive strings
  */
 export function detectBarres(fingering: number[]): Barre[] {
-	// Find played strings (fret > 0) and the lowest fret used
 	const playedStrings = fingering
 		.map((fret, idx) => ({ fret, idx }))
 		.filter(({ fret }) => fret > 0);
@@ -113,7 +96,6 @@ export function detectBarres(fingering: number[]): Barre[] {
 	const lastPlayedString = Math.max(...playedStrings.map((s) => s.idx));
 	const lowestFret = Math.min(...playedStrings.map((s) => s.fret));
 
-	// Check if lowest fret touches both first and last played strings
 	const lowestFretStrings = playedStrings.filter((s) => s.fret === lowestFret).map((s) => s.idx);
 	const isFullBarre =
 		lowestFretStrings.includes(firstPlayedString) &&
@@ -121,7 +103,6 @@ export function detectBarres(fingering: number[]): Barre[] {
 
 	const barres: Barre[] = [];
 
-	// Add full barre if detected
 	if (isFullBarre) {
 		barres.push({
 			fret: lowestFret,
@@ -130,7 +111,6 @@ export function detectBarres(fingering: number[]): Barre[] {
 		});
 	}
 
-	// Group remaining strings by fret (excluding the full barre fret if detected)
 	const fretsToCheck = isFullBarre
 		? playedStrings.filter((s) => s.fret !== lowestFret)
 		: playedStrings;
@@ -140,32 +120,27 @@ export function detectBarres(fingering: number[]): Barre[] {
 		return acc;
 	}, {});
 
-	// For each remaining fret, find consecutive runs of 2+ strings (mini-barres)
 	for (const [fretStr, strings] of Object.entries(fretGroups)) {
 		if (strings.length < 2) continue;
 
 		const fret = Number(fretStr);
 		const sorted = strings.slice().sort((a, b) => a - b);
 
-		// Find consecutive runs
 		let runStart = sorted[0];
 		let runEnd = sorted[0];
 
 		for (let i = 1; i < sorted.length; i++) {
 			if (sorted[i] === runEnd + 1) {
-				// Continue run
 				runEnd = sorted[i];
 			} else {
-				// End current run, check if valid barre
 				if (runEnd - runStart + 1 >= 2) {
 					barres.push({ fret, fromString: runStart, toString: runEnd });
 				}
-				// Start new run
 				runStart = sorted[i];
 				runEnd = sorted[i];
 			}
 		}
-		// Don't forget the last run
+
 		if (runEnd - runStart + 1 >= 2) {
 			barres.push({ fret, fromString: runStart, toString: runEnd });
 		}

@@ -101,7 +101,6 @@ const instrumentInfoCache: Map<Instrument, InstrumentInfo> = new Map();
 export async function getInstrumentInfo(instrument: Instrument): Promise<InstrumentInfo> {
 	await initializeWasm();
 
-	// Check cache first
 	const cached = instrumentInfoCache.get(instrument);
 	if (cached) return cached;
 

@@ -9,7 +9,6 @@ use chordcraft_core::generator::{
 };
 use chordcraft_core::instrument::{Guitar, Ukulele};
 
-/// Instrument choice for CLI
 #[derive(Debug, Clone, Copy, Default, ValueEnum)]
 enum InstrumentChoice {
 	/// Standard 6-string guitar (EADGBE tuning)
@@ -19,7 +18,6 @@ enum InstrumentChoice {
 	Ukulele,
 }
 
-/// Parse voicing type string into VoicingType enum
 fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
 	voicing.and_then(|v| match v.to_lowercase().as_str() {
 		"core" => Some(VoicingType::Core),
@@ -29,13 +27,11 @@ fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
 	})
 }
 
-/// Parse playing context string into PlayingContext enum
 fn parse_playing_context(context: Option<&String>) -> PlayingContext {
 	context
 		.map(|c| match c.to_lowercase().as_str() {
 			"band" => PlayingContext::Band,
-			"solo" => PlayingContext::Solo,
-			_ => PlayingContext::Solo, // Default to solo for invalid input
+			_ => PlayingContext::Solo,
 		})
 		.unwrap_or(PlayingContext::Solo)
 }
@@ -191,12 +187,9 @@ fn find_fingerings(
 	capo: Option<u8>,
 	instrument: InstrumentChoice,
 ) -> Result<()> {
-	// Parse the chord
 	let original_chord =
 		Chord::parse(chord_str).with_context(|| format!("Invalid chord name: '{chord_str}'"))?;
 
-	// If using capo, we generate fingerings for the SHAPE chord (transposed down)
-	// Otherwise, generate for the actual chord
 	let (search_chord, shape_chord) = if let Some(capo_fret) = capo {
 		let shape = original_chord.transpose(-(capo_fret as i32));
 		(shape.clone(), Some(shape))
@@ -204,11 +197,9 @@ fn find_fingerings(
 		(original_chord.clone(), None)
 	};
 
-	// Parse voicing type and playing context
 	let voicing_type = parse_voicing_type(voicing.as_ref());
 	let playing_context = parse_playing_context(context.as_ref());
 
-	// Set up options
 	let options = GeneratorOptions {
 		limit,
 		preferred_position: position,
@@ -217,13 +208,11 @@ fn find_fingerings(
 		..Default::default()
 	};
 
-	// Get instrument name for display
 	let instrument_name = match instrument {
 		InstrumentChoice::Guitar => "Guitar",
 		InstrumentChoice::Ukulele => "Ukulele",
 	};
 
-	// Generate fingerings based on instrument choice
 	let fingerings: Vec<ScoredFingering> = match instrument {
 		InstrumentChoice::Guitar => {
 			let guitar = Guitar::default();
@@ -243,9 +232,7 @@ fn find_fingerings(
 		return Ok(());
 	}
 
-	// Display header
 	if let Some(shape) = shape_chord {
-		// Show both actual chord and the shape being used
 		println!(
 			"\n{} {} {} [{instrument_name}] (showing {} of {} found)",
 			"Fingerings for".bold(),
@@ -265,14 +252,12 @@ fn find_fingerings(
 		);
 	}
 
-	// Display each fingering
 	for (i, scored) in fingerings.iter().take(limit).enumerate() {
 		println!(
 			"{}. {}",
 			(i + 1).to_string().cyan().bold(),
 			scored.fingering
 		);
-		// Format diagram based on instrument
 		let diagram = match instrument {
 			InstrumentChoice::Guitar => format_fingering_diagram(scored, &Guitar::default()),
 			InstrumentChoice::Ukulele => format_fingering_diagram(scored, &Ukulele::default()),
@@ -314,7 +299,6 @@ fn find_progression(
 		position,
 	} = progression_opts;
 
-	// Parse chord names from the string
 	let chord_names: Vec<&str> = chords_str.split_whitespace().collect();
 
 	if chord_names.is_empty() {
@@ -322,7 +306,6 @@ fn find_progression(
 		return Ok(());
 	}
 
-	// If using capo, transpose all chords down and store for both search and display
 	let transposed_chords: Vec<String> = if let Some(capo_fret) = capo {
 		chord_names
 			.iter()
@@ -342,11 +325,9 @@ fn find_progression(
 		chord_names.clone()
 	};
 
-	// Parse voicing type and playing context
 	let voicing_type = parse_voicing_type(voicing.as_ref());
 	let playing_context = parse_playing_context(context.as_ref());
 
-	// Set up options
 	let gen_options = GeneratorOptions {
 		preferred_position: position,
 		voicing_type,
@@ -361,13 +342,11 @@ fn find_progression(
 		..Default::default()
 	};
 
-	// Get instrument name for display
 	let instrument_name = match instrument {
 		InstrumentChoice::Guitar => "Guitar",
 		InstrumentChoice::Ukulele => "Ukulele",
 	};
 
-	// Generate progressions based on instrument choice
 	let progressions = match instrument {
 		InstrumentChoice::Guitar => {
 			let guitar = Guitar::default();
@@ -384,7 +363,6 @@ fn find_progression(
 		return Ok(());
 	}
 
-	// Display the results
 	display_progressions(
 		&progressions,
 		&chord_names,
@@ -396,7 +374,6 @@ fn find_progression(
 	Ok(())
 }
 
-/// Display progression results with formatted output
 fn display_progressions(
 	progressions: &[chordcraft_core::progression::ProgressionSequence],
 	chord_names: &[&str],
@@ -404,7 +381,6 @@ fn display_progressions(
 	instrument_name: &str,
 	instrument: InstrumentChoice,
 ) {
-	// Display header
 	let chord_display = chord_names.join(" → ");
 	if let Some(capo_fret) = capo {
 		println!(
@@ -421,7 +397,6 @@ fn display_progressions(
 		);
 	}
 
-	// Display each progression alternative
 	for (alt_idx, progression) in progressions.iter().enumerate() {
 		println!("{}", "━".repeat(60).dimmed());
 		println!(
@@ -439,7 +414,6 @@ fn display_progressions(
 		println!("{}", "━".repeat(60).dimmed());
 		println!();
 
-		// Display each chord and transition
 		for (i, fingering) in progression.fingerings.iter().enumerate() {
 			let chord_name = if capo.is_some() {
 				chord_names[i]
@@ -454,7 +428,6 @@ fn display_progressions(
 				fingering.position
 			);
 
-			// Display the fingering with correct instrument
 			let diagram = match instrument {
 				InstrumentChoice::Guitar => format_fingering_diagram(fingering, &Guitar::default()),
 				InstrumentChoice::Ukulele => {
@@ -465,7 +438,6 @@ fn display_progressions(
 				println!("  {line}");
 			}
 
-			// Display transition to next chord (if not the last)
 			if i < progression.transitions.len() {
 				let trans = &progression.transitions[i];
 				println!();
@@ -496,17 +468,14 @@ fn name_chord(fingering_str: &str, capo: Option<u8>, instrument: InstrumentChoic
 	use chordcraft_core::analyzer::analyze_fingering;
 	use chordcraft_core::fingering::Fingering;
 
-	// Parse the fingering
 	let fingering = Fingering::parse(fingering_str)
 		.with_context(|| format!("Invalid fingering notation: '{fingering_str}'"))?;
 
-	// Get instrument name for display
 	let instrument_name = match instrument {
 		InstrumentChoice::Guitar => "Guitar",
 		InstrumentChoice::Ukulele => "Ukulele",
 	};
 
-	// Get the notes and analyze based on instrument choice
 	let (pitches, matches) = match instrument {
 		InstrumentChoice::Guitar => {
 			let guitar = Guitar::default();
@@ -522,7 +491,6 @@ fn name_chord(fingering_str: &str, capo: Option<u8>, instrument: InstrumentChoic
 		}
 	};
 
-	// Display header with capo info
 	if let Some(capo_fret) = capo {
 		println!(
 			"\n{} {} {} [{instrument_name}]\n",
@@ -552,8 +520,6 @@ fn name_chord(fingering_str: &str, capo: Option<u8>, instrument: InstrumentChoic
 		return Ok(());
 	}
 
-	// If using capo, transpose all identified chords UP by capo amount
-	// (the fingering shows the shape, but the actual sound is transposed up)
 	let transposed_matches: Vec<_> = if let Some(capo_fret) = capo {
 		matches
 			.iter()
@@ -567,7 +533,6 @@ fn name_chord(fingering_str: &str, capo: Option<u8>, instrument: InstrumentChoic
 		matches.clone()
 	};
 
-	// Display the top match
 	let top = &transposed_matches[0];
 	let shape_chord = &matches[0].chord;
 
@@ -598,7 +563,6 @@ fn name_chord(fingering_str: &str, capo: Option<u8>, instrument: InstrumentChoic
 	);
 	println!("  Score: {}", top.score);
 
-	// Display alternatives if there are any
 	if transposed_matches.len() > 1 {
 		println!("\n{}", "Alternative interpretations:".bold());
 		for (i, (m, shape)) in transposed_matches
