@@ -76,3 +76,8 @@ cargo build --workspace
 ## Contributing
 
 This project is in early development. Contributions welcome!
+
+## Acknowledgements
+
+- SVG favicon from [svgrepo](https://www.svgrepo.com/svg/18180/ukelele)
+- Open graph image by nano banana

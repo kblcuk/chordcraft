@@ -124,6 +124,45 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Identify Chords from Tab Notation - ChordCraft Chord Analyzer</title>
+	<meta
+		name="description"
+		content="Identify any chord by entering tab notation or clicking the interactive fretboard. Analyze guitar and ukulele fingerings to discover chord names with confidence scores."
+	/>
+	<meta
+		name="keywords"
+		content="chord identifier, chord analyzer, tab notation, identify chord, reverse chord lookup, guitar tab analyzer, ukulele chord identifier, what chord is this"
+	/>
+	<link rel="canonical" href="https://chordcraft.rocks/name" />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://chordcraft.rocks/name" />
+	<meta
+		property="og:title"
+		content="Identify Chords from Tab Notation - ChordCraft Chord Analyzer"
+	/>
+	<meta
+		property="og:description"
+		content="Identify any chord by entering tab notation or clicking the interactive fretboard. Analyze guitar and ukulele fingerings to discover chord names."
+	/>
+	<meta property="og:image" content="https://chordcraft.rocks/og-image.png" />
+
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content="https://chordcraft.rocks/name" />
+	<meta
+		name="twitter:title"
+		content="Identify Chords from Tab Notation - ChordCraft Chord Analyzer"
+	/>
+	<meta
+		name="twitter:description"
+		content="Identify any chord by entering tab notation or clicking the interactive fretboard. Analyze guitar and ukulele fingerings."
+	/>
+	<meta name="twitter:image" content="https://chordcraft.rocks/og-image.png" />
+</svelte:head>
+
 <div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
 	<!-- Header -->
 	<div class="mb-6">

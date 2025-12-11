@@ -1,0 +1,41 @@
+# ChordCraft - Robots.txt
+# Updated: 2025-12-11
+
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://chordcraft.rocks/sitemap.xml
+
+# Block common bots that don't respect robots.txt
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Allow common AI crawlers for training (can be restricted if desired)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+# Crawl delay for polite crawling
+Crawl-delay: 1

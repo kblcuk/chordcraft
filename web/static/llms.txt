@@ -1,0 +1,66 @@
+# ChordCraft - LLMs.txt
+# Information for AI crawlers and language models
+# Specification: https://llmstxt.org/
+
+# ChordCraft
+
+> A multi-platform tool for bidirectional chord-fingering conversion, supporting guitar, ukulele, and other stringed instruments.
+
+## Overview
+
+ChordCraft is a web application and CLI tool built with Rust (core) and SvelteKit (web) that provides:
+
+1. **Chord → Fingering**: Input chord names (e.g., "Abm7", "Cmaj7") to get multiple playable fingering options
+2. **Fingering → Chord**: Input tab notation (e.g., "x32010") to identify the chord
+3. **Progression Optimization**: Input chord sequences to get optimal fingering transitions
+
+## Key Features
+
+- **Multi-instrument support**: Guitar (6-string standard tuning) and ukulele (GCEA re-entrant tuning)
+- **Voicing types**: Core (essential notes), Full (all chord tones), Jazzy (extended voicings)
+- **Advanced options**: Capo support (0-12 frets), position preferences, playing context (solo/band)
+- **Smart algorithms**: Playability scoring, transition optimization, voice leading
+- **Fast performance**: Rust core compiled to WebAssembly (~213KB bundle)
+
+## Technology Stack
+
+- **Core**: Rust music theory library with algorithmic fingering generation
+- **Web**: SvelteKit 2 with Svelte 5 (runes mode), Tailwind CSS 4
+- **Build**: Static site generation (pre-rendered HTML for SEO)
+- **WASM**: wasm-pack for browser integration
+
+## Main Routes
+
+- `/find` - Find fingerings for chord names
+- `/name` - Identify chords from tab notation
+- `/progression` - Optimize chord progressions for smooth transitions
+
+## Use Cases
+
+- Musicians learning new chords and voicings
+- Songwriters finding optimal chord progressions
+- Teachers demonstrating multiple fingering options
+- Music theory students understanding chord construction
+
+## Open Source
+
+- Repository: https://github.com/yourusername/chordcraft
+- License: AGPL-3.0-or-later
+- Built with: Rust, SvelteKit, WASM, Tailwind CSS
+
+## Technical Details
+
+The application uses:
+- Algorithmic fingering generation (not database-driven)
+- Interval-based chord theory system
+- Physical playability constraints (stretch, finger count, barre detection)
+- Transition scoring for progression optimization
+- Pre-rendered static HTML for fast loading and SEO
+
+## Contact
+
+For questions, issues, or contributions, visit the GitHub repository.
+
+---
+
+Last updated: 2025-12-11

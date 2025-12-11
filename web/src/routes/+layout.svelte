@@ -5,6 +5,7 @@
 	import Header from '$lib/components/shared/Header.svelte';
 	import Navigation from '$lib/components/shared/Navigation.svelte';
 	import Footer from '$lib/components/shared/Footer.svelte';
+	import StructuredData from '$lib/components/seo/StructuredData.svelte';
 	import '../app.css';
 
 	let { children } = $props();
@@ -43,6 +44,9 @@
 		await Promise.all([wasmLoadPromise, Promise.race([fontLoadPromise, timeoutPromise])]);
 	});
 </script>
+
+<!-- Structured Data for SEO -->
+<StructuredData type="WebApplication" />
 
 <!-- Loading screen shown until fonts are ready -->
 {#if !appReady}

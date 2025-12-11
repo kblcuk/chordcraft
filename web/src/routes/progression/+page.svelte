@@ -134,6 +134,42 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Optimize Chord Progressions - ChordCraft Progression Tool</title>
+	<meta
+		name="description"
+		content="Find the smoothest fingering transitions for chord progressions on guitar and ukulele. Optimize common progressions like I-IV-V, ii-V-I, and more with advanced voice leading."
+	/>
+	<meta
+		name="keywords"
+		content="chord progressions, guitar progression, ukulele progression, chord transitions, voice leading, ii-V-I, I-IV-V, jazz progressions, smooth chord changes"
+	/>
+	<link rel="canonical" href="https://chordcraft.rocks/progression" />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://chordcraft.rocks/progression" />
+	<meta property="og:title" content="Optimize Chord Progressions - ChordCraft Progression Tool" />
+	<meta
+		property="og:description"
+		content="Find the smoothest fingering transitions for chord progressions on guitar and ukulele. Optimize common progressions with advanced voice leading."
+	/>
+	<meta property="og:image" content="https://chordcraft.rocks/og-image.png" />
+
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content="https://chordcraft.rocks/progression" />
+	<meta
+		name="twitter:title"
+		content="Optimize Chord Progressions - ChordCraft Progression Tool"
+	/>
+	<meta
+		name="twitter:description"
+		content="Find the smoothest fingering transitions for chord progressions on guitar and ukulele. Optimize common progressions."
+	/>
+	<meta name="twitter:image" content="https://chordcraft.rocks/og-image.png" />
+</svelte:head>
+
 <div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
 	<!-- Header -->
 	<div class="mb-6">

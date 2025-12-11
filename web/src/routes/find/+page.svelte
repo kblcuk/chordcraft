@@ -136,6 +136,39 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Find Chord Fingerings - ChordCraft Guitar & Ukulele Tool</title>
+	<meta
+		name="description"
+		content="Find multiple fingering options for any chord on guitar or ukulele. Input chord names like Cmaj7, Abm7, F#7b9 to discover playable voicings with capo support and position preferences."
+	/>
+	<meta
+		name="keywords"
+		content="guitar chords, ukulele chords, chord fingerings, guitar chord finder, ukulele chord finder, chord voicings, capo chords, jazz chords, chord diagrams"
+	/>
+	<link rel="canonical" href="https://chordcraft.rocks/find" />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://chordcraft.rocks/find" />
+	<meta property="og:title" content="Find Chord Fingerings - ChordCraft Guitar & Ukulele Tool" />
+	<meta
+		property="og:description"
+		content="Find multiple fingering options for any chord on guitar or ukulele. Discover playable voicings with advanced options like capo support and position preferences."
+	/>
+	<meta property="og:image" content="https://chordcraft.rocks/og-image.png" />
+
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content="https://chordcraft.rocks/find" />
+	<meta name="twitter:title" content="Find Chord Fingerings - ChordCraft Guitar & Ukulele Tool" />
+	<meta
+		name="twitter:description"
+		content="Find multiple fingering options for any chord on guitar or ukulele. Discover playable voicings with advanced options."
+	/>
+	<meta name="twitter:image" content="https://chordcraft.rocks/og-image.png" />
+</svelte:head>
+
 <div class="animate-fade-in rounded-xl border border-border bg-card p-6 shadow-warm sm:p-8">
 	<!-- Header -->
 	<div class="mb-6">
