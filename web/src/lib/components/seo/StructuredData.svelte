@@ -53,5 +53,5 @@
 </script>
 
 <svelte:head>
-	{@html `<\u{73}script type="application/ld+json">${JSON.stringify(schema)}</script>`}
+	{@html `<\u{73}cript type="application/ld+json">${JSON.stringify(schema)}</script>`}
 </svelte:head>
