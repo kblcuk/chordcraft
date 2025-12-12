@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import DarkModeToggle from '$lib/DarkModeToggle.svelte';
+	import InstallButton from '$lib/components/shared/InstallButton.svelte';
 	import Guitar from '@lucide/svelte/icons/guitar';
 	import Ukulele from '@lucide/svelte/icons/tree-palm';
 	import { updateUrl } from '$lib/utils/url-state';
@@ -86,6 +87,7 @@
 					{/if}
 				</div>
 
+				<InstallButton />
 				<DarkModeToggle />
 			</div>
 		</div>

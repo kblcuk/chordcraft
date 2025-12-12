@@ -13,6 +13,29 @@
 	let wasmReady = $state(false);
 	let fontsReady = $state(false);
 	let appReady = $derived(fontsReady);
+	// Register service worker for PWA (production only)
+
+	onMount(async () => {
+		const shouldRegisterServiceWorker = import.meta.env.PROD && 'serviceWorker' in navigator;
+		if (!shouldRegisterServiceWorker) {
+			return;
+		}
+
+		try {
+			const { registerSW } = await import('virtual:pwa-register');
+			registerSW({
+				immediate: true,
+				onNeedRefresh() {
+					console.log('New version available! Please reload.');
+				},
+				onOfflineReady() {
+					console.debug('App is ready to work offline!');
+				},
+			});
+		} catch (error) {
+			console.error('Failed to register service worker:', error);
+		}
+	});
 
 	// Initialize fonts and WASM on mount
 	onMount(async () => {
