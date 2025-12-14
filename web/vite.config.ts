@@ -18,7 +18,7 @@ export default defineConfig({
 			manifest: false, // ./static/manifest.webmanifest
 			workbox: {
 				globPatterns: [
-					'client/**/*.{js,css,ico,png,svg,avif,webp,webmanifest}',
+					'client/**/*.{js,css,ico,png,svg,avif,webp,webmanifest,wasm}',
 					'prerendered/**/*.{html,json}',
 				],
 				// Cache external resources

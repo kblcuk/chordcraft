@@ -9,6 +9,7 @@
   "theme_color": "#8b5a2b",
   "orientation": "any",
   "categories": ["music", "education", "utilities"],
+  "lang": "en",
   "icons": [
     {
       "src": "/icon-192.png",
