@@ -1,8 +1,7 @@
 <script lang="ts">
 	import Github from '@lucide/svelte/icons/github';
 	import Music4 from '@lucide/svelte/icons/music-4';
-	import { env } from '$env/dynamic/public';
-	const PUBLIC_BUILD_VERSION = env.PUBLIC_BUILD_VERSION;
+	import { PUBLIC_BUILD_VERSION } from '$env/static/public';
 </script>
 
 <footer class="mt-auto border-t border-border/50 bg-card/50">
