@@ -2,7 +2,7 @@ import path from 'path';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 // https://vite.dev/config/
 // Note: Bun has native WASM support, so vite-plugin-wasm and vite-plugin-top-level-await
@@ -11,13 +11,16 @@ export default defineConfig({
 	plugins: [
 		sveltekit(),
 		tailwindcss(),
-		VitePWA({
+		SvelteKitPWA({
 			registerType: 'autoUpdate',
 			strategies: 'generateSW',
 			injectRegister: 'auto',
-			manifest: false, // We manually created manifest.webmanifest
+			manifest: false, // ./static/manifest.webmanifest
 			workbox: {
-				globPatterns: ['**/*.{html,css,js,wasm,svg,png,jpg,webp,woff2}'],
+				globPatterns: [
+					'client/**/*.{js,css,ico,png,svg,avif,webp,webmanifest}',
+					'prerendered/**/*.{html,json}',
+				],
 				// Cache external resources
 				runtimeCaching: [
 					{
@@ -51,7 +54,10 @@ export default defineConfig({
 				],
 			},
 			devOptions: {
-				enabled: false, // Disable in dev - PWA only works in production build
+				enabled: true,
+				suppressWarnings: process.env.SUPPRESS_WARNING === 'true',
+				type: 'module',
+				navigateFallback: '/',
 			},
 		}),
 	],
