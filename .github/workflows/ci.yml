@@ -21,67 +21,29 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      - name: Setup mise
+        uses: jdx/mise-action@v2
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Run clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Run tests
-        run: cargo test --workspace
+      - name: Run Rust checks
+        run: mise run rust:checks
 
   web-checks:
     if: github.event_name == 'push' || github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Setup Rust (for wasm-pack)
-        uses: dtolnay/rust-toolchain@stable
+      - name: Setup mise
+        uses: jdx/mise-action@v2
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Install wasm-pack
-        run: cargo install wasm-pack
-
-      - name: Build WASM
-        run: wasm-pack build crates/wasm --target web --release
-
-      - name: Install web dependencies
-        working-directory: web
-        run: bun install
-
-      - name: Generate svelte-kit type definitions
-        working-directory: web
-        run: bun run sync
-
-      - name: Type check (svelte-check)
-        working-directory: web
-        run: bun run check
-
-      - name: Lint
-        working-directory: web
-        run: bun run lint
-
-      - name: Format check
-        working-directory: web
-        run: bun run format:check
-
-      - name: Run tests
-        working-directory: web
-        run: bun run test:run
+      - name: Run web checks
+        run: mise run web:checks
 
   build:
     needs: [rust-checks, web-checks]
@@ -89,34 +51,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Setup mise
+        uses: jdx/mise-action@v2
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Install wasm-pack
-        run: cargo install wasm-pack
-
-      - name: Build WASM
-        run: wasm-pack build crates/wasm --target web --release
-
-      - name: Install web dependencies
-        working-directory: web
-        run: bun install
-
-      - name: Get build version
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Build web app
-        working-directory: web
-        run: bun run build
-        env:
-          PUBLIC_BUILD_VERSION: ${{ steps.vars.outputs.sha_short }}
+      - name: Build
+        run: mise run build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -134,6 +76,11 @@ jobs:
       contents: read
       deployments: write
     steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
@@ -141,8 +88,7 @@ jobs:
           path: web/build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy web/build --project-name=chordcraft
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: mise run deploy main

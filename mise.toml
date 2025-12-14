@@ -1,0 +1,175 @@
+[tools]
+bun = "latest"
+"cargo:wasm-pack" = "latest"
+rust = { version = "latest", components = "clippy,rustfmt" }
+
+# ============================================================================
+# RUST TASKS
+# ============================================================================
+
+[tasks."rust:fmt"]
+description = "Format Rust code"
+run = "cargo fmt --all"
+
+[tasks."rust:fmt-check"]
+description = "Check Rust code formatting"
+run = "cargo fmt --all -- --check"
+
+[tasks."rust:clippy"]
+description = "Run clippy lints"
+run = "cargo clippy --workspace --all-targets -- -D warnings"
+
+[tasks."rust:test"]
+description = "Run Rust tests"
+run = "cargo test --workspace"
+
+[tasks."rust:checks"]
+description = "Run all Rust checks (fmt, clippy, test)"
+depends = ["rust:fmt-check", "rust:clippy", "rust:test"]
+
+# ============================================================================
+# CLI TASKS
+# ============================================================================
+
+[tasks."cli:build"]
+description = "Build CLI tool (debug mode)"
+run = "cargo build -p chordcraft-cli"
+
+[tasks."cli:build-release"]
+description = "Build CLI tool (release mode)"
+run = "cargo build --release -p chordcraft-cli"
+
+[tasks."cli:install"]
+description = "Install CLI tool to system"
+run = "cargo install --path crates/cli"
+
+# ============================================================================
+# WASM TASKS
+# ============================================================================
+
+[tasks."wasm:build"]
+description = "Build WASM package"
+run = "wasm-pack build crates/wasm --target web --release"
+
+# ============================================================================
+# WEB TASKS
+# ============================================================================
+
+[tasks."web:install"]
+description = "Install web dependencies"
+run = "bun install"
+dir = "web"
+depends = "wasm:build"
+
+[tasks."web:sync"]
+description = "Generate SvelteKit type definitions"
+run = "bun run sync"
+dir = "web"
+depends = "web:install"
+
+[tasks."web:check"]
+description = "Type check with svelte-check"
+run = "bun run check"
+dir = "web"
+
+[tasks."web:lint"]
+description = "Lint web code"
+run = "bun run lint"
+dir = "web"
+
+[tasks."web:format"]
+description = "Format web code"
+run = "bun run format"
+dir = "web"
+
+[tasks."web:format-check"]
+description = "Check web code formatting"
+run = "bun run format:check"
+dir = "web"
+
+[tasks."web:test"]
+description = "Run web tests"
+run = "bun run test:run"
+dir = "web"
+
+[tasks."web:checks"]
+description = "Run all web checks (type, lint, format, test)"
+run = [
+	{ task = "web:install" },
+	{ task = "web:sync" },
+	{ tasks = [
+		"web:check",
+		"web:lint",
+		"web:format-check",
+	] },
+	{ task = "web:test" },
+]
+
+[tasks."web:dev"]
+description = "Start web dev server"
+run = "bun run dev"
+dir = "web"
+
+# ============================================================================
+# BUILD TASKS
+# ============================================================================
+
+[tasks."web:build"]
+description = "Build web app for production"
+run = [
+	{ task = "web:sync" },
+	'PUBLIC_BUILD_VERSION="${PUBLIC_BUILD_VERSION:-$(git rev-parse --short HEAD)}" bun run build',
+]
+dir = "web"
+depends = "web:install"
+
+[tasks.build]
+description = "Build WASM and web app"
+run = [
+	{ task = "wasm:build" },
+	{ task = "web:install" },
+	{ task = "web:build" },
+]
+
+# ============================================================================
+# DEPLOY TASKS
+# ============================================================================
+
+[tasks.deploy]
+description = "Deploy to Cloudflare Pages"
+usage = '''
+arg "[environment]" help="Target environment" default="preview" {
+  choices "preview" "main"
+}
+flag "-v --verbose" help="Enable verbose output"
+'''
+
+depends = ["build"]
+
+run = """
+if [ ! -d "web/build" ]; then
+  echo "Error: web/build directory not found. Run 'mise run build' first."
+  exit 1
+fi
+npx wrangler pages deploy web/build --project-name=chordcraft --branch="${usage_environment?}"
+"""
+
+# ============================================================================
+# CI TASKS
+# ============================================================================
+
+[tasks.ci]
+description = "Run all CI checks and build (like GitHub Actions)"
+run = [{ tasks = ["rust:checks", "web:checks"] }, { task = "build" }]
+
+[tasks."ci:quick"]
+description = "Run quick checks without tests"
+run = [
+	{ tasks = [
+		"rust:fmt-check",
+		"rust:clippy",
+		"web:check",
+		"web:lint",
+		"web:format-check",
+	] },
+]

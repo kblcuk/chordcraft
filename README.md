@@ -16,16 +16,24 @@ A multi-platform tool for bidirectional chord-fingering conversion, supporting g
 
 ## Installation
 
+This project uses [mise-en-place](https://mise.jdx.dev/) as dependency and task orchestrator.
+
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/chordcraft.git
 cd chordcraft
 
-# Build the project
-cargo build --release
+# Install tools (Rust, Bun, wasm-pack)
+mise install
+
+# Build the CLI tool
+mise run cli:build-release
+
+# Or install it globally
+mise run cli:install
 
 # Run the CLI tool
-cargo run -p chordcraft-cli -- find "Cmaj7"
+chordcraft -- find "Cmaj7"
 ```
 
 ## Usage
@@ -56,14 +64,29 @@ chordcraft progression "C G Am F" --instrument ukulele
 See [CLAUDE.md](./CLAUDE.md) for detailed implementation plan and architecture decisions.
 
 ```bash
-# Run tests
-cargo test --workspace
+# Run all tests
+mise run rust:test
 
-# Run with watch mode (requires cargo-watch)
-cargo watch -x test -x run
+# Format code
+mise run rust:fmt
 
-# Build all crates
-cargo build --workspace
+# Run lints
+mise run rust:clippy
+
+# Run all Rust checks (format, clippy, tests)
+mise run rust:checks
+
+# Build web app (builds WASM + SvelteKit app)
+mise run build
+
+# Run web dev server
+mise run web:dev
+
+# Run all CI checks locally
+mise run ci
+
+# Quick checks without tests
+mise run ci:quick
 ```
 
 ## Project Structure

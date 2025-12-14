@@ -10,5 +10,16 @@
     "build": "bun run --cwd web build",
     "preview": "bun run --cwd web preview",
     "test": "bun run --cwd web test"
+  },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-toml"
+    ],
+    "tabWidth": 2,
+    "useTabs": true
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4",
+    "prettier-plugin-toml": "^2.0.6"
   }
 }
