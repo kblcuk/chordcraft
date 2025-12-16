@@ -314,6 +314,10 @@
 		/* Hint to browser about upcoming transform */
 		will-change: transform;
 	}
+	.card-root {
+		content-visibility: auto;
+		contain-intrinsic-size: 280px 370px;
+	}
 
 	/* Button press effect */
 	.btn-press:active {

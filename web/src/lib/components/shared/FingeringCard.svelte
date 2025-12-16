@@ -21,10 +21,10 @@
 </script>
 
 <div
-	class="card-lift animate-fade-in-up rounded-xl border border-border bg-card p-4 opacity-0 shadow-warm transition-all duration-200 hover:border-primary/30 {staggerClass}"
+	class="card-lift animate-fade-in-up rounded-xl border border-border bg-card p-4 opacity-0 shadow-warm transition-all duration-200 hover:border-primary/30 {staggerClass} min-h-[370px card-root"
 >
-	<!-- Chord Diagram -->
-	<div class="mb-4 flex justify-center">
+	<!-- Chord Diagram - Reserve fixed space to prevent CLS -->
+	<div class="mb-4 flex h-[200px] items-center justify-center">
 		<ChordDiagram
 			tab={fingering.tab}
 			notes={fingering.notes}
