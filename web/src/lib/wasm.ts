@@ -79,12 +79,38 @@ export interface ProgressionOptions {
 // ============================================================================
 
 let wasmInitialized = false;
+let wasmInitPromise: Promise<void> | null = null;
 
+/**
+ * Initialize WASM module
+ * Uses promise caching to prevent race conditions and duplicate loads
+ */
 export async function initializeWasm(): Promise<void> {
-	if (!wasmInitialized) {
-		await init();
-		wasmInitialized = true;
+	// If already initialized, return immediately
+	if (wasmInitialized) {
+		return;
 	}
+
+	// If initialization is in progress, wait for it
+	if (wasmInitPromise) {
+		await wasmInitPromise;
+		return;
+	}
+
+	// Start initialization and cache the promise
+	wasmInitPromise = (async () => {
+		try {
+			await init();
+			wasmInitialized = true;
+		} catch (error) {
+			console.error('Error initializing WASM:', error);
+			throw error;
+		} finally {
+			wasmInitPromise = null; // Reset promise after completion
+		}
+	})();
+
+	return wasmInitPromise;
 }
 
 // ============================================================================
