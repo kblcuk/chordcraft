@@ -6,13 +6,51 @@
 	let {
 		sequences,
 		stringCount = 6,
+		loading = false,
 	}: {
 		sequences: ProgressionSequence[];
 		stringCount?: number;
+		loading?: boolean;
 	} = $props();
 </script>
 
-{#if sequences.length > 0}
+{#if loading}
+	<!-- Skeleton loader to prevent CLS -->
+	<div class="mt-6 space-y-8">
+		{#each Array.from(Array(2)).map((v, i) => i) as i (i)}
+			<div class="animate-pulse rounded-lg border-2 border-border bg-card p-6">
+				<div class="mb-6 flex items-center justify-between">
+					<div class="h-7 w-40 rounded bg-muted"></div>
+					<div class="h-5 w-32 rounded bg-muted"></div>
+				</div>
+
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+					{#each Array.from(Array(4)).map((v, i) => i) as i (i)}
+						<div class="rounded-lg border-2 border-border bg-background p-4">
+							<!-- Chord name skeleton -->
+							<div class="mb-3 flex justify-center">
+								<div class="h-6 w-24 rounded bg-muted"></div>
+							</div>
+							<!-- Diagram skeleton -->
+							<div class="mb-3 flex justify-center">
+								<div class="h-32 w-24 rounded-lg bg-muted"></div>
+							</div>
+							<!-- Tab notation skeleton -->
+							<div class="mb-2 flex justify-center">
+								<div class="h-7 w-28 rounded bg-muted"></div>
+							</div>
+							<!-- Badges skeleton -->
+							<div class="flex justify-center gap-1">
+								<div class="h-5 w-16 rounded bg-muted"></div>
+								<div class="h-5 w-16 rounded bg-muted"></div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/each}
+	</div>
+{:else if sequences.length > 0}
 	<div class="mt-6 space-y-8">
 		{#each sequences as sequence, i (sequence.fingerings.map((f) => f.tab).join('-'))}
 			<div class="rounded-lg border-2 border-border bg-card p-6">

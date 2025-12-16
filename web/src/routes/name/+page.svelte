@@ -245,14 +245,16 @@
 	{/if}
 
 	<!-- Results -->
-	{#if results.length > 0}
+	{#if loading || results.length > 0}
 		<div class="mt-6 space-y-4">
 			<!-- Finger Count Badge -->
-			<div class="flex justify-center">
-				<FingerCountBadge tab={urlState.tab} />
-			</div>
+			{#if !loading && results.length > 0}
+				<div class="flex justify-center">
+					<FingerCountBadge tab={urlState.tab} />
+				</div>
+			{/if}
 
-			<Results matches={results} />
+			<Results matches={results} {loading} />
 		</div>
 	{/if}
 </div>

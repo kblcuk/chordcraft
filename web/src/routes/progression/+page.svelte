@@ -232,5 +232,5 @@
 	{/if}
 
 	<!-- Results -->
-	<Results sequences={results} {stringCount} />
+	<Results sequences={results} {stringCount} {loading} />
 </div>

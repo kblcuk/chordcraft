@@ -216,5 +216,5 @@
 	{/if}
 
 	<!-- Results -->
-	<Results fingerings={results} {stringCount} />
+	<Results fingerings={results} {stringCount} {loading} />
 </div>
