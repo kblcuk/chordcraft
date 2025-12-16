@@ -1,0 +1,35 @@
+# Cloudflare Pages Headers Configuration
+# Optimizes caching for static assets
+
+# Font files - aggressive caching (immutable, 1 year)
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Cross-Origin-Resource-Policy: cross-origin
+
+# SvelteKit immutable assets - aggressive caching
+/_app/immutable/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Version file - never cache
+/_app/version.json
+  Cache-Control: no-cache, must-revalidate
+
+# WASM files - aggressive caching
+/*.wasm
+  Cache-Control: public, max-age=31536000, immutable
+  Content-Type: application/wasm
+
+# Manifest and service worker - short cache
+/manifest.webmanifest
+  Cache-Control: public, max-age=86400
+
+# HTML pages - no cache (dynamic content)
+/*.html
+  Cache-Control: no-cache, must-revalidate
+
+# Security headers for all pages
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
