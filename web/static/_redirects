@@ -1,0 +1,3 @@
+# Cloudflare Pages Redirects
+# Redirect root to /find to prevent CLS from client-side redirect
+/  /find  307
