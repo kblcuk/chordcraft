@@ -55,12 +55,19 @@ impl Fingering {
 				'0'..='9' => StringState::Fretted(c.to_digit(10).unwrap() as u8),
 				'(' => {
 					let mut num_str = String::new();
+					let mut found_closing = false;
 					while let Some(&next) = chars.peek() {
 						if next == ')' {
 							chars.next(); // consume the ')'
+							found_closing = true;
 							break;
 						}
 						num_str.push(chars.next().unwrap());
+					}
+					if !found_closing {
+						return Err(ChordCraftError::InvalidFingering(
+							"Unclosed parenthesis in fret notation".to_string(),
+						));
 					}
 					let fret = num_str.parse::<u8>().map_err(|_| {
 						ChordCraftError::InvalidFingering(format!("Invalid fret number: {num_str}"))
@@ -772,6 +779,28 @@ mod tests {
 			score_good,
 			score_bad,
 			score_good - score_bad
+		);
+	}
+
+	#[test]
+	fn test_parse_unclosed_parenthesis() {
+		let result = Fingering::parse("x(10");
+		assert!(result.is_err());
+		let err = result.unwrap_err();
+		assert!(
+			err.to_string().contains("Unclosed parenthesis"),
+			"Expected unclosed parenthesis error, got: {err}"
+		);
+	}
+
+	#[test]
+	fn test_parse_empty_parenthesis() {
+		let result = Fingering::parse("x()0000");
+		assert!(result.is_err());
+		let err = result.unwrap_err();
+		assert!(
+			err.to_string().contains("Invalid fret number"),
+			"Expected invalid fret number error for empty parens, got: {err}"
 		);
 	}
 }
