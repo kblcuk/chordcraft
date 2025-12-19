@@ -72,6 +72,11 @@ impl Fingering {
 					let fret = num_str.parse::<u8>().map_err(|_| {
 						ChordCraftError::InvalidFingering(format!("Invalid fret number: {num_str}"))
 					})?;
+					if fret > 24 {
+						return Err(ChordCraftError::InvalidFingering(format!(
+							"Fret {fret} exceeds maximum of 24"
+						)));
+					}
 					StringState::Fretted(fret)
 				}
 				' ' | '-' => continue, // Allow separators
@@ -791,6 +796,21 @@ mod tests {
 			err.to_string().contains("Unclosed parenthesis"),
 			"Expected unclosed parenthesis error, got: {err}"
 		);
+	}
+
+	#[test]
+	fn test_parse_fret_exceeds_maximum() {
+		let result = Fingering::parse("x(25)0000");
+		assert!(result.is_err());
+		let err = result.unwrap_err();
+		assert!(
+			err.to_string().contains("exceeds maximum"),
+			"Expected fret exceeds maximum error, got: {err}"
+		);
+
+		// Fret 24 should be allowed (edge case)
+		let result = Fingering::parse("x(24)0000");
+		assert!(result.is_ok(), "Fret 24 should be valid");
 	}
 
 	#[test]
