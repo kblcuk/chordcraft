@@ -7,7 +7,8 @@ use chordcraft_core::generator::{
 	GeneratorOptions, PlayingContext, ScoredFingering, format_fingering_diagram,
 	generate_fingerings,
 };
-use chordcraft_core::instrument::{Guitar, Ukulele};
+use chordcraft_core::instrument::{ConfigurableInstrument, Guitar, Ukulele};
+use chordcraft_core::note::Note;
 
 #[derive(Debug, Clone, Copy, Default, ValueEnum)]
 enum InstrumentChoice {
@@ -16,6 +17,86 @@ enum InstrumentChoice {
 	Guitar,
 	/// Standard ukulele (GCEA tuning)
 	Ukulele,
+	/// 4-string bass guitar (EADG tuning)
+	Bass,
+	/// 5-string bass guitar (BEADG tuning)
+	Bass5,
+	/// Standard mandolin (GDAE tuning)
+	Mandolin,
+	/// 5-string banjo (gDGBD tuning)
+	Banjo,
+	/// Baritone ukulele (DGBE tuning)
+	BariUke,
+	/// 7-string guitar (BEADGBE tuning)
+	Guitar7,
+	/// Drop D guitar (DADGBE tuning)
+	DropD,
+	/// Open G guitar (DGDGBD tuning)
+	OpenG,
+	/// DADGAD guitar tuning
+	Dadgad,
+}
+
+/// A wrapper that holds any instrument type for use in CLI operations
+enum InstrumentWrapper {
+	Guitar(Guitar),
+	Ukulele(Ukulele),
+	Configurable(ConfigurableInstrument),
+}
+
+impl InstrumentWrapper {
+	fn from_choice(choice: InstrumentChoice) -> Self {
+		match choice {
+			InstrumentChoice::Guitar => InstrumentWrapper::Guitar(Guitar::default()),
+			InstrumentChoice::Ukulele => InstrumentWrapper::Ukulele(Ukulele::default()),
+			InstrumentChoice::Bass => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::bass())
+			}
+			InstrumentChoice::Bass5 => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::bass_5_string())
+			}
+			InstrumentChoice::Mandolin => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::mandolin())
+			}
+			InstrumentChoice::Banjo => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::banjo())
+			}
+			InstrumentChoice::BariUke => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::baritone_ukulele())
+			}
+			InstrumentChoice::Guitar7 => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::guitar_7_string())
+			}
+			InstrumentChoice::DropD => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::guitar_drop_d())
+			}
+			InstrumentChoice::OpenG => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::guitar_open_g())
+			}
+			InstrumentChoice::Dadgad => {
+				InstrumentWrapper::Configurable(ConfigurableInstrument::guitar_dadgad())
+			}
+		}
+	}
+
+	fn name(&self) -> &str {
+		match self {
+			InstrumentWrapper::Guitar(_) => "Guitar",
+			InstrumentWrapper::Ukulele(_) => "Ukulele",
+			InstrumentWrapper::Configurable(c) => c.name(),
+		}
+	}
+}
+
+// Helper macro to execute operations on any instrument type
+macro_rules! with_instrument {
+	($wrapper:expr, $instr:ident => $body:expr) => {
+		match $wrapper {
+			InstrumentWrapper::Guitar($instr) => $body,
+			InstrumentWrapper::Ukulele($instr) => $body,
+			InstrumentWrapper::Configurable($instr) => $body,
+		}
+	};
 }
 
 fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
@@ -34,6 +115,49 @@ fn parse_playing_context(context: Option<&String>) -> PlayingContext {
 			_ => PlayingContext::Solo,
 		})
 		.unwrap_or(PlayingContext::Solo)
+}
+
+/// Parse a custom tuning string like "E2,A2,D3,G3,B3,E4" into notes
+fn parse_tuning(tuning_str: &str) -> Result<Vec<Note>> {
+	tuning_str
+		.split(',')
+		.map(|s| {
+			Note::parse(s.trim()).map_err(|e| anyhow::anyhow!("Invalid note '{}': {}", s.trim(), e))
+		})
+		.collect()
+}
+
+/// Create a custom instrument from a tuning string
+fn create_custom_instrument(tuning_str: &str) -> Result<ConfigurableInstrument> {
+	let tuning = parse_tuning(tuning_str)?;
+	let string_count = tuning.len();
+
+	if string_count < 2 {
+		anyhow::bail!("Tuning must have at least 2 strings");
+	}
+	if string_count > 12 {
+		anyhow::bail!("Tuning cannot have more than 12 strings");
+	}
+
+	// Determine sensible defaults based on string count
+	let (max_stretch, fret_range, min_played) = match string_count {
+		2..=4 => (5, 17, 1), // Small instruments like ukulele/mandolin
+		5..=6 => (4, 24, 3), // Guitar-like
+		7..=8 => (4, 24, 3), // Extended range guitars
+		_ => (3, 22, 4),     // Very large instruments
+	};
+
+	let string_names: Vec<String> = tuning.iter().map(|n| format!("{}", n.pitch)).collect();
+
+	Ok(ConfigurableInstrument::builder()
+		.name("Custom Tuning")
+		.tuning(tuning)
+		.fret_range(0, fret_range)
+		.max_stretch(max_stretch)
+		.min_played_strings(min_played)
+		.string_names(string_names)
+		.build()
+		.expect("Valid custom instrument"))
 }
 
 #[derive(Parser)]
@@ -72,9 +196,13 @@ enum Commands {
 		#[arg(short, long)]
 		capo: Option<u8>,
 
-		/// Instrument: guitar or ukulele (default: guitar)
+		/// Instrument type (guitar, ukulele, bass, bass5, mandolin, banjo, bari-uke, guitar7, drop-d, open-g, dadgad)
 		#[arg(short, long, default_value = "guitar")]
 		instrument: InstrumentChoice,
+
+		/// Custom tuning (e.g., "D2,A2,D3,G3,B3,E4" for Drop D). Overrides --instrument.
+		#[arg(short, long)]
+		tuning: Option<String>,
 	},
 
 	/// Identify chord from fingering notation
@@ -86,9 +214,13 @@ enum Commands {
 		#[arg(short, long)]
 		capo: Option<u8>,
 
-		/// Instrument: guitar or ukulele (default: guitar)
+		/// Instrument type (guitar, ukulele, bass, bass5, mandolin, banjo, bari-uke, guitar7, drop-d, open-g, dadgad)
 		#[arg(short, long, default_value = "guitar")]
 		instrument: InstrumentChoice,
+
+		/// Custom tuning (e.g., "D2,A2,D3,G3,B3,E4" for Drop D). Overrides --instrument.
+		#[arg(short, long)]
+		tuning: Option<String>,
 	},
 
 	/// Find optimal fingerings for a chord progression
@@ -120,9 +252,13 @@ enum Commands {
 		#[arg(short, long)]
 		capo: Option<u8>,
 
-		/// Instrument: guitar or ukulele (default: guitar)
+		/// Instrument type (guitar, ukulele, bass, bass5, mandolin, banjo, bari-uke, guitar7, drop-d, open-g, dadgad)
 		#[arg(short, long, default_value = "guitar")]
 		instrument: InstrumentChoice,
+
+		/// Custom tuning (e.g., "D2,A2,D3,G3,B3,E4" for Drop D). Overrides --instrument.
+		#[arg(short, long)]
+		tuning: Option<String>,
 	},
 }
 
@@ -138,15 +274,28 @@ fn main() -> Result<()> {
 			context,
 			capo,
 			instrument,
+			tuning,
 		} => {
-			find_fingerings(&chord, limit, position, voicing, context, capo, instrument)?;
+			find_fingerings(
+				&chord,
+				capo,
+				instrument,
+				tuning,
+				CliOptions {
+					limit,
+					position,
+					voicing,
+					context,
+				},
+			)?;
 		}
 		Commands::Name {
 			fingering,
 			capo,
 			instrument,
+			tuning,
 		} => {
-			name_chord(&fingering, capo, instrument)?;
+			name_chord(&fingering, capo, instrument, tuning)?;
 		}
 		Commands::Progression {
 			chords,
@@ -157,6 +306,7 @@ fn main() -> Result<()> {
 			context,
 			capo,
 			instrument,
+			tuning,
 		} => {
 			find_progression(
 				&chords,
@@ -165,6 +315,7 @@ fn main() -> Result<()> {
 					context,
 					capo,
 					instrument,
+					tuning,
 				},
 				FindProgressionOptions {
 					limit,
@@ -178,15 +329,40 @@ fn main() -> Result<()> {
 	Ok(())
 }
 
+/// Get instrument from either a custom tuning string or a preset choice
+fn get_instrument(
+	instrument_choice: InstrumentChoice,
+	tuning: Option<String>,
+) -> Result<InstrumentWrapper> {
+	if let Some(tuning_str) = tuning {
+		let custom = create_custom_instrument(&tuning_str)?;
+		Ok(InstrumentWrapper::Configurable(custom))
+	} else {
+		Ok(InstrumentWrapper::from_choice(instrument_choice))
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct CliOptions {
+	pub limit: usize,
+	pub position: Option<u8>,
+	pub voicing: Option<String>,
+	pub context: Option<String>,
+}
+
 fn find_fingerings(
 	chord_str: &str,
-	limit: usize,
-	position: Option<u8>,
-	voicing: Option<String>,
-	context: Option<String>,
 	capo: Option<u8>,
-	instrument: InstrumentChoice,
+	instrument_choice: InstrumentChoice,
+	tuning: Option<String>,
+	cli_options: CliOptions,
 ) -> Result<()> {
+	let CliOptions {
+		limit,
+		position,
+		voicing,
+		context,
+	} = cli_options;
 	let original_chord =
 		Chord::parse(chord_str).with_context(|| format!("Invalid chord name: '{chord_str}'"))?;
 
@@ -208,21 +384,11 @@ fn find_fingerings(
 		..Default::default()
 	};
 
-	let instrument_name = match instrument {
-		InstrumentChoice::Guitar => "Guitar",
-		InstrumentChoice::Ukulele => "Ukulele",
-	};
+	let instrument = get_instrument(instrument_choice, tuning)?;
+	let instrument_name = instrument.name();
 
-	let fingerings: Vec<ScoredFingering> = match instrument {
-		InstrumentChoice::Guitar => {
-			let guitar = Guitar::default();
-			generate_fingerings(&search_chord, &guitar, &options)
-		}
-		InstrumentChoice::Ukulele => {
-			let ukulele = Ukulele::default();
-			generate_fingerings(&search_chord, &ukulele, &options)
-		}
-	};
+	let fingerings: Vec<ScoredFingering> =
+		with_instrument!(&instrument, instr => generate_fingerings(&search_chord, instr, &options));
 
 	if fingerings.is_empty() {
 		println!(
@@ -258,10 +424,8 @@ fn find_fingerings(
 			(i + 1).to_string().cyan().bold(),
 			scored.fingering
 		);
-		let diagram = match instrument {
-			InstrumentChoice::Guitar => format_fingering_diagram(scored, &Guitar::default()),
-			InstrumentChoice::Ukulele => format_fingering_diagram(scored, &Ukulele::default()),
-		};
+		let diagram =
+			with_instrument!(&instrument, instr => format_fingering_diagram(scored, instr));
 		println!("{diagram}");
 		println!();
 	}
@@ -274,6 +438,7 @@ struct FindProgressionInstrumentOptions {
 	voicing: Option<String>,
 	context: Option<String>,
 	capo: Option<u8>,
+	tuning: Option<String>,
 }
 struct FindProgressionOptions {
 	limit: usize,
@@ -287,10 +452,11 @@ fn find_progression(
 ) -> Result<()> {
 	use chordcraft_core::progression::{ProgressionOptions, generate_progression};
 	let FindProgressionInstrumentOptions {
-		instrument,
+		instrument: instrument_choice,
 		voicing,
 		context,
 		capo,
+		tuning,
 	} = instrument_opts;
 
 	let FindProgressionOptions {
@@ -342,21 +508,12 @@ fn find_progression(
 		..Default::default()
 	};
 
-	let instrument_name = match instrument {
-		InstrumentChoice::Guitar => "Guitar",
-		InstrumentChoice::Ukulele => "Ukulele",
-	};
+	let instrument = get_instrument(instrument_choice, tuning)?;
+	let instrument_name = instrument.name().to_string();
 
-	let progressions = match instrument {
-		InstrumentChoice::Guitar => {
-			let guitar = Guitar::default();
-			generate_progression(&search_chords, &guitar, &options)
-		}
-		InstrumentChoice::Ukulele => {
-			let ukulele = Ukulele::default();
-			generate_progression(&search_chords, &ukulele, &options)
-		}
-	};
+	let progressions = with_instrument!(&instrument, instr => {
+		generate_progression(&search_chords, instr, &options)
+	});
 
 	if progressions.is_empty() {
 		println!("{}", "No valid progressions found".yellow());
@@ -367,8 +524,8 @@ fn find_progression(
 		&progressions,
 		&chord_names,
 		capo,
-		instrument_name,
-		instrument,
+		&instrument_name,
+		&instrument,
 	);
 
 	Ok(())
@@ -379,7 +536,7 @@ fn display_progressions(
 	chord_names: &[&str],
 	capo: Option<u8>,
 	instrument_name: &str,
-	instrument: InstrumentChoice,
+	instrument: &InstrumentWrapper,
 ) {
 	let chord_display = chord_names.join(" → ");
 	if let Some(capo_fret) = capo {
@@ -428,12 +585,8 @@ fn display_progressions(
 				fingering.position
 			);
 
-			let diagram = match instrument {
-				InstrumentChoice::Guitar => format_fingering_diagram(fingering, &Guitar::default()),
-				InstrumentChoice::Ukulele => {
-					format_fingering_diagram(fingering, &Ukulele::default())
-				}
-			};
+			let diagram =
+				with_instrument!(instrument, instr => format_fingering_diagram(fingering, instr));
 			for line in diagram.lines() {
 				println!("  {line}");
 			}
@@ -464,32 +617,26 @@ fn display_progressions(
 	}
 }
 
-fn name_chord(fingering_str: &str, capo: Option<u8>, instrument: InstrumentChoice) -> Result<()> {
+fn name_chord(
+	fingering_str: &str,
+	capo: Option<u8>,
+	instrument_choice: InstrumentChoice,
+	tuning: Option<String>,
+) -> Result<()> {
 	use chordcraft_core::analyzer::analyze_fingering;
 	use chordcraft_core::fingering::Fingering;
 
 	let fingering = Fingering::parse(fingering_str)
 		.with_context(|| format!("Invalid fingering notation: '{fingering_str}'"))?;
 
-	let instrument_name = match instrument {
-		InstrumentChoice::Guitar => "Guitar",
-		InstrumentChoice::Ukulele => "Ukulele",
-	};
+	let instrument = get_instrument(instrument_choice, tuning)?;
+	let instrument_name = instrument.name();
 
-	let (pitches, matches) = match instrument {
-		InstrumentChoice::Guitar => {
-			let guitar = Guitar::default();
-			let p = fingering.unique_pitch_classes(&guitar);
-			let m = analyze_fingering(&fingering, &guitar);
-			(p, m)
-		}
-		InstrumentChoice::Ukulele => {
-			let ukulele = Ukulele::default();
-			let p = fingering.unique_pitch_classes(&ukulele);
-			let m = analyze_fingering(&fingering, &ukulele);
-			(p, m)
-		}
-	};
+	let (pitches, matches) = with_instrument!(&instrument, instr => {
+		let p = fingering.unique_pitch_classes(instr);
+		let m = analyze_fingering(&fingering, instr);
+		(p, m)
+	});
 
 	if let Some(capo_fret) = capo {
 		println!(
