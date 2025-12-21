@@ -271,8 +271,6 @@ const BAND_AVOID_LOW_STRINGS_BONUS: i32 = 10;
 const BAND_MID_NECK_MIN: u8 = 3;
 const BAND_MID_NECK_MAX: u8 = 10;
 const BAND_POSITION_PENALTY: i32 = 3;
-const GUITAR_LOW_E_STRING: usize = 0;
-const GUITAR_A_STRING: usize = 1;
 
 pub struct FingeringScorerOptions {
 	pub has_all_notes: bool,
@@ -340,18 +338,20 @@ fn score_fingering<I: Instrument>(
 				VoicingType::Full => score += BAND_FULL_VOICING_BONUS,
 			}
 
-			let strings = fingering.strings();
-			let uses_low_e = strings
-				.get(GUITAR_LOW_E_STRING)
-				.map(|s| s.is_played())
-				.unwrap_or(false);
-			let uses_low_a = strings
-				.get(GUITAR_A_STRING)
-				.map(|s| s.is_played())
-				.unwrap_or(false);
-
-			if !uses_low_e && !uses_low_a {
-				score += BAND_AVOID_LOW_STRINGS_BONUS;
+			// Bonus for avoiding bass register strings (only applies if instrument has some)
+			// Returns None for bass instruments (all strings are bass) - no penalty there
+			// Returns Some([]) for high instruments like ukulele - no bass strings to avoid
+			// Returns Some([0,1]) for guitar - avoid low E and A strings
+			if let Some(bass_indices) = instrument.bass_string_indices()
+				&& !bass_indices.is_empty()
+			{
+				let strings = fingering.strings();
+				let uses_bass = bass_indices
+					.iter()
+					.any(|&i| strings.get(i).map(|s| s.is_played()).unwrap_or(false));
+				if !uses_bass {
+					score += BAND_AVOID_LOW_STRINGS_BONUS;
+				}
 			}
 
 			if let Some(pref_pos) = options.preferred_position {

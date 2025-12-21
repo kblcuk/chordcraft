@@ -192,6 +192,13 @@ impl Note {
 	pub fn semitone_distance_to(&self, other: &Note) -> i32 {
 		other.to_midi() as i32 - self.to_midi() as i32
 	}
+
+	/// Returns true if this note is in the bass register (below C3, ~131Hz).
+	/// Notes below C3 are typically covered by bass guitar/piano left hand in a band context.
+	/// C3 has MIDI note number 48.
+	pub fn is_bass_register(&self) -> bool {
+		self.to_midi() < 48 // C3 = MIDI 48
+	}
 }
 
 impl fmt::Display for Note {
@@ -275,5 +282,40 @@ mod tests {
 
 		let c5 = c4.add_semitones(12);
 		assert_eq!(c5.octave, 5);
+	}
+
+	#[test]
+	fn test_is_bass_register() {
+		// C3 is the threshold (MIDI 48) - notes below are bass
+		let c3 = Note::new(PitchClass::C, 3);
+		assert!(
+			!c3.is_bass_register(),
+			"C3 should NOT be bass (it's the threshold)"
+		);
+
+		let b2 = Note::new(PitchClass::B, 2);
+		assert!(b2.is_bass_register(), "B2 should be bass");
+
+		// Guitar low E and A strings
+		let e2 = Note::new(PitchClass::E, 2);
+		let a2 = Note::new(PitchClass::A, 2);
+		assert!(e2.is_bass_register(), "E2 (guitar low E) should be bass");
+		assert!(a2.is_bass_register(), "A2 (guitar A string) should be bass");
+
+		// Guitar D string and above
+		let d3 = Note::new(PitchClass::D, 3);
+		assert!(!d3.is_bass_register(), "D3 should NOT be bass");
+
+		// Ukulele strings (all in octave 4)
+		let c4 = Note::new(PitchClass::C, 4);
+		let g4 = Note::new(PitchClass::G, 4);
+		assert!(!c4.is_bass_register(), "C4 (ukulele) should NOT be bass");
+		assert!(!g4.is_bass_register(), "G4 (ukulele) should NOT be bass");
+
+		// Bass guitar strings
+		let e1 = Note::new(PitchClass::E, 1);
+		let g2 = Note::new(PitchClass::G, 2);
+		assert!(e1.is_bass_register(), "E1 (bass guitar) should be bass");
+		assert!(g2.is_bass_register(), "G2 (bass guitar) should be bass");
 	}
 }

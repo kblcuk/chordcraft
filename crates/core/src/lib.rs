@@ -34,7 +34,7 @@ pub use analyzer::{ChordMatch, analyze_fingering};
 pub use chord::{Chord, ChordQuality};
 pub use fingering::Fingering;
 pub use generator::PlayingContext;
-pub use instrument::{CapoedInstrument, Guitar, Instrument, Ukulele};
+pub use instrument::{CapoedInstrument, ConfigurableInstrument, Guitar, Instrument, Ukulele};
 pub use interval::Interval;
 pub use note::{Note, PitchClass};
 
@@ -64,6 +64,9 @@ pub mod error {
 
 		#[error("Invalid capo position: {0} (must be between {1} and {2})")]
 		InvalidCapoPosition(u8, u8, u8),
+
+		#[error("Invalid instrument configuration: {0}")]
+		InvalidInstrument(String),
 	}
 
 	pub type Result<T> = std::result::Result<T, ChordCraftError>;
