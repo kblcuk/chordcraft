@@ -13,13 +13,7 @@
 	 * - Accessible keyboard navigation
 	 */
 
-	import {
-		VISIBLE_FRETS,
-		DIMENSIONS,
-		MARGIN_BOTTOM,
-		MARGIN_SIDE,
-		COLORS,
-	} from '$lib/utils/fretboard-constants';
+	import { VISIBLE_FRETS, DIMENSIONS, MARGIN_SIDE, COLORS } from '$lib/utils/fretboard-constants';
 	import {
 		parseTabNotation,
 		generateTabNotation,
@@ -59,9 +53,9 @@
 	// Computed Layout
 	// ============================================================================
 
-	let { width, height, dotRadius, marginTop } = $derived(DIMENSIONS[size]);
+	let { width, height, dotRadius, marginTop, marginBottom } = $derived(DIMENSIONS[size]);
 	let fretboardWidth = $derived(width - MARGIN_SIDE * 2);
-	let fretboardHeight = $derived(height - marginTop - MARGIN_BOTTOM);
+	let fretboardHeight = $derived(height - marginTop - marginBottom);
 	let stringSpacing = $derived(fretboardWidth / (stringCount - 1));
 	let fretSpacing = $derived(fretboardHeight / VISIBLE_FRETS);
 	let endFret = $derived(startFret + VISIBLE_FRETS);

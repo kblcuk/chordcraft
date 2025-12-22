@@ -20,9 +20,9 @@ export const MARGIN_SIDE = 25;
 // ============================================================================
 
 export const DIMENSIONS = {
-	small: { width: 120, height: 160, dotRadius: 6, marginTop: 30 },
-	medium: { width: 160, height: 200, dotRadius: 8, marginTop: 35 },
-	large: { width: 200, height: 250, dotRadius: 10, marginTop: 40 },
+	small: { width: 120, height: 160, dotRadius: 6, marginTop: 30, marginBottom: 15 },
+	medium: { width: 160, height: 200, dotRadius: 8, marginTop: 35, marginBottom: 22 },
+	large: { width: 200, height: 250, dotRadius: 10, marginTop: 40, marginBottom: 30 },
 } as const;
 
 export type DiagramSize = keyof typeof DIMENSIONS;
