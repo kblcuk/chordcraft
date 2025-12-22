@@ -367,6 +367,7 @@ impl Fingering {
 			return 0;
 		}
 		// Reward efficient finger usage: fewer fingers = easier transitions
+		// Note: using all 4 fingers is normal for barre chords, so penalty is mild
 		let finger_ratio = (fingers as f32) / (max_fingers as f32);
 		if finger_ratio <= 0.25 {
 			score += 15;
@@ -375,18 +376,28 @@ impl Fingering {
 		} else if finger_ratio <= 0.75 {
 			score += 0;
 		} else {
-			score -= 20;
+			score -= 5; // Mild penalty for using all fingers (was -20)
 		}
 
 		if self.has_high_barre_with_threshold(main_barre_threshold) {
 			score -= 40;
 		}
 
-		let is_open = self
+		// Check for interior open strings (open strings between fretted notes)
+		// These create muddy tone and require precise muting control
+		let interior_opens = self.interior_open_string_count();
+		if interior_opens > 0 {
+			score -= (interior_opens as i32) * 15;
+		}
+
+		// Open position bonus only for true open positions (no interior opens)
+		let has_open_strings = self
 			.strings
 			.iter()
-			.any(|s| matches!(s, StringState::Fretted(0)))
-			&& self.max_fret().unwrap_or(0) <= open_position_threshold;
+			.any(|s| matches!(s, StringState::Fretted(0)));
+		let is_open = has_open_strings
+			&& self.max_fret().unwrap_or(0) <= open_position_threshold
+			&& interior_opens == 0;
 		if is_open {
 			score += 10;
 		}
@@ -403,6 +414,28 @@ impl Fingering {
 		}
 
 		score.clamp(0, 100) as u8
+	}
+
+	/// Count open strings (fret 0) that fall between the first and last fretted (>0) strings.
+	/// These "interior opens" are harder to play cleanly due to muting requirements.
+	fn interior_open_string_count(&self) -> usize {
+		// Find first and last string with fret > 0
+		let first_fretted = self
+			.strings
+			.iter()
+			.position(|s| matches!(s, StringState::Fretted(f) if *f > 0));
+		let last_fretted = self
+			.strings
+			.iter()
+			.rposition(|s| matches!(s, StringState::Fretted(f) if *f > 0));
+
+		match (first_fretted, last_fretted) {
+			(Some(first), Some(last)) if last > first => self.strings[first..=last]
+				.iter()
+				.filter(|s| matches!(s, StringState::Fretted(0)))
+				.count(),
+			_ => 0,
+		}
 	}
 
 	/// Uses instrument's `bass_string_index()` for re-entrant tunings (e.g., ukulele).
@@ -822,5 +855,29 @@ mod tests {
 			err.to_string().contains("Invalid fret number"),
 			"Expected invalid fret number error for empty parens, got: {err}"
 		);
+	}
+
+	#[test]
+	fn test_interior_open_strings_penalized() {
+		let guitar = Guitar::default();
+
+		// Classic Bm barre shape (no interior opens)
+		let barre = Fingering::parse("x24432").unwrap();
+		assert_eq!(barre.interior_open_string_count(), 0);
+
+		// Scattered open strings (2 interior opens)
+		let scattered = Fingering::parse("x20402").unwrap();
+		assert_eq!(scattered.interior_open_string_count(), 2);
+
+		// Barre should score higher than scattered opens
+		assert!(
+			barre.playability_score_for(&guitar) > scattered.playability_score_for(&guitar),
+			"Barre shape should score higher than scattered opens"
+		);
+
+		// True open position (Am - opens at treble end, not interior)
+		let am = Fingering::parse("x02210").unwrap();
+		assert_eq!(am.interior_open_string_count(), 0);
+		assert!(am.is_open_position_for(&guitar));
 	}
 }
