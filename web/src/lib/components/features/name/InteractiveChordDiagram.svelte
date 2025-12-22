@@ -253,7 +253,7 @@
 		<!-- Fret number indicator (for high positions) -->
 		{#if !isOpenPosition}
 			<text
-				x="5"
+				x={startFret > 8 ? 0 : 5}
 				y={marginTop + fretSpacing / 2}
 				class="text-xs font-medium select-none"
 				text-anchor="start"
