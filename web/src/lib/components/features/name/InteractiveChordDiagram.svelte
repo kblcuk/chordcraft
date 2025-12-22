@@ -227,10 +227,7 @@
 
 <div class="interactive-fretboard flex flex-col items-center space-y-3">
 	<!-- Position slider -->
-	<div class="flex items-center gap-3">
-		<label for="position-slider" class="text-sm font-medium whitespace-nowrap">
-			Position: {startFret === 0 ? 'Open' : `Frets ${startFret + 1}-${endFret}`}
-		</label>
+	<div class="flex flex-col items-center gap-3">
 		<input
 			id="position-slider"
 			type="range"
@@ -239,6 +236,9 @@
 			bind:value={startFret}
 			class="h-8 flex-1 touch-pan-x"
 		/>
+		<label for="position-slider" class="text-sm font-medium whitespace-nowrap">
+			Position: {startFret === 0 ? 'Open' : `Frets ${startFret + 1}-${endFret}`}
+		</label>
 	</div>
 
 	<!-- SVG Fretboard -->
