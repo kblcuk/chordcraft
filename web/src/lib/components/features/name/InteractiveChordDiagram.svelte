@@ -6,6 +6,11 @@
 	 * Supports multiple instruments with variable string counts:
 	 * - Guitar: 6 strings
 	 * - Ukulele: 4 strings
+	 *
+	 * Features:
+	 * - Subtle CSS animations for visual feedback
+	 * - Mobile-optimized touch targets
+	 * - Accessible keyboard navigation
 	 */
 
 	import {
@@ -49,9 +54,6 @@
 	// Fingering state: -1 = muted, 0 = open, 1-24 = fret number
 	// Indexed from low string (0) to high string (stringCount-1)
 	let fingering = $state<number[]>(parseTabNotation(value));
-
-	// Hover state for visual feedback
-	let hoveredPosition = $state<{ string: number; fret: number } | null>(null);
 
 	// ============================================================================
 	// Computed Layout
@@ -196,6 +198,9 @@
 		return handler();
 	};
 
+	// Touch target size (larger for easier tapping)
+	let touchTargetRadius = $derived(dotRadius + 6);
+
 	// ============================================================================
 	// Coordinate Calculations
 	// ============================================================================
@@ -226,10 +231,10 @@
 	let barres = $derived(detectBarres(fingering));
 </script>
 
-<div class="space-y-3">
+<div class="interactive-fretboard flex flex-col items-center space-y-3">
 	<!-- Position slider -->
 	<div class="flex items-center gap-3">
-		<label for="position-slider" class="text-sm font-medium">
+		<label for="position-slider" class="text-sm font-medium whitespace-nowrap">
 			Position: {startFret === 0 ? 'Open' : `Frets ${startFret + 1}-${endFret}`}
 		</label>
 		<input
@@ -238,7 +243,7 @@
 			min="0"
 			max="19"
 			bind:value={startFret}
-			class="flex-1"
+			class="h-8 flex-1 touch-pan-x"
 		/>
 	</div>
 
@@ -247,7 +252,8 @@
 		{width}
 		{height}
 		viewBox="0 0 {width} {height}"
-		class="bg-diagram rounded-lg"
+		class="bg-diagram rounded-lg select-none"
+		style="touch-action: manipulation;"
 		xmlns="http://www.w3.org/2000/svg"
 	>
 		<!-- Fret number indicator (for high positions) -->
@@ -315,32 +321,12 @@
 			/>
 		{/each}
 
-		<!-- Hover indicators -->
-		{#if hoveredPosition && hoveredPosition.fret >= startFret && hoveredPosition.fret <= endFret}
-			{@const x = getStringX(hoveredPosition.string)}
-			{@const y = getDotY(hoveredPosition.fret)}
-			<circle
-				cx={x}
-				cy={y}
-				r={dotRadius}
-				fill={COLORS.hoverDot}
-				opacity="0.3"
-				class="pointer-events-none"
-			/>
-		{/if}
-
 		<!-- Finger positions (selected dots) -->
-		{#each fingering as fret, stringIndex (stringIndex)}
+		{#each fingering as fret, stringIndex (`finger-${stringIndex}-${fret}`)}
 			{@const x = getStringX(stringIndex)}
 			{#if fret > 0}
 				{@const y = getDotY(fret)}
-				<circle
-					cx={x}
-					cy={y}
-					r={dotRadius}
-					fill={COLORS.selectedDot}
-					class="drop-shadow-md"
-				/>
+				<circle cx={x} cy={y} r={dotRadius} fill={COLORS.selectedDot} class="finger-dot" />
 			{:else if fret === 0}
 				{@const y = marginTop - 12}
 				<circle
@@ -350,21 +336,22 @@
 					fill="none"
 					stroke={COLORS.openString}
 					stroke-width="2"
-					class="drop-shadow-sm"
+					class="open-string"
 				/>
 			{/if}
 		{/each}
 
 		<!-- Muted string indicators (X) -->
-		{#each fingering as fret, stringIndex (stringIndex)}
+		{#each fingering as fret, stringIndex (`muted-${stringIndex}-${fret}`)}
 			{#if fret === -1}
 				{@const x = getStringX(stringIndex)}
 				<text
 					{x}
 					y={marginTop - 14}
-					class="font-bold select-none"
+					class="muted-marker select-none"
 					text-anchor="middle"
 					font-size="14"
+					font-weight="bold"
 					fill={COLORS.mutedString}
 				>
 					×
@@ -389,16 +376,13 @@
 					<circle
 						cx={x}
 						cy={y}
-						r={dotRadius + 4}
-						fill="transparent"
-						class="cursor-pointer focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						r={touchTargetRadius}
+						class="hit-zone focus-visible:outline-2 focus-visible:outline-(--diagram-selected)"
 						role="button"
 						tabindex="0"
 						aria-label="Set {stringName} string to fret {fret}"
 						onclick={handler}
 						onkeydown={handleKeyPress(handler)}
-						onmouseenter={() => (hoveredPosition = { string: stringIndex, fret })}
-						onmouseleave={() => (hoveredPosition = null)}
 					/>
 				{/each}
 			{/each}
@@ -418,16 +402,13 @@
 					<circle
 						cx={x}
 						cy={y}
-						r={dotRadius + 4}
-						fill="transparent"
-						class="cursor-pointer focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						r={touchTargetRadius}
+						class="hit-zone focus-visible:outline-2 focus-visible:outline-(--diagram-selected)"
 						role="button"
 						tabindex="0"
 						aria-label="Set {stringName} string to fret {fret}"
 						onclick={handler}
 						onkeydown={handleKeyPress(handler)}
-						onmouseenter={() => (hoveredPosition = { string: stringIndex, fret })}
-						onmouseleave={() => (hoveredPosition = null)}
 					/>
 				{/each}
 			{/each}
@@ -443,9 +424,8 @@
 			<circle
 				cx={x}
 				cy={marginTop - 14}
-				r={12}
-				fill="transparent"
-				class="cursor-pointer focus:ring-2 focus:ring-blue-500 focus:outline-none"
+				r={14}
+				class="hit-zone focus-visible:outline-2 focus-visible:outline-(--diagram-selected)"
 				role="button"
 				tabindex="0"
 				aria-label="Toggle {stringName} string: open, muted, or clear"
@@ -459,13 +439,103 @@
 	<button
 		data-testid="clear-button"
 		onclick={clear}
-		class="text-sm text-muted-foreground underline hover:text-foreground"
+		class="text-sm text-muted-foreground underline transition-colors hover:text-foreground"
 	>
 		Clear all
 	</button>
 
 	<!-- Current tab notation display -->
-	<div class="rounded border border-border bg-muted p-2 text-center font-mono text-sm">
+	<div class="w-full rounded border border-border bg-muted p-2 text-center font-mono text-sm">
 		{value || 'Click on the fretboard to build a chord'}
 	</div>
 </div>
+
+<style>
+	/* Custom animation for finger dot appearance - scale + fade not in Tailwind */
+	@keyframes dot-appear {
+		from {
+			transform: scale(0.7);
+			opacity: 0.6;
+		}
+	}
+
+	/* Finger dots */
+	:global(.interactive-fretboard .finger-dot),
+	:global(.interactive-fretboard .open-string),
+	:global(.interactive-fretboard .muted-marker) {
+		animation: dot-appear 0.12s ease-out;
+		transform-origin: center;
+		transform-box: fill-box;
+	}
+
+	:global(.interactive-fretboard .finger-dot) {
+		filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+	}
+
+	/* Hit zones - hover/active via CSS */
+	:global(.interactive-fretboard .hit-zone) {
+		cursor: pointer;
+		fill: transparent;
+	}
+
+	:global(.interactive-fretboard .hit-zone:hover) {
+		fill: var(--diagram-hover);
+		fill-opacity: 0.25;
+	}
+
+	:global(.interactive-fretboard .hit-zone:active) {
+		fill: var(--diagram-hover);
+		fill-opacity: 0.4;
+	}
+
+	/* Slider thumb - needs vendor prefixes, can't use Tailwind */
+	:global(.interactive-fretboard input[type='range']) {
+		-webkit-appearance: none;
+		appearance: none;
+		background: transparent;
+	}
+
+	:global(.interactive-fretboard input[type='range']::-webkit-slider-runnable-track) {
+		height: 6px;
+		background: var(--muted);
+		border-radius: 50%;
+	}
+
+	:global(.interactive-fretboard input[type='range']::-webkit-slider-thumb) {
+		-webkit-appearance: none;
+		width: 24px;
+		height: 24px;
+		background: var(--diagram-selected);
+		border-radius: 50%;
+		margin-top: -9px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	}
+
+	:global(.interactive-fretboard input[type='range']::-moz-range-track) {
+		height: 6px;
+		background: var(--muted);
+		border-radius: 50%;
+	}
+
+	:global(.interactive-fretboard input[type='range']::-moz-range-thumb) {
+		width: 24px;
+		height: 24px;
+		background: var(--diagram-selected);
+		border-radius: 50%;
+		border: none;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	}
+
+	@media (pointer: coarse) {
+		:global(.interactive-fretboard input[type='range']::-webkit-slider-thumb) {
+			width: 28px;
+			height: 28px;
+			margin-top: -11px;
+		}
+
+		:global(.interactive-fretboard input[type='range']::-moz-range-thumb) {
+			width: 28px;
+			height: 28px;
+		}
+	}
+</style>
