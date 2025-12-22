@@ -341,10 +341,10 @@
 				{@const x = getStringX(stringIndex)}
 				<text
 					{x}
-					y={marginTop - 14}
+					y={marginTop - 6}
 					class="muted-marker select-none"
 					text-anchor="middle"
-					font-size="14"
+					font-size="18"
 					font-weight="bold"
 					fill={COLORS.mutedString}
 				>
@@ -417,7 +417,7 @@
 			{@const handler = () => handleStringMarkerClick(stringIndex)}
 			<circle
 				cx={x}
-				cy={marginTop - 14}
+				cy={marginTop - 12}
 				r={14}
 				class="hit-zone focus-visible:outline-2 focus-visible:outline-(--diagram-selected)"
 				role="button"
