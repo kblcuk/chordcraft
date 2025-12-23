@@ -28,6 +28,7 @@ pub mod instrument;
 pub mod interval;
 pub mod note;
 pub mod progression;
+pub mod shapes;
 
 // Re-export commonly used types
 pub use analyzer::{ChordMatch, analyze_fingering};

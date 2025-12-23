@@ -6,6 +6,7 @@
 use crate::chord::{Chord, VoicingType};
 use crate::fingering::{Fingering, StringState};
 use crate::instrument::Instrument;
+use crate::shapes;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PlayingContext {
@@ -258,6 +259,7 @@ fn should_continue_branch(
 const STRING_USAGE_BONUS: i32 = 8;
 const INTERIOR_MUTE_PENALTY: i32 = 30;
 const POSITION_DISTANCE_PENALTY: i32 = 3;
+const STANDARD_SHAPE_BONUS: i32 = 20;
 const SOLO_ROOT_IN_BASS_BONUS: i32 = 30;
 const SOLO_FULL_VOICING_BONUS: i32 = 20;
 const SOLO_CORE_VOICING_BONUS: i32 = 5;
@@ -271,6 +273,24 @@ const BAND_AVOID_LOW_STRINGS_BONUS: i32 = 10;
 const BAND_MID_NECK_MIN: u8 = 3;
 const BAND_MID_NECK_MAX: u8 = 10;
 const BAND_POSITION_PENALTY: i32 = 3;
+
+/// Check if a fingering matches a standard chord shape for the given instrument.
+/// Returns the shape name if found, None otherwise.
+fn matches_standard_shape<I: Instrument>(
+	fingering: &Fingering,
+	instrument: &I,
+) -> Option<&'static str> {
+	match instrument.string_count() {
+		6 => shapes::guitar::find_matching_shape(fingering).map(|(name, _)| name),
+		// For 4-string instruments, try both ukulele and mandolin shapes
+		// The matching will naturally pick the right one based on the fingering pattern
+		4 => shapes::ukulele::find_matching_shape(fingering)
+			.or_else(|| shapes::mandolin::find_matching_shape(fingering))
+			.map(|(name, _)| name),
+		5 => shapes::banjo::find_matching_shape(fingering).map(|(name, _)| name),
+		_ => None, // No standard shapes defined for other string counts
+	}
+}
 
 pub struct FingeringScorerOptions {
 	pub has_all_notes: bool,
@@ -300,6 +320,12 @@ fn score_fingering<I: Instrument>(
 			.filter(|s| !s.is_played())
 			.count();
 		score -= (interior_mutes as i32) * INTERIOR_MUTE_PENALTY;
+	}
+
+	// Bonus for matching a standard chord shape (Am, E, Em, etc.)
+	// These shapes are well-known and easier to learn/remember
+	if matches_standard_shape(fingering, instrument).is_some() {
+		score += STANDARD_SHAPE_BONUS;
 	}
 
 	match options.playing_context {

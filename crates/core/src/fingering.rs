@@ -383,23 +383,28 @@ impl Fingering {
 			score -= 40;
 		}
 
-		// Check for interior open strings (open strings between fretted notes)
-		// These create muddy tone and require precise muting control
+		// Check for scattered interior open strings (multiple opens between fretted notes)
+		// A single interior open (like G string in x32010 C chord) is fine
+		// Multiple interior opens (like x20402) create muddy tone and muting issues
 		let interior_opens = self.interior_open_string_count();
-		if interior_opens > 0 {
+		if interior_opens >= 2 {
 			score -= (interior_opens as i32) * 15;
 		}
 
-		// Open position bonus only for true open positions (no interior opens)
+		// Open position bonus for chords with open strings near the nut
+		// Slight reduction if there's a single interior open (less clean than pure open)
 		let has_open_strings = self
 			.strings
 			.iter()
 			.any(|s| matches!(s, StringState::Fretted(0)));
-		let is_open = has_open_strings
-			&& self.max_fret().unwrap_or(0) <= open_position_threshold
-			&& interior_opens == 0;
+		let is_open = has_open_strings && self.max_fret().unwrap_or(0) <= open_position_threshold;
 		if is_open {
-			score += 10;
+			if interior_opens == 0 {
+				score += 10; // Full bonus for clean open position
+			} else if interior_opens == 1 {
+				score += 5; // Reduced bonus for single interior open (still playable)
+			}
+			// No bonus if 2+ interior opens (already penalized above)
 		}
 
 		if let Some(min) = self.min_fret()
@@ -752,10 +757,11 @@ mod tests {
 	#[test]
 	fn test_playability_prefers_fewer_fingers() {
 		let guitar = Guitar::default();
-		let simple_barre = Fingering::parse("464444").unwrap(); // 3 fingers
-		let complex = Fingering::parse("424404").unwrap(); // 4 fingers
+		// Compare non-open fingerings to isolate finger count effect
+		let simple = Fingering::parse("464444").unwrap(); // 3 fingers
+		let complex = Fingering::parse("465444").unwrap(); // 4 fingers (added fret 5)
 
-		let score_simple = simple_barre.playability_score_for(&guitar);
+		let score_simple = simple.playability_score_for(&guitar);
 		let score_complex = complex.playability_score_for(&guitar);
 
 		assert!(
@@ -865,7 +871,7 @@ mod tests {
 		let barre = Fingering::parse("x24432").unwrap();
 		assert_eq!(barre.interior_open_string_count(), 0);
 
-		// Scattered open strings (2 interior opens)
+		// Scattered open strings (2 interior opens) - should be penalized
 		let scattered = Fingering::parse("x20402").unwrap();
 		assert_eq!(scattered.interior_open_string_count(), 2);
 
@@ -879,5 +885,14 @@ mod tests {
 		let am = Fingering::parse("x02210").unwrap();
 		assert_eq!(am.interior_open_string_count(), 0);
 		assert!(am.is_open_position_for(&guitar));
+
+		// Classic C chord (1 interior open at G string) - should NOT be heavily penalized
+		let c_chord = Fingering::parse("x32010").unwrap();
+		assert_eq!(c_chord.interior_open_string_count(), 1);
+		// C should still get partial open position bonus
+		assert!(
+			c_chord.playability_score_for(&guitar) >= 80,
+			"C chord should score well despite single interior open"
+		);
 	}
 }
