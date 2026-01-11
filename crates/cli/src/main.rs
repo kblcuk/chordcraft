@@ -196,7 +196,7 @@ enum Commands {
 		#[arg(short, long)]
 		capo: Option<u8>,
 
-		/// Instrument type (guitar, ukulele, bass, bass5, mandolin, banjo, bari-uke, guitar7, drop-d, open-g, dadgad)
+		/// Instrument type (guitar, ukulele, bass, bass-5, mandolin, banjo, bari-uke, guitar-7, drop-d, open-g, dadgad)
 		#[arg(short, long, default_value = "guitar")]
 		instrument: InstrumentChoice,
 
@@ -214,7 +214,7 @@ enum Commands {
 		#[arg(short, long)]
 		capo: Option<u8>,
 
-		/// Instrument type (guitar, ukulele, bass, bass5, mandolin, banjo, bari-uke, guitar7, drop-d, open-g, dadgad)
+		/// Instrument type (guitar, ukulele, bass, bass-5, mandolin, banjo, bari-uke, guitar-7, drop-d, open-g, dadgad)
 		#[arg(short, long, default_value = "guitar")]
 		instrument: InstrumentChoice,
 
@@ -252,7 +252,7 @@ enum Commands {
 		#[arg(short, long)]
 		capo: Option<u8>,
 
-		/// Instrument type (guitar, ukulele, bass, bass5, mandolin, banjo, bari-uke, guitar7, drop-d, open-g, dadgad)
+		/// Instrument type (guitar, ukulele, bass, bass-5, mandolin, banjo, bari-uke, guitar-7, drop-d, open-g, dadgad)
 		#[arg(short, long, default_value = "guitar")]
 		instrument: InstrumentChoice,
 
