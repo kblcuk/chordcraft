@@ -84,6 +84,31 @@ describe('URL State - Find Params', () => {
 			const result = parseFindParams(params);
 			expect(result.instrument).toBe('guitar');
 		});
+
+		// Test all 11 supported instruments
+		it.each([
+			['guitar', 'guitar'],
+			['ukulele', 'ukulele'],
+			['baritone-ukulele', 'baritone-ukulele'],
+			['bass', 'bass'],
+			['bass-5', 'bass-5'],
+			['mandolin', 'mandolin'],
+			['banjo', 'banjo'],
+			['guitar-7', 'guitar-7'],
+			['drop-d', 'drop-d'],
+			['open-g', 'open-g'],
+			['dadgad', 'dadgad'],
+		])('should parse %s instrument correctly', (urlValue, expected) => {
+			const params = new URLSearchParams({ instrument: urlValue });
+			const result = parseFindParams(params);
+			expect(result.instrument).toBe(expected);
+		});
+
+		it('should handle case-insensitive instrument names', () => {
+			const params = new URLSearchParams({ instrument: 'UKULELE' });
+			const result = parseFindParams(params);
+			expect(result.instrument).toBe('ukulele');
+		});
 	});
 
 	describe('buildFindParams', () => {

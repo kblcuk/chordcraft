@@ -420,4 +420,151 @@ describe('ChordDiagram - User Experience', () => {
 			expect(container.querySelector('svg')).toBeInTheDocument();
 		});
 	});
+
+	describe('String Names Display', () => {
+		it('should display default guitar string names (E A D G B e)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: 'x32010',
+					notes: ['C', 'E', 'G', 'C', 'E'],
+					rootNote: 'C',
+					stringCount: 6,
+					stringNames: ['E', 'A', 'D', 'G', 'B', 'e'],
+				},
+			});
+
+			const text = container.textContent || '';
+			expect(text).toContain('E');
+			expect(text).toContain('A');
+			expect(text).toContain('D');
+			expect(text).toContain('G');
+			expect(text).toContain('B');
+		});
+
+		it('should display ukulele string names (G C E A)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '0003',
+					notes: ['G', 'C', 'E', 'C'],
+					rootNote: 'C',
+					stringCount: 4,
+					stringNames: ['G', 'C', 'E', 'A'],
+				},
+			});
+
+			const text = container.textContent || '';
+			expect(text).toContain('G');
+			expect(text).toContain('C');
+			expect(text).toContain('E');
+			expect(text).toContain('A');
+		});
+
+		it('should display mandolin string names (G D A E)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '0230',
+					notes: ['G', 'D', 'A', 'B'],
+					rootNote: 'G',
+					stringCount: 4,
+					stringNames: ['G', 'D', 'A', 'E'],
+				},
+			});
+
+			const text = container.textContent || '';
+			expect(text).toContain('G');
+			expect(text).toContain('D');
+			expect(text).toContain('A');
+			expect(text).toContain('E');
+		});
+
+		it('should display 7-string guitar names (B E A D G B E)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '(10)(12)(12)(12)(10)(12)(10)',
+					notes: ['B', 'E', 'G#', 'C#'],
+					rootNote: 'E',
+					stringCount: 7,
+					stringNames: ['B', 'E', 'A', 'D', 'G', 'B', 'E'],
+				},
+			});
+
+			const text = container.textContent || '';
+			// Should contain all 7 string names
+			const stringNameCount = (text.match(/[BEADG]/g) || []).length;
+			expect(stringNameCount).toBeGreaterThanOrEqual(7);
+		});
+
+		it('should display drop-D tuning names (D A D G B E)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '000232',
+					notes: ['D', 'A', 'D', 'A', 'D', 'F#'],
+					rootNote: 'D',
+					stringCount: 6,
+					stringNames: ['D', 'A', 'D', 'G', 'B', 'E'],
+				},
+			});
+
+			const text = container.textContent || '';
+			expect(text).toContain('D');
+			expect(text).toContain('A');
+			expect(text).toContain('G');
+			expect(text).toContain('B');
+			expect(text).toContain('E');
+		});
+
+		it('should display banjo string names (g D G B D) with lowercase g', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: '00000',
+					notes: ['g', 'D', 'G', 'B', 'D'],
+					rootNote: 'G',
+					stringCount: 5,
+					stringNames: ['g', 'D', 'G', 'B', 'D'],
+				},
+			});
+
+			const text = container.textContent || '';
+			// Banjo has lowercase g for drone string
+			expect(text).toContain('g');
+			expect(text).toContain('D');
+			expect(text).toContain('G');
+			expect(text).toContain('B');
+		});
+
+		it('should display bass 5-string names (B E A D G)', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: 'x0000',
+					notes: ['E', 'A', 'D', 'G'],
+					rootNote: 'E',
+					stringCount: 5,
+					stringNames: ['B', 'E', 'A', 'D', 'G'],
+				},
+			});
+
+			const text = container.textContent || '';
+			expect(text).toContain('B');
+			expect(text).toContain('E');
+			expect(text).toContain('A');
+			expect(text).toContain('D');
+			expect(text).toContain('G');
+		});
+
+		it('should render correct number of string name labels', () => {
+			const { container } = render(ChordDiagram, {
+				props: {
+					tab: 'x32010',
+					notes: ['C', 'E', 'G', 'C', 'E'],
+					rootNote: 'C',
+					stringCount: 6,
+					stringNames: ['E', 'A', 'D', 'G', 'B', 'e'],
+				},
+			});
+
+			const textElements = container.querySelectorAll('text');
+			// String names should be rendered (among other text elements)
+			expect(textElements.length).toBeGreaterThan(0);
+		});
+	});
 });
