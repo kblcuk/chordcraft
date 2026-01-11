@@ -62,10 +62,14 @@
 			<SelectLabel class="text-xs font-semibold">Standard Instruments</SelectLabel>
 			{#each INSTRUMENT_CATEGORIES.standard as inst (inst)}
 				{@const meta = INSTRUMENT_METADATA[inst]}
-				<SelectItem value={inst}>
+				<SelectItem value={inst} class="data-highlighted:bg-primary/10">
 					<div class="flex flex-col">
-						<span>{meta.label}</span>
-						<span class="text-xs text-muted-foreground">{meta.tuning}</span>
+						<span class="text-foreground">{meta.label}</span>
+						<span
+							class="text-xs text-muted-foreground data-highlighted:text-foreground/70"
+						>
+							{meta.tuning}
+						</span>
 					</div>
 				</SelectItem>
 			{/each}
@@ -76,10 +80,14 @@
 			<SelectLabel class="text-xs font-semibold">Alternate Guitar Tunings</SelectLabel>
 			{#each INSTRUMENT_CATEGORIES['alternate-tuning'] as inst (inst)}
 				{@const meta = INSTRUMENT_METADATA[inst]}
-				<SelectItem value={inst}>
+				<SelectItem value={inst} class="data-highlighted:bg-primary/10">
 					<div class="flex flex-col">
 						<span>{meta.label}</span>
-						<span class="text-xs text-muted-foreground">{meta.tuning}</span>
+						<span
+							class="text-xs text-muted-foreground data-highlighted:text-foreground/70"
+						>
+							{meta.tuning}
+						</span>
 					</div>
 				</SelectItem>
 			{/each}
