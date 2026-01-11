@@ -9,11 +9,13 @@
 		size = 'medium',
 		index = 0,
 		stringCount = 6,
+		stringNames = ['E', 'A', 'D', 'G', 'B', 'e'],
 	}: {
 		fingering: ScoredFingering;
 		size?: 'small' | 'medium' | 'large';
 		index?: number;
 		stringCount?: number;
+		stringNames?: string[];
 	} = $props();
 
 	// Stagger animation class
@@ -31,6 +33,7 @@
 			rootNote={fingering.notes[0] || ''}
 			{size}
 			{stringCount}
+			{stringNames}
 		/>
 	</div>
 

@@ -34,6 +34,7 @@
 	// Instrument info for string count (cached)
 	let instrumentInfo = $state<InstrumentInfo | null>(null);
 	const stringCount = $derived(instrumentInfo?.stringCount ?? 6);
+	const stringNames = $derived(instrumentInfo?.stringNames ?? ['E', 'A', 'D', 'G', 'B', 'e']);
 
 	// Local input value for controlled component
 	let progressionInput = $derived(urlState.chords);
@@ -232,5 +233,5 @@
 	{/if}
 
 	<!-- Results -->
-	<Results sequences={results} {stringCount} {loading} />
+	<Results sequences={results} {stringCount} {stringNames} {loading} />
 </div>

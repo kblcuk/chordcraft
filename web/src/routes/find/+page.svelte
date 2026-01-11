@@ -29,9 +29,10 @@
 	let loading = $state(false);
 	let error = $state('');
 
-	// Instrument info for string count (cached)
+	// Instrument info for string count and names (cached)
 	let instrumentInfo = $state<InstrumentInfo | null>(null);
 	const stringCount = $derived(instrumentInfo?.stringCount ?? 6);
+	const stringNames = $derived(instrumentInfo?.stringNames ?? ['E', 'A', 'D', 'G', 'B', 'e']);
 
 	// Local input value for controlled component
 	// Sync local input with URL state (for browser back/forward)
@@ -216,5 +217,5 @@
 	{/if}
 
 	<!-- Results -->
-	<Results fingerings={results} {stringCount} {loading} />
+	<Results fingerings={results} {stringCount} {stringNames} {loading} />
 </div>

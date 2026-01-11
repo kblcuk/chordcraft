@@ -5,10 +5,12 @@
 	let {
 		fingerings,
 		stringCount = 6,
+		stringNames = ['E', 'A', 'D', 'G', 'B', 'e'],
 		loading = false,
 	}: {
 		fingerings: ScoredFingering[];
 		stringCount?: number;
+		stringNames?: string[];
 		loading?: boolean;
 	} = $props();
 </script>
@@ -53,7 +55,7 @@
 		</h3>
 		<div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 			{#each fingerings as fingering, index (fingering.tab)}
-				<FingeringCard {fingering} {index} size="medium" {stringCount} />
+				<FingeringCard {fingering} {index} size="medium" {stringCount} {stringNames} />
 			{/each}
 		</div>
 	</div>

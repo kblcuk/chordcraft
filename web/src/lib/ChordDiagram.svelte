@@ -28,12 +28,14 @@
 		rootNote = '',
 		size = 'medium',
 		stringCount = 6,
+		stringNames = ['E', 'A', 'D', 'G', 'B', 'e'],
 	}: {
 		tab: string;
 		notes?: string[];
 		rootNote?: string;
 		size?: 'small' | 'medium' | 'large';
 		stringCount?: number;
+		stringNames?: string[];
 	} = $props();
 
 	// ============================================================================
@@ -430,6 +432,22 @@
 			fill={COLORS.mutedString}
 		>
 			×
+		</text>
+	{/each}
+
+	<!-- String names at bottom -->
+	{#each [...Array(stringCount).keys()] as stringIndex (stringIndex)}
+		{@const x = MARGIN_SIDE + stringIndex * stringSpacing}
+		{@const stringName = stringNames[stringIndex] || `${stringIndex + 1}`}
+		<text
+			{x}
+			y={height - 8}
+			class="text-xs select-none"
+			text-anchor="middle"
+			fill={COLORS.fretNumber}
+			font-size="10"
+		>
+			{stringName}
 		</text>
 	{/each}
 </svg>

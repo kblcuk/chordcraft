@@ -427,6 +427,24 @@
 				onkeydown={handleKeyPress(handler)}
 			/>
 		{/each}
+
+		<!-- String names at bottom -->
+		{#each Array(stringCount)
+			.fill(0)
+			.map((_, i) => i) as stringIndex (stringIndex)}
+			{@const x = getStringX(stringIndex)}
+			{@const stringName = stringNames[stringIndex] || `${stringIndex + 1}`}
+			<text
+				{x}
+				y={height - 8}
+				class="text-xs select-none"
+				text-anchor="middle"
+				fill={COLORS.fretNumber}
+				font-size="10"
+			>
+				{stringName}
+			</text>
+		{/each}
 	</svg>
 
 	<!-- Clear button -->

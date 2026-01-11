@@ -6,10 +6,12 @@
 	let {
 		sequences,
 		stringCount = 6,
+		stringNames = ['E', 'A', 'D', 'G', 'B', 'e'],
 		loading = false,
 	}: {
 		sequences: ProgressionSequence[];
 		stringCount?: number;
+		stringNames?: string[];
 		loading?: boolean;
 	} = $props();
 </script>
@@ -85,6 +87,7 @@
 										rootNote={fingering.notes[0] || ''}
 										size="small"
 										{stringCount}
+										{stringNames}
 									/>
 								</div>
 
