@@ -80,7 +80,7 @@ describe('URL State - Find Params', () => {
 		});
 
 		it('should handle invalid instrument values', () => {
-			const params = new URLSearchParams({ instrument: 'banjo' });
+			const params = new URLSearchParams({ instrument: 'omnichord' });
 			const result = parseFindParams(params);
 			expect(result.instrument).toBe('guitar');
 		});

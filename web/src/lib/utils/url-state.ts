@@ -103,8 +103,25 @@ function parseNumberOrNull(params: URLSearchParams, key: string): number | null 
 }
 
 function parseInstrument(params: URLSearchParams): Instrument {
-	const value = params.get('instrument');
-	return value === 'ukulele' ? 'ukulele' : 'guitar';
+	const value = params.get('instrument')?.toLowerCase();
+
+	// List of valid instruments (matches TypeScript Instrument type)
+	const validInstruments: Instrument[] = [
+		'guitar',
+		'ukulele',
+		'baritone-ukulele',
+		'bass',
+		'bass-5',
+		'mandolin',
+		'banjo',
+		'guitar-7',
+		'drop-d',
+		'open-g',
+		'dadgad',
+	];
+
+	// Validate and return, default to guitar if invalid
+	return validInstruments.includes(value as Instrument) ? (value as Instrument) : 'guitar';
 }
 
 function parseVoicing(params: URLSearchParams): Voicing {

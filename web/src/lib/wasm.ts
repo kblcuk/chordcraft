@@ -15,7 +15,18 @@ import init, {
 // ============================================================================
 
 /** Supported instrument types */
-export type Instrument = 'guitar' | 'ukulele';
+export type Instrument =
+	| 'guitar'
+	| 'ukulele'
+	| 'baritone-ukulele'
+	| 'bass'
+	| 'bass-5'
+	| 'mandolin'
+	| 'banjo'
+	| 'guitar-7'
+	| 'drop-d'
+	| 'open-g'
+	| 'dadgad';
 
 /** Instrument configuration info */
 export interface InstrumentInfo {
@@ -72,6 +83,124 @@ export interface ProgressionOptions {
 	maxFretDistance?: number;
 	candidatesPerChord?: number;
 	generatorOptions?: GeneratorOptions;
+}
+
+// ============================================================================
+// Instrument Metadata
+// ============================================================================
+
+/** Instrument metadata for UI display */
+export const INSTRUMENT_METADATA: Record<
+	Instrument,
+	{
+		label: string;
+		category: 'standard' | 'alternate-tuning';
+		stringCount: number;
+		tuning: string;
+		description?: string;
+	}
+> = {
+	guitar: {
+		label: 'Guitar (Standard)',
+		category: 'standard',
+		stringCount: 6,
+		tuning: 'EADGBE',
+		description: 'Standard 6-string guitar',
+	},
+	ukulele: {
+		label: 'Ukulele',
+		category: 'standard',
+		stringCount: 4,
+		tuning: 'GCEA',
+		description: 'Standard soprano ukulele',
+	},
+	'baritone-ukulele': {
+		label: 'Baritone Ukulele',
+		category: 'standard',
+		stringCount: 4,
+		tuning: 'DGBE',
+		description: 'Larger ukulele, same as guitar top 4 strings',
+	},
+	bass: {
+		label: 'Bass (4-string)',
+		category: 'standard',
+		stringCount: 4,
+		tuning: 'EADG',
+		description: 'Standard 4-string bass guitar',
+	},
+	'bass-5': {
+		label: 'Bass (5-string)',
+		category: 'standard',
+		stringCount: 5,
+		tuning: 'BEADG',
+		description: '5-string bass with low B',
+	},
+	mandolin: {
+		label: 'Mandolin',
+		category: 'standard',
+		stringCount: 4,
+		tuning: 'GDAE',
+		description: 'Standard mandolin tuning',
+	},
+	banjo: {
+		label: 'Banjo (5-string)',
+		category: 'standard',
+		stringCount: 5,
+		tuning: 'gDGBD',
+		description: 'Standard 5-string banjo with high G drone',
+	},
+	'guitar-7': {
+		label: '7-String Guitar',
+		category: 'alternate-tuning',
+		stringCount: 7,
+		tuning: 'BEADGBE',
+		description: 'Extended range guitar with low B',
+	},
+	'drop-d': {
+		label: 'Drop D Guitar',
+		category: 'alternate-tuning',
+		stringCount: 6,
+		tuning: 'DADGBE',
+		description: 'Guitar with low E tuned down to D',
+	},
+	'open-g': {
+		label: 'Open G Guitar',
+		category: 'alternate-tuning',
+		stringCount: 6,
+		tuning: 'DGDGBD',
+		description: 'Open G tuning for slide guitar',
+	},
+	dadgad: {
+		label: 'DADGAD Guitar',
+		category: 'alternate-tuning',
+		stringCount: 6,
+		tuning: 'DADGAD',
+		description: 'Celtic/modal tuning',
+	},
+};
+
+/** Instrument groupings for UI */
+export const INSTRUMENT_CATEGORIES = {
+	standard: [
+		'guitar',
+		'ukulele',
+		'baritone-ukulele',
+		'bass',
+		'bass-5',
+		'mandolin',
+		'banjo',
+	] as const,
+	'alternate-tuning': ['drop-d', 'open-g', 'dadgad', 'guitar-7'] as const,
+} as const;
+
+/** Helper: Get display label for instrument */
+export function getInstrumentLabel(instrument: Instrument): string {
+	return INSTRUMENT_METADATA[instrument].label;
+}
+
+/** Helper: Get category for instrument */
+export function getInstrumentCategory(instrument: Instrument): 'standard' | 'alternate-tuning' {
+	return INSTRUMENT_METADATA[instrument].category;
 }
 
 // ============================================================================
