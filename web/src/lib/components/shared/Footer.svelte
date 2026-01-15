@@ -2,6 +2,7 @@
 	import Github from '@lucide/svelte/icons/github';
 	import Music4 from '@lucide/svelte/icons/music-4';
 	import { PUBLIC_BUILD_VERSION } from '$env/static/public';
+	import InstallButton from '$lib/components/shared/InstallButton.svelte';
 </script>
 
 <footer class="mt-auto border-t border-border/50 bg-card/50">
@@ -16,7 +17,7 @@
 				<span>using Rust + WASM + Svelte</span>
 			</p>
 
-			<!-- Links -->
+			<!-- Links & Actions -->
 			<div class="flex items-center gap-6">
 				<a
 					href="https://github.com/kblcuk/chordcraft"
@@ -25,6 +26,7 @@
 					<Github class="h-4 w-4 transition-transform group-hover:scale-110" />
 					<span>View on GitHub</span>
 				</a>
+				<InstallButton />
 			</div>
 
 			<!-- Copyright -->

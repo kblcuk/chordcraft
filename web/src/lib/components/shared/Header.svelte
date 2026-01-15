@@ -1,6 +1,5 @@
 <script lang="ts">
 	import DarkModeToggle from '$lib/DarkModeToggle.svelte';
-	import InstallButton from '$lib/components/shared/InstallButton.svelte';
 	import InstrumentSelector from '$lib/components/shared/InstrumentSelector.svelte';
 	import Guitar from '@lucide/svelte/icons/guitar';
 
@@ -35,7 +34,7 @@
 			</div>
 
 			<!-- Right side: Instrument selector + Status + Dark mode -->
-			<div class="flex items-center gap-3 sm:gap-4">
+			<div class="flex items-center gap-2 sm:gap-4">
 				<!-- Instrument Selector -->
 				<InstrumentSelector />
 
@@ -56,7 +55,6 @@
 					{/if}
 				</div>
 
-				<InstallButton />
 				<DarkModeToggle />
 			</div>
 		</div>
