@@ -1,9 +1,15 @@
 <script lang="ts">
 	import Download from '@lucide/svelte/icons/download';
+	import Share from '@lucide/svelte/icons/share';
+	import Plus from '@lucide/svelte/icons/plus';
+	import X from '@lucide/svelte/icons/x';
 	import { browser } from '$app/environment';
 	import { Button } from '../ui/button';
+	import * as Popover from '../ui/popover';
 
 	let showInstallButton = $state(false);
+	let showIOSInstructions = $state(false);
+	let iosPopoverOpen = $state(false);
 	let deferredPrompt = $state<BeforeInstallPromptEvent | null>(null);
 	let isInstalling = $state(false);
 
@@ -11,6 +17,11 @@
 		prompt(): Promise<void>;
 		userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 	}
+
+	const isIOS = (): boolean => {
+		if (!browser) return false;
+		return /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
+	};
 
 	const isAppInstalled = (): boolean => {
 		if (!browser) return false;
@@ -22,13 +33,26 @@
 		return localStorage.getItem('pwa-installed') === '1';
 	};
 
-	// Listen for beforeinstallprompt event
+	const isIOSInstructionsDismissed = (): boolean => {
+		if (!browser) return false;
+		return localStorage.getItem('ios-install-dismissed') === '1';
+	};
+
+	// Listen for beforeinstallprompt event (Chromium browsers)
+	// For iOS, show instructions instead
 	$effect(() => {
 		if (!browser) return;
 
 		// Don't show button if already installed
 		if (isAppInstalled()) {
 			showInstallButton = false;
+			showIOSInstructions = false;
+			return;
+		}
+
+		// iOS doesn't support beforeinstallprompt, show manual instructions
+		if (isIOS()) {
+			showIOSInstructions = !isIOSInstructionsDismissed();
 			return;
 		}
 
@@ -57,7 +81,7 @@
 		};
 	});
 
-	// Handle install button click
+	// Handle install button click (Chromium)
 	const handleInstallClick = async () => {
 		if (!deferredPrompt) return;
 
@@ -83,9 +107,16 @@
 			showInstallButton = false;
 		}
 	};
+
+	const dismissIOSInstructions = () => {
+		localStorage.setItem('ios-install-dismissed', '1');
+		showIOSInstructions = false;
+		iosPopoverOpen = false;
+	};
 </script>
 
 {#if showInstallButton}
+	<!-- Standard install button for Chromium browsers -->
 	<Button
 		onclick={handleInstallClick}
 		disabled={isInstalling}
@@ -93,13 +124,69 @@
 		title="Install ChordCraft as an app"
 	>
 		<Download size={16} />
-		<span class="hidden sm:inline">
-			{#if isInstalling}
-				Installing...
-			{:else}
-				Install App
-			{/if}
-		</span>
-		<span class="sm:hidden">Install</span>
+		{#if isInstalling}
+			Installing...
+		{:else}
+			Install App
+		{/if}
 	</Button>
+{:else if showIOSInstructions}
+	<!-- iOS-specific install instructions -->
+	<Popover.Root bind:open={iosPopoverOpen}>
+		<Popover.Trigger>
+			{#snippet child({ props })}
+				<Button {...props} variant="default" title="Install ChordCraft as an app">
+					<Download size={16} />
+					Install App
+				</Button>
+			{/snippet}
+		</Popover.Trigger>
+		<Popover.Content class="w-80" side="bottom" align="end">
+			<div class="flex flex-col gap-3">
+				<div class="flex items-start justify-between gap-2">
+					<h4 class="font-semibold text-sm">Install ChordCraft</h4>
+					<button
+						onclick={dismissIOSInstructions}
+						class="text-muted-foreground hover:text-foreground -mt-1 -mr-1 p-1"
+						aria-label="Dismiss"
+					>
+						<X size={16} />
+					</button>
+				</div>
+				<p class="text-muted-foreground text-sm">
+					Add this app to your home screen for quick access and offline use:
+				</p>
+				<ol class="text-sm space-y-2">
+					<li class="flex items-center gap-2">
+						<span
+							class="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs font-medium"
+							>1</span
+						>
+						<span class="flex items-center gap-1">
+							Tap the <Share size={14} class="text-primary inline" /> Share button
+						</span>
+					</li>
+					<li class="flex items-center gap-2">
+						<span
+							class="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs font-medium"
+							>2</span
+						>
+						<span class="flex items-center gap-1">
+							Scroll and tap <Plus size={14} class="text-primary inline" /> Add to Home Screen
+						</span>
+					</li>
+					<li class="flex items-center gap-2">
+						<span
+							class="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs font-medium"
+							>3</span
+						>
+						<span>Tap Add to confirm</span>
+					</li>
+				</ol>
+				<Button variant="outline" size="sm" class="mt-1" onclick={dismissIOSInstructions}>
+					Got it
+				</Button>
+			</div>
+		</Popover.Content>
+	</Popover.Root>
 {/if}
