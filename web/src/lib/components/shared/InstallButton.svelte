@@ -144,40 +144,41 @@
 		<Popover.Content class="w-80" side="bottom" align="end">
 			<div class="flex flex-col gap-3">
 				<div class="flex items-start justify-between gap-2">
-					<h4 class="font-semibold text-sm">Install ChordCraft</h4>
+					<h4 class="text-sm font-semibold">Install ChordCraft</h4>
 					<button
 						onclick={dismissIOSInstructions}
-						class="text-muted-foreground hover:text-foreground -mt-1 -mr-1 p-1"
+						class="-mt-1 -mr-1 p-1 text-muted-foreground hover:text-foreground"
 						aria-label="Dismiss"
 					>
 						<X size={16} />
 					</button>
 				</div>
-				<p class="text-muted-foreground text-sm">
+				<p class="text-sm text-muted-foreground">
 					Add this app to your home screen for quick access and offline use:
 				</p>
-				<ol class="text-sm space-y-2">
+				<ol class="space-y-2 text-sm">
 					<li class="flex items-center gap-2">
 						<span
-							class="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs font-medium"
+							class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-xs font-medium"
 							>1</span
 						>
 						<span class="flex items-center gap-1">
-							Tap the <Share size={14} class="text-primary inline" /> Share button
+							Tap the <Share size={14} class="inline text-primary" /> Share button
 						</span>
 					</li>
 					<li class="flex items-center gap-2">
 						<span
-							class="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs font-medium"
+							class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-xs font-medium"
 							>2</span
 						>
 						<span class="flex items-center gap-1">
-							Scroll and tap <Plus size={14} class="text-primary inline" /> Add to Home Screen
+							Scroll and tap <Plus size={14} class="inline text-primary" /> Add to Home
+							Screen
 						</span>
 					</li>
 					<li class="flex items-center gap-2">
 						<span
-							class="bg-muted flex h-5 w-5 shrink-0 items-center justify-center rounded text-xs font-medium"
+							class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-xs font-medium"
 							>3</span
 						>
 						<span>Tap Add to confirm</span>
