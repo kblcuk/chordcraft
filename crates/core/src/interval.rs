@@ -49,11 +49,14 @@ impl Interval {
 		};
 
 		// Adjust for quality
+		// For perfect intervals (1, 4, 5): diminished = base - 1
+		// For non-perfect intervals (2, 3, 6, 7): diminished = base - 2 (below minor)
 		match (self.quality, self.is_perfect_interval()) {
 			(Perfect, true) | (Major, false) => base_semitones,
 			(Minor, false) => base_semitones - 1,
 			(Augmented, _) => base_semitones + 1,
-			(Diminished, _) => base_semitones - 1,
+			(Diminished, true) => base_semitones - 1,
+			(Diminished, false) => base_semitones - 2,
 			_ => base_semitones, // Invalid combination, return base
 		}
 	}
@@ -123,6 +126,12 @@ impl Interval {
 		};
 
 		format!("{quality_name} {distance_name}")
+	}
+
+	/// Compare intervals by semitone value, treating enharmonic equivalents as equal.
+	/// For example, Augmented(4) and Diminished(5) are both 6 semitones and compare equal.
+	pub fn enharmonic_eq(&self, other: &Interval) -> bool {
+		self.to_semitones() == other.to_semitones()
 	}
 
 	/// Parse an interval from short notation (e.g., "M3", "P5", "m7")
@@ -279,5 +288,30 @@ mod tests {
 		assert_eq!(MAJOR_THIRD.full_name(), "Major 3rd");
 		assert_eq!(PERFECT_FIFTH.full_name(), "Perfect 5th");
 		assert_eq!(MINOR_SEVENTH.full_name(), "Minor 7th");
+	}
+
+	#[test]
+	fn test_enharmonic_eq() {
+		// Augmented 4th and Diminished 5th are both 6 semitones (tritone)
+		let aug4 = Interval::new(IntervalQuality::Augmented, 4);
+		let dim5 = Interval::new(IntervalQuality::Diminished, 5);
+		assert!(
+			aug4.enharmonic_eq(&dim5),
+			"Aug4 and Dim5 should be enharmonically equal"
+		);
+
+		// Same interval should be equal
+		assert!(PERFECT_FIFTH.enharmonic_eq(&PERFECT_FIFTH));
+
+		// Different semitone counts should not be equal
+		assert!(!MAJOR_THIRD.enharmonic_eq(&MINOR_THIRD));
+
+		// Augmented 5th and Minor 6th are both 8 semitones
+		let aug5 = Interval::new(IntervalQuality::Augmented, 5);
+		assert!(aug5.enharmonic_eq(&MINOR_SIXTH));
+
+		// Diminished 7th = 9 semitones = Major 6th
+		let dim7 = Interval::new(IntervalQuality::Diminished, 7);
+		assert!(dim7.enharmonic_eq(&MAJOR_SIXTH));
 	}
 }
