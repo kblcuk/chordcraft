@@ -118,7 +118,7 @@
 		opts: Partial<{
 			limit: number;
 			capo: number;
-			voicing: 'all' | 'core' | 'full' | 'jazzy';
+			voicing: 'all' | 'core' | 'full' | 'jazzy' | 'incomplete';
 			position: number | null;
 			context: 'solo' | 'band';
 		}>

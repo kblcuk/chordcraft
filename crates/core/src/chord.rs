@@ -87,22 +87,22 @@ impl ChordQuality {
 			Sus2 => (vec![UNISON, MAJOR_SECOND, PERFECT_FIFTH], vec![]),
 			Sus4 => (vec![UNISON, PERFECT_FOURTH, PERFECT_FIFTH], vec![]),
 
-			// 7th chords
+			// 7th chords (5th is optional - the 7th defines the chord's color)
 			Dominant7 => (
-				vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH],
-				vec![],
+				vec![UNISON, MAJOR_THIRD, MINOR_SEVENTH],
+				vec![PERFECT_FIFTH],
 			),
 			Major7 => (
-				vec![UNISON, MAJOR_THIRD, PERFECT_FIFTH, MAJOR_SEVENTH],
-				vec![],
+				vec![UNISON, MAJOR_THIRD, MAJOR_SEVENTH],
+				vec![PERFECT_FIFTH],
 			),
 			Minor7 => (
-				vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MINOR_SEVENTH],
-				vec![],
+				vec![UNISON, MINOR_THIRD, MINOR_SEVENTH],
+				vec![PERFECT_FIFTH],
 			),
 			MinorMajor7 => (
-				vec![UNISON, MINOR_THIRD, PERFECT_FIFTH, MAJOR_SEVENTH],
-				vec![],
+				vec![UNISON, MINOR_THIRD, MAJOR_SEVENTH],
+				vec![PERFECT_FIFTH],
 			),
 			Diminished7 => (
 				vec![
@@ -319,8 +319,10 @@ pub enum VoicingType {
 	Core,
 	/// All chord tones present
 	Full,
-	/// Jazz voicings with possible omissions
+	/// Intentional jazz voicings: has the defining intervals but omits less essential tones
 	Jazzy,
+	/// Incomplete voicing: missing essential notes (e.g., no 3rd, power chords)
+	Incomplete,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

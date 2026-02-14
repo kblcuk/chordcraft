@@ -24,7 +24,7 @@ export const routes = [
 // Type Definitions
 // =============================================================================
 
-export type Voicing = 'all' | 'core' | 'full' | 'jazzy';
+export type Voicing = 'all' | 'core' | 'full' | 'jazzy' | 'incomplete';
 export type PlayingContext = 'solo' | 'band';
 
 export interface FindUrlState {
@@ -126,7 +126,7 @@ function parseInstrument(params: URLSearchParams): Instrument {
 
 function parseVoicing(params: URLSearchParams): Voicing {
 	const value = params.get('voicing');
-	if (value === 'core' || value === 'full' || value === 'jazzy') return value;
+	if (value === 'core' || value === 'full' || value === 'jazzy' || value === 'incomplete') return value;
 	return 'all';
 }
 

@@ -179,8 +179,8 @@ impl Default for JsProgressionOptions {
 pub struct JsScoredFingering {
 	/// Tab notation (e.g., "x32010")
 	pub tab: String,
-	/// Playability score (0-100)
-	pub score: u8,
+	/// Playability score (higher is better)
+	pub score: u16,
 	/// Voicing type ("core", "full", or "jazzy")
 	pub voicing_type: String,
 	/// Whether root is in bass
@@ -238,6 +238,7 @@ fn parse_voicing_type(s: &str) -> Option<VoicingType> {
 		"core" => Some(VoicingType::Core),
 		"full" => Some(VoicingType::Full),
 		"jazzy" => Some(VoicingType::Jazzy),
+		"incomplete" => Some(VoicingType::Incomplete),
 		_ => None,
 	}
 }
@@ -248,6 +249,7 @@ fn voicing_type_to_string(vt: &VoicingType) -> String {
 		VoicingType::Core => "core".to_string(),
 		VoicingType::Full => "full".to_string(),
 		VoicingType::Jazzy => "jazzy".to_string(),
+		VoicingType::Incomplete => "incomplete".to_string(),
 	}
 }
 

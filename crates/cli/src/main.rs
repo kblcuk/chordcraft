@@ -104,6 +104,7 @@ fn parse_voicing_type(voicing: Option<&String>) -> Option<VoicingType> {
 		"core" => Some(VoicingType::Core),
 		"full" => Some(VoicingType::Full),
 		"jazzy" | "jazz" => Some(VoicingType::Jazzy),
+		"incomplete" => Some(VoicingType::Incomplete),
 		_ => None,
 	})
 }

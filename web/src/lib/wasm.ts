@@ -37,7 +37,7 @@ export interface InstrumentInfo {
 export interface ScoredFingering {
 	tab: string;
 	score: number;
-	voicingType: 'core' | 'full' | 'jazzy';
+	voicingType: 'core' | 'full' | 'jazzy' | 'incomplete';
 	hasRootInBass: boolean;
 	position: number;
 	notes: string[];

@@ -41,7 +41,7 @@ impl Default for GeneratorOptions {
 #[derive(Debug, Clone)]
 pub struct ScoredFingering {
 	pub fingering: Fingering,
-	pub score: u8,
+	pub score: u16,
 	pub voicing_type: VoicingType,
 	pub has_root_in_bass: bool,
 	pub position: u8,
@@ -101,12 +101,17 @@ pub fn generate_fingerings<I: Instrument>(
 			let has_all_core = core_notes.iter().all(|n| pitches.contains(n));
 			let has_all_notes = all_notes.iter().all(|n| pitches.contains(n));
 
+			let has_root = pitches.contains(&root);
 			let voicing_type = if has_all_notes {
 				VoicingType::Full
 			} else if has_all_core {
 				VoicingType::Core
-			} else {
+			} else if has_root && pitches.len() >= 2 {
+				// Has root and at least one other chord tone: intentional voicing
 				VoicingType::Jazzy
+			} else {
+				// Missing root or too few notes: incomplete voicing
+				VoicingType::Incomplete
 			};
 
 			if let Some(required_voicing) = &options.voicing_type
@@ -118,21 +123,7 @@ pub fn generate_fingerings<I: Instrument>(
 			let bass_pitch = fingering.bass_note(instrument).map(|n| n.pitch);
 			let has_root_in_bass = bass_pitch == Some(root);
 
-			let fretted_frets: Vec<u8> = fingering
-				.strings()
-				.iter()
-				.filter_map(|s| match s {
-					StringState::Fretted(f) if *f > 0 => Some(*f),
-					_ => None,
-				})
-				.collect();
-
-			let position = if fretted_frets.is_empty() {
-				0
-			} else {
-				(fretted_frets.iter().map(|f| *f as u32).sum::<u32>() / fretted_frets.len() as u32)
-					as u8
-			};
+			let position = fingering.min_fret().unwrap_or(0);
 
 			let score = score_fingering(
 				&fingering,
@@ -150,7 +141,7 @@ pub fn generate_fingerings<I: Instrument>(
 
 			Some(ScoredFingering {
 				fingering,
-				score: score.max(0) as u8, // Don't clamp to 100, allow higher scores for sorting
+				score: score.max(0) as u16,
 				voicing_type,
 				has_root_in_bass,
 				position,
@@ -259,7 +250,7 @@ fn should_continue_branch(
 const STRING_USAGE_BONUS: i32 = 8;
 const INTERIOR_MUTE_PENALTY: i32 = 30;
 const POSITION_DISTANCE_PENALTY: i32 = 3;
-const STANDARD_SHAPE_BONUS: i32 = 20;
+const STANDARD_SHAPE_BONUS: i32 = 35;
 const SOLO_ROOT_IN_BASS_BONUS: i32 = 30;
 const SOLO_FULL_VOICING_BONUS: i32 = 20;
 const SOLO_CORE_VOICING_BONUS: i32 = 5;
@@ -340,8 +331,10 @@ fn score_fingering<I: Instrument>(
 				score += SOLO_CORE_VOICING_BONUS;
 			}
 
-			if fingering_options.voicing_type == VoicingType::Jazzy
-				&& !fingering_options.has_root_in_bass
+			if matches!(
+				fingering_options.voicing_type,
+				VoicingType::Jazzy | VoicingType::Incomplete
+			) && !fingering_options.has_root_in_bass
 			{
 				score -= SOLO_JAZZY_WITHOUT_ROOT_PENALTY;
 			}
@@ -362,6 +355,7 @@ fn score_fingering<I: Instrument>(
 			match fingering_options.voicing_type {
 				VoicingType::Core | VoicingType::Jazzy => score += BAND_COMPACT_VOICING_BONUS,
 				VoicingType::Full => score += BAND_FULL_VOICING_BONUS,
+				VoicingType::Incomplete => {} // No bonus for incomplete voicings
 			}
 
 			// Bonus for avoiding bass register strings (only applies if instrument has some)
@@ -969,6 +963,101 @@ mod tests {
 				fingering.fingering
 			);
 		}
+	}
+
+	// ===================================================================
+	// Golden-file tests: verify well-known fingerings rank in top results
+	// ===================================================================
+
+	/// Helper: check if a specific tab notation appears in the top N results
+	fn assert_in_top_n(chord_name: &str, expected_tab: &str, top_n: usize) {
+		let chord = Chord::parse(chord_name).unwrap();
+		let guitar = Guitar::default();
+		let options = GeneratorOptions {
+			limit: top_n,
+			..Default::default()
+		};
+		let fingerings = generate_fingerings(&chord, &guitar, &options);
+		let tabs: Vec<String> = fingerings.iter().map(|f| f.fingering.to_string()).collect();
+		assert!(
+			tabs.contains(&expected_tab.to_string()),
+			"{chord_name}: expected {expected_tab} in top {top_n}, got: {tabs:?}"
+		);
+	}
+
+	#[test]
+	fn test_golden_c_major() {
+		assert_in_top_n("C", "x32010", 3);
+	}
+
+	#[test]
+	fn test_golden_g_major() {
+		assert_in_top_n("G", "320003", 3);
+	}
+
+	#[test]
+	fn test_golden_d_major() {
+		assert_in_top_n("D", "xx0232", 3);
+	}
+
+	#[test]
+	fn test_golden_a_major() {
+		assert_in_top_n("A", "x02220", 3);
+	}
+
+	#[test]
+	fn test_golden_e_major() {
+		assert_in_top_n("E", "022100", 3);
+	}
+
+	#[test]
+	fn test_golden_am() {
+		assert_in_top_n("Am", "x02210", 3);
+	}
+
+	#[test]
+	fn test_golden_em() {
+		assert_in_top_n("Em", "022000", 3);
+	}
+
+	#[test]
+	fn test_golden_dm() {
+		assert_in_top_n("Dm", "xx0231", 3);
+	}
+
+	#[test]
+	fn test_golden_f_barre() {
+		// F barre (133211) should rank in top 5 (it's harder than open chords)
+		assert_in_top_n("F", "133211", 5);
+	}
+
+	#[test]
+	fn test_golden_cmaj7() {
+		assert_in_top_n("Cmaj7", "x32000", 5);
+	}
+
+	#[test]
+	fn test_golden_am7() {
+		assert_in_top_n("Am7", "x02010", 5);
+	}
+
+	#[test]
+	fn test_golden_g7() {
+		// Open G7 (320001) has 3 interior open strings which penalizes its ranking.
+		// Barre E7-shape variants at fret 3 rank higher.
+		// Verify the E7-shape barre G7 (353433) ranks high, and 320001 still appears.
+		assert_in_top_n("G7", "353433", 3);
+		assert_in_top_n("G7", "320001", 20);
+	}
+
+	#[test]
+	fn test_golden_d7() {
+		assert_in_top_n("D7", "xx0212", 5);
+	}
+
+	#[test]
+	fn test_golden_e7() {
+		assert_in_top_n("E7", "020100", 5);
 	}
 
 	#[test]

@@ -2,7 +2,7 @@
 	import { Slider } from '$lib/components/ui/slider';
 	import { Label } from '$lib/components/ui/label';
 
-	type VoicingType = 'all' | 'core' | 'full' | 'jazzy';
+	type VoicingType = 'all' | 'core' | 'full' | 'jazzy' | 'incomplete';
 	type PlayingContext = 'solo' | 'band';
 
 	let {
