@@ -263,7 +263,11 @@ impl Fingering {
 		total_fingers
 	}
 
-	/// Consecutive strings can be barred; gaps require separate fingers.
+	/// Count fingers needed for strings at the same fret.
+	/// A barre covers from the lowest to highest string at that fret, spanning
+	/// any gaps (muted or differently-fretted strings in between). This models
+	/// how guitarists actually barre: the index finger presses all 6 strings
+	/// even if some strings in the middle are fretted higher.
 	fn count_fingers_for_strings(strings: &[usize]) -> u8 {
 		if strings.is_empty() {
 			return 0;
@@ -273,22 +277,9 @@ impl Fingering {
 			return 1;
 		}
 
-		let mut sorted = strings.to_vec();
-		sorted.sort_unstable();
-
-		let mut finger_count = 0;
-		let mut i = 0;
-
-		while i < sorted.len() {
-			finger_count += 1;
-			while i + 1 < sorted.len() && sorted[i + 1] == sorted[i] + 1 {
-				i += 1;
-			}
-
-			i += 1;
-		}
-
-		finger_count
+		// Two or more strings at the same fret = one barre finger
+		// A barre covers the entire span from first to last string
+		1
 	}
 
 	pub fn is_playable_for<I: Instrument>(&self, instrument: &I) -> bool {
@@ -662,14 +653,14 @@ mod tests {
 
 	#[test]
 	fn test_min_fingers_simple_barre() {
-		// 464444 - string 1 at fret 6 breaks the barre at fret 4
-		// Algorithm counts: string 0 at fret 4 (1), strings 2-5 barred at fret 4 (1), string 1 at fret 6 (1)
-		// = 3 fingers (conservative but correct - can't make a full barre with string 1 in the way)
+		// 464444 - barre fret 4 across all strings, one finger on fret 6
+		// Barre covers strings 0,2,3,4,5 at fret 4 (one finger), string 1 at fret 6 (one finger)
+		// = 2 fingers (realistic: index barre + one extension finger)
 		let f = Fingering::parse("464444").unwrap();
 		assert_eq!(
 			f.min_fingers_required(),
-			3,
-			"Broken barre + one note = 3 fingers"
+			2,
+			"Barre + one extension = 2 fingers"
 		);
 
 		// A true full barre would be something like 444444
@@ -693,14 +684,10 @@ mod tests {
 	fn test_min_fingers_complex() {
 		// 424404 - mixed frets with gaps
 		let f = Fingering::parse("424404").unwrap();
-		// Fret 4: strings 0,2,3,5 (can barre 2-3, separate fingers for 0 and 5) = 3 fingers
-		// Fret 2: string 1 = 1 finger
-		// Total: 4 fingers
-		assert_eq!(
-			f.min_fingers_required(),
-			4,
-			"Mixed frets with gaps = 4 fingers"
-		);
+		// Fret 4: strings 0,2,3,5 → one barre (covers from string 0 to 5)
+		// Fret 2: string 1 → one finger
+		// Total: 2 fingers (barre across fret 4 + one finger on fret 2)
+		assert_eq!(f.min_fingers_required(), 2, "Barre + one note = 2 fingers");
 	}
 
 	#[test]
@@ -717,40 +704,28 @@ mod tests {
 	#[test]
 	fn test_min_fingers_barre_f() {
 		// 133211 - barre F chord
-		let f = Fingering::parse("133211").unwrap();
-		// Fret 1: strings 0,1,5 (0-1 consecutive, 5 separate) = 2 barres/fingers
-		// Fret 3: string 2 = 1 finger
-		// Fret 3: string 3 = wait, let me recalculate
 		// 133211 = E:1, A:3, D:3, G:2, B:1, e:1
-		// Fret 1: strings 0,4,5 (not all consecutive) = need to check grouping
-		// Fret 2: string 3 = 1 finger
-		// Fret 3: strings 1,2 (consecutive) = 1 barre
-		// Let's trace through the algorithm...
-		// Actually, standard F is: index finger barres fret 1 (strings 0,1,5)
-		// but they're not consecutive (0,1 are, but 5 is separate)
-		// So: barre 0-1 (1 finger), string 5 at fret 1 (could extend barre? or separate)
-		// In practice, you barre all of fret 1 with index finger = 1 finger
-		// Then fret 2 string 3 with middle, fret 3 strings 1,2 with ring/pinkie
-		// Let's see what our algorithm says...
+		// Fret 1: strings [0,4,5] → one barre finger
+		// Fret 2: string [3] → one finger
+		// Fret 3: strings [1,2] → one barre finger
+		// Total = 3 fingers (index barre fret 1, middle on fret 2, ring/pinkie on fret 3)
+		let f = Fingering::parse("133211").unwrap();
 		let fingers = f.min_fingers_required();
-		println!("Barre F requires {fingers} fingers by algorithm");
-		// The algorithm will group by fret, so:
-		// Fret 1: [0,4,5] -> 0 alone, 4-5 consecutive = 2 groups
-		// Fret 2: [3] = 1 group
-		// Fret 3: [1,2] consecutive = 1 group
-		// Total = 4 fingers
-		// But in reality, you can barre all of fret 1 with one finger!
-		// Our algorithm is conservative (over-estimates) which is okay for now
-		assert!(fingers <= 4, "Barre F should be playable");
+		assert_eq!(fingers, 3, "Barre F should require 3 fingers");
 	}
 
 	#[test]
 	fn test_unplayable_too_many_fingers() {
 		let guitar = Guitar::default();
-		// Create a fingering that requires 5+ fingers (should be filtered)
+		// 123456 - six different frets, each requires separate finger
+		// Fret 1: [0] = 1, Fret 2: [1] = 1, Fret 3: [2] = 1,
+		// Fret 4: [3] = 1, Fret 5: [4] = 1, Fret 6: [5] = 1 = 6 total
 		let f = Fingering::parse("123456").unwrap();
 		let fingers = f.min_fingers_required();
-		assert!(fingers > 4, "This should require too many fingers");
+		assert!(
+			fingers > 4,
+			"This should require too many fingers ({fingers})"
+		);
 		assert!(!f.is_playable_for(&guitar), "Should be marked unplayable");
 	}
 
