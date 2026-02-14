@@ -129,9 +129,187 @@ pub mod guitar {
 		string_count: 6,
 	};
 
+	// === 7th chord shapes (CAGED system extensions) ===
+
+	/// E7 shape: 020100 - open E dominant 7th
+	pub const E7_SHAPE: StandardShape = StandardShape {
+		name: "E7",
+		pattern: &[Some(0), Some(2), Some(0), Some(1), Some(0), Some(0)],
+		string_count: 6,
+	};
+
+	/// Em7 shape: 022030 - open Em7
+	pub const EM7_SHAPE: StandardShape = StandardShape {
+		name: "Em7",
+		pattern: &[Some(0), Some(2), Some(2), Some(0), Some(3), Some(0)],
+		string_count: 6,
+	};
+
+	/// A7 shape: x02020 - open A dominant 7th
+	pub const A7_SHAPE: StandardShape = StandardShape {
+		name: "A7",
+		pattern: &[None, Some(0), Some(2), Some(0), Some(2), Some(0)],
+		string_count: 6,
+	};
+
+	/// Am7 shape: x02010 - open Am7
+	pub const AM7_SHAPE: StandardShape = StandardShape {
+		name: "Am7",
+		pattern: &[None, Some(0), Some(2), Some(0), Some(1), Some(0)],
+		string_count: 6,
+	};
+
+	/// Amaj7 shape: x02120 - open Amaj7
+	pub const AMAJ7_SHAPE: StandardShape = StandardShape {
+		name: "Amaj7",
+		pattern: &[None, Some(0), Some(2), Some(1), Some(2), Some(0)],
+		string_count: 6,
+	};
+
+	/// Cmaj7 shape: x32000 - open Cmaj7
+	pub const CMAJ7_SHAPE: StandardShape = StandardShape {
+		name: "Cmaj7",
+		pattern: &[None, Some(3), Some(2), Some(0), Some(0), Some(0)],
+		string_count: 6,
+	};
+
+	/// D7 shape: xx0212 - open D7
+	pub const D7_SHAPE: StandardShape = StandardShape {
+		name: "D7",
+		pattern: &[None, None, Some(0), Some(2), Some(1), Some(2)],
+		string_count: 6,
+	};
+
+	/// Dm7 shape: xx0211 - open Dm7
+	pub const DM7_SHAPE: StandardShape = StandardShape {
+		name: "Dm7",
+		pattern: &[None, None, Some(0), Some(2), Some(1), Some(1)],
+		string_count: 6,
+	};
+
+	/// Fmaj7 shape: x33210 - common Fmaj7
+	pub const FMAJ7_SHAPE: StandardShape = StandardShape {
+		name: "Fmaj7",
+		pattern: &[None, Some(3), Some(3), Some(2), Some(1), Some(0)],
+		string_count: 6,
+	};
+
+	/// B7 shape: x21202 - open B7
+	pub const B7_SHAPE: StandardShape = StandardShape {
+		name: "B7",
+		pattern: &[None, Some(2), Some(1), Some(2), Some(0), Some(2)],
+		string_count: 6,
+	};
+
+	/// G7 shape: 320001 - open G7
+	pub const G7_SHAPE: StandardShape = StandardShape {
+		name: "G7",
+		pattern: &[Some(3), Some(2), Some(0), Some(0), Some(0), Some(1)],
+		string_count: 6,
+	};
+
+	// === Power chord shapes ===
+
+	/// Power chord (5th): x022xx or root-5th shape
+	pub const POWER5_E_SHAPE: StandardShape = StandardShape {
+		name: "5-E",
+		pattern: &[Some(0), Some(2), Some(2), None, None, None],
+		string_count: 6,
+	};
+
+	/// Power chord A-rooted: x022xx shape
+	pub const POWER5_A_SHAPE: StandardShape = StandardShape {
+		name: "5-A",
+		pattern: &[None, Some(0), Some(2), Some(2), None, None],
+		string_count: 6,
+	};
+
+	// === Additional common open shapes ===
+
+	/// F shape (partial): xx3211 - easy F voicing without barre
+	pub const F_PARTIAL_SHAPE: StandardShape = StandardShape {
+		name: "F-partial",
+		pattern: &[None, None, Some(3), Some(2), Some(1), Some(1)],
+		string_count: 6,
+	};
+
+	/// Emaj7 shape: 021100 - open Emaj7
+	pub const EMAJ7_SHAPE: StandardShape = StandardShape {
+		name: "Emaj7",
+		pattern: &[Some(0), Some(2), Some(1), Some(1), Some(0), Some(0)],
+		string_count: 6,
+	};
+
+	/// Dsus2 shape: xx0230 - common sus chord
+	pub const DSUS2_SHAPE: StandardShape = StandardShape {
+		name: "Dsus2",
+		pattern: &[None, None, Some(0), Some(2), Some(3), Some(0)],
+		string_count: 6,
+	};
+
+	/// Dsus4 shape: xx0233 - common sus chord
+	pub const DSUS4_SHAPE: StandardShape = StandardShape {
+		name: "Dsus4",
+		pattern: &[None, None, Some(0), Some(2), Some(3), Some(3)],
+		string_count: 6,
+	};
+
+	/// Asus2 shape: x02200 - common sus chord
+	pub const ASUS2_SHAPE: StandardShape = StandardShape {
+		name: "Asus2",
+		pattern: &[None, Some(0), Some(2), Some(2), Some(0), Some(0)],
+		string_count: 6,
+	};
+
+	/// Asus4 shape: x02230 - common sus chord
+	pub const ASUS4_SHAPE: StandardShape = StandardShape {
+		name: "Asus4",
+		pattern: &[None, Some(0), Some(2), Some(2), Some(3), Some(0)],
+		string_count: 6,
+	};
+
+	/// Esus4 shape: 022200 - common sus chord
+	pub const ESUS4_SHAPE: StandardShape = StandardShape {
+		name: "Esus4",
+		pattern: &[Some(0), Some(2), Some(2), Some(2), Some(0), Some(0)],
+		string_count: 6,
+	};
+
 	/// All standard guitar shapes for iteration
 	pub const ALL_SHAPES: &[&StandardShape] = &[
-		&AM_SHAPE, &A_SHAPE, &EM_SHAPE, &E_SHAPE, &C_SHAPE, &G_SHAPE, &D_SHAPE, &DM_SHAPE,
+		// Triads
+		&AM_SHAPE,
+		&A_SHAPE,
+		&EM_SHAPE,
+		&E_SHAPE,
+		&C_SHAPE,
+		&G_SHAPE,
+		&D_SHAPE,
+		&DM_SHAPE,
+		// 7th chords
+		&E7_SHAPE,
+		&EM7_SHAPE,
+		&A7_SHAPE,
+		&AM7_SHAPE,
+		&AMAJ7_SHAPE,
+		&CMAJ7_SHAPE,
+		&D7_SHAPE,
+		&DM7_SHAPE,
+		&FMAJ7_SHAPE,
+		&B7_SHAPE,
+		&G7_SHAPE,
+		&EMAJ7_SHAPE,
+		// Power chords
+		&POWER5_E_SHAPE,
+		&POWER5_A_SHAPE,
+		// Partial/alternative shapes
+		&F_PARTIAL_SHAPE,
+		// Suspended chords
+		&DSUS2_SHAPE,
+		&DSUS4_SHAPE,
+		&ASUS2_SHAPE,
+		&ASUS4_SHAPE,
+		&ESUS4_SHAPE,
 	];
 
 	/// Find which standard shape a fingering matches, if any.
