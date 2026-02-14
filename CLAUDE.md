@@ -178,7 +178,8 @@ chordcraft/
 
 - **Core**: Essential notes only (root, 3rd, 7th for 7th chords; root, 3rd, 5th for triads)
 - **Full**: All chord tones present, no omissions
-- **Jazzy**: Extended voicings, possible omissions of less essential notes (often 5th), jazz-style colorings
+- **Jazzy**: Has root and defining character notes, intentionally omits less essential tones (5th, extensions)
+- **Incomplete**: Missing essential notes (no root, power chords, etc.)
 
 ### Phase 3: Reverse Lookup (Tabs → Chord) ✓ COMPLETE
 
@@ -328,11 +329,11 @@ pub struct ProgressionSequence {
    - Use `score_transition()` to evaluate each transition
    - Keep only transitions within `max_fret_distance` constraint
 
-3. **Build Complete Progressions** (greedy approach)
-   - Start with top fingering for first chord
-   - For each subsequent chord, pick fingering with best transition from previous
-   - Build K different progressions using different starting fingerings
-   - Alternative: Use dynamic programming for true global optimization (future)
+3. **Build Complete Progressions** (beam search)
+   - Maintain top-K partial sequences at each step (beam width = limit * 3, min 10)
+   - At each chord, expand all beam candidates with all next-chord fingerings
+   - Prune to beam width by total transition score
+   - Returns globally better solutions than the previous greedy approach
 
 4. **Rank & Return**
    - Score complete progressions (sum of transition scores)
@@ -397,6 +398,12 @@ fn calculate_shape_similarity<I: Instrument>(
     instrument: &I,
 ) -> i32 {
     let mut bonus = 0;
+
+    // Same standard shape = barre slide (easiest transition)
+    // e.g., E-shape barre at fret 1 (F) → E-shape at fret 3 (G) = just slide
+    if same_standard_shape(from, to, instrument) {
+        bonus += 50;
+    }
 
     // Both use barre in similar position
     if from.has_barre() && to.has_barre() {
@@ -668,7 +675,7 @@ All tests are inlined in Rust modules. Run with: `cargo test --workspace`
 
 **Future Enhancements** (Phase 6+):
 
-- Global optimization using dynamic programming (optimal substructure)
+- ✅ Beam search (replaces greedy); dynamic programming for true global optimization (future)
 - Support for repeated sections (verse, chorus patterns)
 - Strumming pattern integration (avoid difficult transitions on beat)
 - Visual finger movement diagrams (which finger goes where)
@@ -859,7 +866,8 @@ Instead of binary "valid/invalid", classify voicings by use case:
 
 - **Core**: For clarity, ensemble playing, when others cover the full harmony
 - **Full**: For solo playing, complete harmonic picture
-- **Jazzy**: For advanced players, color tones, sophisticated voicings
+- **Jazzy**: For advanced players, intentional omissions of non-essential tones, color voicings
+- **Incomplete**: Missing essential notes (power chords, rootless voicings); ranked lower by default
 
 ### Scoring Weights (to be tuned)
 
@@ -927,10 +935,11 @@ Fingering scoring is separated into distinct concerns:
    - Position preferences (open position bonus, high fret penalty)
    - Independent of chord context
 
-2. **Generation Scoring** (`generator::score_fingering()`) - Unbounded
+2. **Generation Scoring** (`generator::score_fingering()`) - Stored as `u16`
    - Builds on playability score
    - Adds chord-specific bonuses (root in bass, voicing completeness)
    - Adds musical preferences (interior mutes penalty, string coverage)
+   - Standard shape bonus (+35 for matching known chord shapes from `shapes.rs`)
    - Used for ranking/sorting fingerings
 
 This separation allows:
@@ -1013,7 +1022,7 @@ This separation allows:
 
 ---
 
-**Last updated**: 2025-12-08 - Added ukulele CLI support with re-entrant tuning handling
+**Last updated**: 2026-02-14 - Core audit fixes: tritone bug, scoring improvements, beam search
 **Current status**:
 
 - ✅ Phases 1-5 complete (Core, Generator, Analyzer, CLI, Progressions)
