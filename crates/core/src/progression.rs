@@ -7,6 +7,7 @@ use crate::chord::Chord;
 use crate::fingering::Fingering;
 use crate::generator::{GeneratorOptions, PlayingContext, ScoredFingering, generate_fingerings};
 use crate::instrument::Instrument;
+use crate::shapes;
 
 const BASE_SCORE: i32 = 100;
 const MOVEMENT_WEIGHT: i32 = 30;
@@ -15,6 +16,7 @@ const BARRE_SIMILARITY_BONUS: i32 = 15;
 const OPEN_POSITION_BONUS: i32 = 10;
 const STRING_COUNT_SIMILARITY_BONUS: i32 = 5;
 const DISTANCE_PENALTY: i32 = 5;
+const SAME_SHAPE_SLIDE_BONUS: i32 = 50;
 const BAND_MOVEMENT_WEIGHT: i32 = 40;
 const BAND_DISTANCE_PENALTY: i32 = 8;
 
@@ -99,87 +101,107 @@ pub fn generate_progression<I: Instrument>(
 		return vec![];
 	}
 
-	let mut sequences = Vec::new();
-	let start_limit = options.limit.min(candidates[0].len());
+	// Beam search: keep top-K partial sequences at each step
+	let beam_width = (options.limit * 3).max(10); // wider beam for better results
 
-	for start_idx in 0..start_limit {
-		if let Some(sequence) = build_progression_sequence(
-			&chords,
-			chord_names,
-			&candidates,
-			start_idx,
-			instrument,
-			options,
-		) {
-			sequences.push(sequence);
-		}
-	}
+	let sequences =
+		beam_search_progression(chord_names, &candidates, beam_width, instrument, options);
 
-	sequences.sort_by(|a, b| b.total_score.cmp(&a.total_score));
-	sequences.truncate(options.limit);
-	sequences
+	let mut result: Vec<ProgressionSequence> = sequences;
+	result.sort_by(|a, b| b.total_score.cmp(&a.total_score));
+	result.truncate(options.limit);
+	result
 }
 
-fn build_progression_sequence<I: Instrument>(
-	chords: &[Chord],
+/// A partial sequence being built during beam search
+struct BeamCandidate {
+	fingerings: Vec<ScoredFingering>,
+	transitions: Vec<ChordTransition>,
+	total_score: i32,
+}
+
+fn beam_search_progression<I: Instrument>(
 	chord_names: &[&str],
 	candidates: &[Vec<ScoredFingering>],
-	start_idx: usize,
+	beam_width: usize,
 	instrument: &I,
 	options: &ProgressionOptions,
-) -> Option<ProgressionSequence> {
-	let mut selected_fingerings = Vec::new();
-	let mut transitions = Vec::new();
+) -> Vec<ProgressionSequence> {
+	// Initialize beam with all first-chord candidates
+	let mut beam: Vec<BeamCandidate> = candidates[0]
+		.iter()
+		.map(|sf| BeamCandidate {
+			fingerings: vec![sf.clone()],
+			transitions: vec![],
+			total_score: 0,
+		})
+		.collect();
 
-	selected_fingerings.push(candidates[0][start_idx].clone());
-
-	for i in 1..chords.len() {
-		let from = &selected_fingerings[i - 1];
+	// Expand beam for each subsequent chord
+	for i in 1..candidates.len() {
+		let mut next_beam: Vec<BeamCandidate> = Vec::new();
 		let from_chord_name = chord_names[i - 1].to_string();
 		let to_chord_name = chord_names[i].to_string();
-		let mut best_transition: Option<(ChordTransition, ScoredFingering)> = None;
 
-		for to in &candidates[i] {
-			let transition = score_transition(
-				from_chord_name.clone(),
-				to_chord_name.clone(),
-				from,
-				to,
-				instrument,
-				options.generator_options.playing_context,
-			);
+		for candidate in &beam {
+			let from = candidate.fingerings.last().unwrap();
 
-			if transition.position_distance > options.max_fret_distance {
-				continue;
-			}
+			for to in &candidates[i] {
+				let transition = score_transition(
+					from_chord_name.clone(),
+					to_chord_name.clone(),
+					from,
+					to,
+					instrument,
+					options.generator_options.playing_context,
+				);
 
-			if best_transition.is_none()
-				|| transition.score > best_transition.as_ref().unwrap().0.score
-			{
-				best_transition = Some((transition, to.clone()));
+				if transition.position_distance > options.max_fret_distance {
+					continue;
+				}
+
+				let new_total = candidate.total_score + transition.score;
+				let mut new_fingerings = candidate.fingerings.clone();
+				new_fingerings.push(to.clone());
+				let mut new_transitions = candidate.transitions.clone();
+				new_transitions.push(transition);
+
+				next_beam.push(BeamCandidate {
+					fingerings: new_fingerings,
+					transitions: new_transitions,
+					total_score: new_total,
+				});
 			}
 		}
 
-		let (transition, to_fingering) = best_transition?;
+		// Prune to beam width: keep top-K by total score
+		next_beam.sort_by(|a, b| b.total_score.cmp(&a.total_score));
+		next_beam.truncate(beam_width);
+		beam = next_beam;
 
-		transitions.push(transition);
-		selected_fingerings.push(to_fingering);
+		if beam.is_empty() {
+			return vec![];
+		}
 	}
 
-	let total_score: i32 = transitions.iter().map(|t| t.score).sum();
-	let avg_transition_score = if transitions.is_empty() {
-		0.0
-	} else {
-		total_score as f32 / transitions.len() as f32
-	};
-
-	Some(ProgressionSequence {
-		chords: chord_names.iter().map(|s| s.to_string()).collect(),
-		fingerings: selected_fingerings,
-		transitions,
-		total_score,
-		avg_transition_score,
-	})
+	// Convert beam candidates to final sequences
+	beam.into_iter()
+		.map(|candidate| {
+			let total_score = candidate.total_score;
+			let avg_transition_score = if candidate.transitions.is_empty() {
+				0.0
+			} else {
+				total_score as f32 / candidate.transitions.len() as f32
+			};
+			ProgressionSequence {
+				chords: chord_names.iter().map(|s| s.to_string()).collect(),
+				fingerings: candidate.fingerings,
+				transitions: candidate.transitions,
+				total_score,
+				avg_transition_score,
+			}
+		})
+		.collect()
 }
 
 fn score_transition<I: Instrument>(
@@ -268,6 +290,17 @@ fn calculate_shape_similarity<I: Instrument>(
 ) -> i32 {
 	let mut bonus = 0;
 
+	// Check if both fingerings match the same standard shape (barre slide)
+	// This is the easiest transition: same hand shape, just slide up/down the neck
+	let from_shape = find_shape_for_instrument(from, instrument);
+	let to_shape = find_shape_for_instrument(to, instrument);
+
+	if let (Some((from_name, _)), Some((to_name, _))) = (from_shape, to_shape)
+		&& from_name == to_name
+	{
+		bonus += SAME_SHAPE_SLIDE_BONUS;
+	}
+
 	if from.has_barre() && to.has_barre() {
 		bonus += BARRE_SIMILARITY_BONUS;
 	}
@@ -283,6 +316,20 @@ fn calculate_shape_similarity<I: Instrument>(
 	}
 
 	bonus
+}
+
+/// Find which standard shape a fingering matches for the given instrument
+fn find_shape_for_instrument<I: Instrument>(
+	fingering: &Fingering,
+	instrument: &I,
+) -> Option<(&'static str, u8)> {
+	match instrument.string_count() {
+		6 => shapes::guitar::find_matching_shape(fingering),
+		4 => shapes::ukulele::find_matching_shape(fingering)
+			.or_else(|| shapes::mandolin::find_matching_shape(fingering)),
+		5 => shapes::banjo::find_matching_shape(fingering),
+		_ => None,
+	}
 }
 
 #[cfg(test)]
